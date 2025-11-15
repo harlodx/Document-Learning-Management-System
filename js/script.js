@@ -157,7 +157,7 @@ const node_1 = new DocumentNode(
     'Main Procedure', 
     'Overview of the entire process.', 
     1.0, 
-    //[node_1_1, node_1_2] // Contains node_1_1 and node_1_2
+    [node_1_1, node_1_2] // Contains node_1_1 and node_1_2
 );
 
 const node_2 = new DocumentNode(
@@ -183,32 +183,62 @@ const flatNodeList = [
   node_2
 ];
 
-//Function to check is an object is already a part of a hierarchy
-function isNested(node, nodeList) {
-  for (const potentialParent of nodeList) {
-    if (potentialParent.children.includes(node)) {
-      return true;
-    }
-  }
-  return false;
-}
 
 
 
-//A function that will take a flat array of nodes and build the hierarchy based on the IDs (if they aren't already nested)
+
+//A function that will take a flat array of nodes (not a matrix) and build the hierarchy based on the IDs (if they aren't already nested)
 function buildHierarchy(flatNodes) {
 
   const nodeMap = new Map();
   const rootNodes = [];
+  const existingSubNodes = [];
+
   // First, create a map of all nodes by their IDs
   flatNodes.forEach(node => {
-    nodeMap.set(node.id, node);
-    console.log("Mapping node ID:", node.id); //TEST LOG
+    //console.log(node.id); //TEST LOG
+    
+    // Check for existing children and log them to an array (existingSubNodes) in order to avoid duplication
+    if (node.children.length > 0) {
+      console.log(`Node ID: ${node.id}, Children: ${node.children.length}`);
+        node.children.forEach(child => {
+          console.log(` - Child ID: ${child.id}`);
+          existingSubNodes.push(child.id);
+        });
+        
+    } else {
+      console.log(`Node ID: ${node.id} has no children.`);
+      nodeMap.set(node.id, node);
+    }
+    //
+
+    //Debug log to check existing sub nodes
+    // existingSubNodes.forEach(id => {
+    //   console.log("Existing Sub Node ID:", id, " : type", typeof(id)); //TEST LOG
+    // });
+
+    //nodeMap.set(node.id, node); //Was here before adding existingSubNodes check
+
+    
+
   });
+
   // Then, iterate again to establish parent-child relationships
   flatNodes.forEach(node => {
+    
+    if (existingSubNodes.includes(node.id)) {
+      console.log(`Skipping node ID: ${node.id} as it is already a child of another node.`);
+      return; // Skip this node as it's already a child
+    }
+
+    console.log(existingSubNodes.includes(node.children.id), " : " , node.id);//TEST LOG TO CHECK FOR DUPLICATES
+
+
+    
+    
     const idParts = node.id.split('-');
     if (idParts.length > 1) {
+
       // This node has a parent
       const parentId = idParts.slice(0, -1).join('-');
       const parentNode = nodeMap.get(parentId);
@@ -223,6 +253,7 @@ function buildHierarchy(flatNodes) {
       rootNodes.push(node);
     }
   });
+
   return rootNodes;
 }
 
@@ -231,7 +262,7 @@ const nodes = buildHierarchy(flatNodeList); //TODO - Replace this with actual da
 
 // The final data structure is an array of the top-level nodes
 const documentStructure = [...nodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system)
-console.log(documentStructure); //Test log to verify structure
+//console.log(documentStructure); //Test log to verify structure
 
 
 
