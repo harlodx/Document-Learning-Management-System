@@ -141,7 +141,7 @@ const node_1_1 = new DocumentNode(
     'Preparation Steps', 
     'Initial steps before starting the procedure.', 
     1.1, 
-    [node_1_1_1] // Contains node_1_1_1
+    // [node_1_1_1] // Contains node_1_1_1
 );
 
 const node_1_2 = new DocumentNode(
@@ -157,7 +157,7 @@ const node_1 = new DocumentNode(
     'Main Procedure', 
     'Overview of the entire process.', 
     1.0, 
-    [node_1_1, node_1_2] // Contains node_1_1 and node_1_2
+    //[node_1_1, node_1_2] // Contains node_1_1 and node_1_2
 );
 
 const node_2 = new DocumentNode(
@@ -167,12 +167,72 @@ const node_2 = new DocumentNode(
     2.0
 );
 
-const nodes = [node_1, node_2];
+const node_3 = new DocumentNode(
+    '3', 
+    'Appendices', 
+    'Supplementary information and resources.', 
+    3.0
+);
+
+const flatNodeList = [
+  node_3,
+  node_1,
+  node_1_1,
+  node_1_1_1,
+  node_1_2,
+  node_2
+];
+
+//Function to check is an object is already a part of a hierarchy
+function isNested(node, nodeList) {
+  for (const potentialParent of nodeList) {
+    if (potentialParent.children.includes(node)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+
+//A function that will take a flat array of nodes and build the hierarchy based on the IDs (if they aren't already nested)
+function buildHierarchy(flatNodes) {
+
+  const nodeMap = new Map();
+  const rootNodes = [];
+  // First, create a map of all nodes by their IDs
+  flatNodes.forEach(node => {
+    nodeMap.set(node.id, node);
+    console.log("Mapping node ID:", node.id); //TEST LOG
+  });
+  // Then, iterate again to establish parent-child relationships
+  flatNodes.forEach(node => {
+    const idParts = node.id.split('-');
+    if (idParts.length > 1) {
+      // This node has a parent
+      const parentId = idParts.slice(0, -1).join('-');
+      const parentNode = nodeMap.get(parentId);
+      if (parentNode) {
+        parentNode.addChild(node);
+      } else {
+        // Parent not found, treat as root
+        rootNodes.push(node);
+      }
+    } else {
+      // No parent, this is a root node
+      rootNodes.push(node);
+    }
+  });
+  return rootNodes;
+}
+
+
+const nodes = buildHierarchy(flatNodeList); //TODO - Replace this with actual data retrieval logic
 
 // The final data structure is an array of the top-level nodes
 const documentStructure = [...nodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system)
+console.log(documentStructure); //Test log to verify structure
 
-// END OF TEST DATA
 
 
 /*
