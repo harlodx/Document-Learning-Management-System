@@ -240,10 +240,19 @@ const node_3_22 = new DocumentNode(
 
 // Another Level 2 under node_3 with poor initial ID structure to test re-parenting and ordering
 const node_3_22b = new DocumentNode(
-  '3-22b',
-  'T 3.22',
-  'Extra documents and materials for reference.',
+  '3-22',
+  'T 3.22b',
+  'A duplicate ID',
   13,
+
+);
+
+// Another Level 2 under node_3 with poor initial ID structure to test re-parenting and ordering
+const node_3_22c = new DocumentNode(
+  '3-22',
+  'T 3.22c',
+  'A duplicate ID',
+  14,
 
 );
 
@@ -260,6 +269,7 @@ const flatNodeList = [
   node_3_1_1, // Test re-parenting from 3-1-1-1 to 3-1
   node_3_22,  // Test re-parenting from 3-22 to 3-2
   node_3_22b,
+  node_3_22c,
   node_1_2_2, // Original
   node_1_2_2b // Duplicate to test re-parenting / correction to an alternative order and id while maintaining name
 
@@ -269,102 +279,108 @@ const flatNodeList = [
 /*
 * This function will take any supplied ID and break it down into an array of values and then increment the final value by 1 and return that number
 *
-* TODO: need error checking - what if the last array item wasn't a number?
+* [x] TODO: need error checking - what if the last array item wasn't a number?
+* [x] TODO: what if there were multiple IDs that were the same? Check how many times the same ID presents and correct it 
 */
-function generateNewID(currentID) {
+function generateNewID(currentNode, existingIDs) {
+
+  let existingDuplicateIDs = 1;
 
   // Split the ID into parts
-  const idParts = currentID.split('-');
+  const idParts = currentNode.id.split('-');
 
-  idParts.forEach(id => {
-    const idInteger = parseInt(id);
-    //debugMessage("ID item is of type: ", typeof(idInteger));
+  // Error check - are all the components of the existing ID numbers?
+  idParts.forEach(idPart => {
+    const idInteger = parseInt(idPart);
+
+    // If NaN return Error
     if (typeof (idInteger) != 'number') {
       console.log(Error = "Error: not a number");
+      return(Error);
     }
-
-    else {
-      // console.log(`Got past the error check`);
-      // Get the last part and load it into a variable as an integer
-      idParts[idParts.length - 1] = parseInt(idParts.slice(-1)[0], 10) + 1;
-      idParts[idParts.length - 1] = idParts[idParts.length - 1].toString(); // There has to be a more efficient way to do this instead of on two lines??
-
-
-      //debugMessage(`Final ID Parts:`, idParts); //TEST LOG
-
-      //Build out the new ID into a string that we can use in HTML later on
-      let updatedID = idParts.join('-');
-      debugMessage(`Duplicate node ID found: ${currentID}. Assigning new unique ID: ${updatedID}`); //TEST LOG
-
-      return updatedID;
-
-    }
-
   });
 
-  return -1;
+  existingIDs.forEach(existingID => {
+    // console.log(`Existing ID is: ${existingID}`);
+    if (existingID === currentNode.id) {
+      // Increment the counter for Existing Duplicate IDs
+      existingDuplicateIDs++;
+      // console.log(`Incremented the existingDuplicateIDs counter by 1`);
+    }
+  });
+
+  // debugMessage(`Existing ID's will be modified by ${existingDuplicateIDs} increments.`);
+
+  // Get the last part and load it into a variable as an integer
+  const lastSuffixOfID = parseInt(idParts.slice(-1)[0], 10) + existingDuplicateIDs;  //check how many duplicate entries there are and add that number here TODO
+  idParts[idParts.length - 1] = lastSuffixOfID.toString();
+
+  //Build out the new ID into a string that we can use in HTML later on
+  const updatedID = idParts.join('-');
+
+  debugMessage(`Duplicate node ID found: ${currentNode.id}. Assigning new unique ID: ${updatedID}`, currentNode); //TEST LOG
+
+  return updatedID;
 
 }
 
 
 function populateNodeMapOOP(flatNodes) {
-  debugMessage("populateNodeMap called with flatNodes:", flatNodes); //TEST LOG
-
+  
   // Test log each node's ID
   const nodeMap = new Map();  // Map to hold nodes by ID
   const existingSubNodes = [];
   const existingIDs = [];
 
 
+
+
   // First, create a map of all nodes by their IDs
   flatNodes.forEach(node => {
-    //console.log(node.id); //TEST LOG
-    let newID = "";
-    const currentNodeId = node.id;  // Store current node ID for reference
-    debugMessage(`Current existingIDs: `, existingIDs);
 
+    // [ ] TODO error check for non-standard ID values: if anything doesn't conform to 1-1-1 (number hyphen number hyphen etc) try to correct if possible or throw an error - try not to destroy entries or throw errors. Just place them in a container for user to review maybe??
+  
     // Iterate through existing children and assign them to the map ensuring that all duplication is handled by assigning consecutive unique IDs
-    if (nodeMap.has(currentNodeId)) {
-      debugMessage("IF: currentNodeID", currentNodeId);
-      console.log(existingIDs.includes(currentNodeId));
-
-      
-      //TODO
-      //This loop is meant to check for the presence of duplicate ID's - the first time, just log them to a duplicate array, the second time change the ID so we don't have duplicates
-      if (existingIDs.includes(currentNodeId)) {
-        debugMessage("Got here #2");
-      //generateNewID(currentNodeId);
-        currentNodeId = generateNewID(currentNodeId); 
-        
-        }
-        
-        else {
-          debugMessage("Got here #3", currentNodeId);
-          existingIDs.push(currentNodeId);
-        }
-
-        nodeMap.set(currentNodeId, node);
+    if (nodeMap.has(node.id)) { // If the new node.id already exists within the nodeMap
+      debugMessage(`nodeMap has currentNodeID: ${node.id}`); // Display a message
+            
+      // Assign new IDs
+      const newID = generateNewID(node, existingIDs); 
+      // Log the existing ID so that we can account for multiple duplicates rather than just writing over them.
+      existingIDs.push(node.id);  
+      // Set the modified value (newID) as the ID rather than the supplied one
+      nodeMap.set(newID, node);
 
     }
     else {
-      nodeMap.set(currentNodeId, node);
+      // No duplicates exist, just set the existing one as a suitable ID value
+      nodeMap.set(node.id, node);
     }
 
 
-
-
-
-
-
-
     // Check for existing children and log them to an array (existingSubNodes) in order to avoid duplication
+    /*
+    * TODO - we need to handle children better
+    *   They break the display rendering they are placed into the hierarchy (breaks out into a new section)
+    *
+    */
     if (node.children.length > 0) {
 
+      let children = []
+
       // console.log(`Node ID: ${node.id} has pre-existing children:`); //DEBUG LOG
+      //debugMessage(`Found pre-existing children for nodeID: ${node.id} : ${node.child}`); // TODO
       node.children.forEach(child => {
-        // console.log(` - Child ID: ${child.id}`);  //DEBUG LOG
+        //console.log(` - Child ID: ${child.id}`);  //DEBUG LOG
+        children.push(child.id);
         existingSubNodes.push(child.id);
+
+        //TODO
+
+        
       });
+
+      debugMessage(`Existing children present for ID: ${node.id} : `, children);
 
     } else {
       // console.log(`Node ID: ${node.id} has no children.`);
@@ -372,6 +388,9 @@ function populateNodeMapOOP(flatNodes) {
     }
 
   });
+
+  debugMessage(`Duplicated ID's were as follow: `, existingIDs);
+  debugMessage(`nodeMap is as follows: ${nodeMap}`);
 
   const returnObjects = [nodeMap, existingSubNodes];
 
