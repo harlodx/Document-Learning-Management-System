@@ -115,6 +115,8 @@ class DocumentNode {
 
     this.children = children; // Array of DocumentNode
   }
+
+  // Add a child
   addChild(childNode) {
     if (childNode instanceof DocumentNode) {
       this.children.push(childNode);
@@ -122,6 +124,22 @@ class DocumentNode {
     } else {
       throw new Error("Child must be an instance of DocumentNode");
     }
+  }
+
+  // Remove a child by their id
+  removeChildById(childId){
+    const initialLength = this.children.length;
+
+    this.children = this.children.filter(child => child.id != childId);
+
+    return this.children.length < initialLength;
+  }
+
+  // Display a child as a string
+  displayChildren() {
+    if (this,this.children.length === 0) return 'No children.';
+
+    return this.children.map(child => `[${child.name} (${child.id})]`).join( ' | ');
   }
 }
 
@@ -339,26 +357,8 @@ function populateNodeMapOOP(flatNodes) {
   flatNodes.forEach(node => {
 
     // [ ] TODO error check for non-standard ID values: if anything doesn't conform to 1-1-1 (number hyphen number hyphen etc) try to correct if possible or throw an error - try not to destroy entries or throw errors. Just place them in a container for user to review maybe??
-  
-    // Iterate through existing children and assign them to the map ensuring that all duplication is handled by assigning consecutive unique IDs
-    if (nodeMap.has(node.id)) { // If the new node.id already exists within the nodeMap
-      debugMessage(`nodeMap has currentNodeID: ${node.id}`); // Display a message
-            
-      // Assign new IDs
-      const newID = generateNewID(node, existingIDs); 
-      // Log the existing ID so that we can account for multiple duplicates rather than just writing over them.
-      existingIDs.push(node.id);  
-      // Set the modified value (newID) as the ID rather than the supplied one
-      nodeMap.set(newID, node);
 
-    }
-    else {
-      // No duplicates exist, just set the existing one as a suitable ID value
-      nodeMap.set(node.id, node);
-    }
-
-
-    // Check for existing children and log them to an array (existingSubNodes) in order to avoid duplication
+    
     /*
     * TODO - we need to handle children better
     *   They break the display rendering they are placed into the hierarchy (breaks out into a new section)
@@ -368,33 +368,72 @@ function populateNodeMapOOP(flatNodes) {
 
       let children = []
 
-      // console.log(`Node ID: ${node.id} has pre-existing children:`); //DEBUG LOG
-      //debugMessage(`Found pre-existing children for nodeID: ${node.id} : ${node.child}`); // TODO
       node.children.forEach(child => {
-        //console.log(` - Child ID: ${child.id}`);  //DEBUG LOG
-        children.push(child.id);
-        existingSubNodes.push(child.id);
-
-        //TODO
+        console.log(` - Child ID found: ${child.id}`);  //DEBUG LOG
+        //const deletionStatus = node.removeChildById(child.id);
 
         
+
+        if (!node.removeChildById(child.id)) {
+          console.log(`Unable to remove child: ${child.id}`);
+        }
+        else {
+          console.log(`Removed child: ${child.id}`);
+        }
+
       });
 
-      debugMessage(`Existing children present for ID: ${node.id} : `, children);
+
+
 
     } else {
       // console.log(`Node ID: ${node.id} has no children.`);
       nodeMap.set(node.id, node);
     }
 
+
+
+  
+    // Iterate through existing nodes and assign them to the map ensuring that all duplication is handled by assigning consecutive unique IDs
+    if (nodeMap.has(node.id)) { // If the new node.id already exists within the nodeMap
+      // debugMessage(`nodeMap has currentNodeID: ${node.id}`); // Display a message
+            
+      // Assign new IDs
+      const newID = generateNewID(node, existingIDs); 
+      // Log the existing ID so that we can account for multiple duplicates rather than just writing over them.
+      existingIDs.push(node.id);  
+      // Set the modified value (newID) as the ID rather than the supplied one
+      nodeMap.set(node.id = newID);
+      // debugMessage(`nodeMap has currentNodeID: ${node.id}`, node); // Display a message
+
+    }
+    else {
+      // No duplicates exist, just set the existing one as a suitable ID value
+      nodeMap.set(node.id, node);
+    }
   });
 
-  debugMessage(`Duplicated ID's were as follow: `, existingIDs);
-  debugMessage(`nodeMap is as follows: ${nodeMap}`);
 
-  const returnObjects = [nodeMap, existingSubNodes];
+      // Check for existing children and log them to an array (existingSubNodes) in order to avoid duplication
 
-  return (returnObjects);
+
+
+  // debugMessage(`Duplicated ID's were as follow: `, existingIDs);
+  // debugMessage(`nodeMap now contains the following: `, nodeMap );
+  
+  // Debug loop
+  existingSubNodes.forEach(node => {
+    debugMessage(`node ID: ${node.id} contains the following: `, node );
+  });
+
+  //const returnObjects = [nodeMap, existingSubNodes];
+
+  return {
+    // The map
+    nodeMap: nodeMap,
+    // The duplicated ID's
+    existingSubNodes: existingSubNodes,
+  };
 
 }
 
@@ -410,20 +449,26 @@ function buildHierarchyOOP(flatNodes) {
 
 
   // Create a map of all nodes by their IDs
+  //const nodeMap = new Map();
   const nodeObjects = populateNodeMapOOP(flatNodes);
-  const nodeMap = nodeObjects[0]; // Extract the nodeMap from the returned objects
-  debugMessage("Node Map populated:", typeof (nodeMap)); //TEST LOG
-  const existingSubNodes = nodeObjects[1];  // Extract existingSubNodes array
-  debugMessage("Existing Sub Nodes:", existingSubNodes.Map); //TEST LOG
+  flatNodes = nodeObjects.nodeMap; // Extract the nodeMap from the returned objects
+
+  debugMessage("flatNodes populated as follows:", flatNodes); //TEST LOG
+  
+  const duplicateIDs = nodeObjects.existingDuplicateIDs;  // Extract existingSubNodes array
+  debugMessage("Existing Sub Nodes:", duplicateIDs); //TEST LOG
 
 
   // TEST LOG - Iterate through the nodeMap to verify contents
-  nodeMap.forEach((node, nodeId) => {
-    //debugMessage(`Node ID in Map: ${nodeId}`, node); //TEST LOG
-  });
+  // flatNodes.forEach((node, nodeId) => {
+  //   debugMessage(`Node ID in Map: ${nodeId}`, node); //TEST LOG
+  // });
 
-  // Check for existing children and log them to an array (existingSubNodes) in order to avoid duplication
-  // Check for duplicated ids and correct them by appending a suffix or incrementing number
+
+
+
+  // [x] Check for duplicated ids and correct them by appending a suffix or incrementing number
+  // [ ] Check for existing children and log them to an array (existingSubNodes) in order to avoid duplication
   // Sort the flatNodes array by order first to ensure correct processing sequence
   // Iterate through the flatNodes array to establish parent-child relationships
   // Ensure that all nodes (root and children) are numbered consecutively
