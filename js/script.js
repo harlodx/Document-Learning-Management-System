@@ -108,7 +108,51 @@ STEP 3: THE REVERT OPERATION (Restoring a Previous Version)
 */
 class DocumentNode {
   constructor(id, name, content, order = 0, children = []) {
-    this.id = id;
+    
+    if (typeof id != 'string' || id.length === 0) {
+      throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
+    }
+
+    // 1. CLEANUP STEP: Remove all non-conforming characters.
+    // The regex used here is: /[^\d-]/g
+    // - [^\d-]: A **negated character set** (starting with ^). It matches any character that is 
+    //   *NOT* a digit (\d) and *NOT* a hyphen (-).
+    // - /g: The global flag, ensuring ALL occurrences are matched and replaced, not just the first one.
+    // The characters found by this regex are replaced with an empty string (''), effectively deleting them.
+    let cleanedId = id.replace(/[^\d-]/g, '');
+    if (cleanedId != id) {
+      debugMessage(`Changed improperly formatted ID ${id} to ${cleanedId}`);
+    }
+
+
+    // 2. FINAL VALIDATION REGEX: Ensure the cleaned string starts/ends correctly.
+    // The Regular Expression: /^[\d]+(-[\d]+)*$/
+    // This ensures the ID consists of alternating blocks of numbers and hyphens, 
+    // starting and ending only with numbers.
+    const idRegex = /^[\d]+(-[\d]+)*$/;
+    /*
+    * REGEX BREAKDOWN (for the strict validation regex): /^[\d]+(-[\d]+)*$/
+    * * 1. Anchor: ^ - Matches the beginning of the string.
+    * * 2. First Segment (Mandatory): [\d]+ - Requires the ID to begin with at least one number.
+    * * 3. Repeating Segment (Optional): (-[\d]+)* - Allows subsequent segments (a hyphen followed by numbers).
+    * * 4. Anchor: $ - Matches the end of the string.
+    */
+
+
+    if (!idRegex.test(cleanedId)){
+      debugMessage(`Error, ID ${id} not valid`);
+      //Throw data validation error
+      throw new Error(`[ID Error] ID "${id}" was cleaned to "${cleanedId}", but the final format is invalid (must start and end with a number).`);
+      
+    } else {
+      //debugMessage(`No Errors, ID ${cleanedId} is valid`);
+    }
+
+
+    //TODO do ID validation within the class to move it out of our main program(?)
+
+
+    this.id = cleanedId; // Use the cleaned and validated ID
     this.name = name;
     this.content = content;
     this.order = order;
@@ -202,7 +246,7 @@ const node_1_2_2 = new DocumentNode(
 
 // Duplicate Level 2 for testing re-parenting
 const node_1_2_2b = new DocumentNode(
-  '1-2-2',
+  '1-2-2b',
   'T 1.22 Duplicate',
   'Citations and reference materials.',
   6
@@ -326,6 +370,7 @@ function generateNewID(currentNode, existingIDs) {
       // console.log(`Incremented the existingDuplicateIDs counter by 1`);
     }
   });
+
 
   // debugMessage(`Existing ID's will be modified by ${existingDuplicateIDs} increments.`);
 
