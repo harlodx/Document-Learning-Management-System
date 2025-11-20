@@ -99,6 +99,350 @@ STEP 3: THE REVERT OPERATION (Restoring a Previous Version)
     - **Re-Render**: Call your existing `renderDocumentStructure()` function to update the DOM.
 */
 
+/**
+ * Suggest that we redo the DocumentNode class to handle the full functionality for this page. See below:
+ */
+
+
+// /**
+//  * Class designed to represent a node in a hierarchical document structure.
+//  * Includes methods for robust JSON loading, saving, and automatic re-indexing 
+//  * to support user editing and reordering in a web environment.
+//  * * NOTE: This version uses explicit 'if...else' statements instead of conditional shorthand 
+//  * for improved readability and learning.
+//  */
+// class DocumentNode {
+//     // STATIC PROPERTY: Global registry of IDs for uniqueness checking.
+//     static _existingIds = new Set();
+
+//     // --- Core Constructor ---
+
+//     /**
+//      * Constructs a new DocumentNode instance. 
+//      * NOTE: 'order' is always derived from the last segment of the ID.
+//      * @param {string} id - The unique identifier (e.g., '1', '1-2').
+//      * @param {string} name - The title or heading for this node.
+//      * @param {string} content - The main body text for this node.
+//      * @param {DocumentNode[]} [children=[]] - An array of nested DocumentNode instances.
+//      * @param {string|null} [parentId=null] - The ID of the parent node.
+//      */
+//     constructor(id, name, content, children = [], parentId = null) {
+//         if (typeof id !== 'string' || id.length === 0) {
+//             throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
+//         }
+
+//         let cleanedId = id.replace(/[^\d-]/g, '');
+//         const idRegex = /^[\d]+(-[\d]+)*$/; 
+
+//         if (!idRegex.test(cleanedId)) {
+//             // This is primarily an issue during initial manual construction or data corruption.
+//             throw new Error(`[ID Error] ID format is invalid: ${id}`);
+//         }
+
+//         // --- ID Validation & Registration ---
+//         if (DocumentNode._existingIds.has(cleanedId)) {
+//             // Only necessary if the ID was manually created or a conflict occurred during auto-gen.
+//             cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
+//         }
+//         DocumentNode._existingIds.add(cleanedId);
+
+//         // --- Assignment ---
+//         this.id = cleanedId;
+//         this.name = name;
+//         this.content = content;
+
+//         // Use full if structure for children check
+//         if (Array.isArray(children)) {
+//             this.children = children;
+//         } else {
+//             this.children = [];
+//         }
+
+//         this.parentId = parentId;
+
+//         // The 'order' (local index) is derived from the last number segment of the ID.
+//         const parts = cleanedId.split('-');
+//         this.order = parseInt(parts[parts.length - 1], 10);
+//     }
+
+//     // --- STATIC Methods for Data Flow ---
+
+//     /**
+//      * Factory method to recursively build the DocumentNode tree from a raw JSON object.
+//      * @param {object} jsonNode - The raw JSON data for a single node.
+//      * @param {string|null} [parentId=null] - The parent's ID during recursion.
+//      * @returns {DocumentNode} A fully instantiated DocumentNode.
+//      */
+//     static fromJSON(jsonNode, parentId = null) {
+//         if (!jsonNode.id || !jsonNode.name || jsonNode.content === undefined) {
+//              throw new Error("Invalid JSON structure: Node must have id, name, and content.");
+//         }
+
+//         // Create the node (the constructor handles ID registration)
+//         const node = new DocumentNode(
+//             jsonNode.id,
+//             jsonNode.name,
+//             jsonNode.content,
+//             [], // Children will be populated recursively
+//             parentId
+//         );
+
+//         // Recursively hydrate children
+//         if (Array.isArray(jsonNode.children)) {
+//             // Using map with an explicit return statement for clarity
+//             node.children = jsonNode.children.map(childJson => {
+//                 return DocumentNode.fromJSON(childJson, node.id);
+//             });
+//         }
+        
+//         // After hydrating the whole tree, re-index to ensure order/ID coherence
+//         node.reIndexChildren(); 
+
+//         return node;
+//     }
+
+//     /**
+//      * Standard JavaScript method used by JSON.stringify() to control serialization.
+//      * @returns {object} A plain object containing only the necessary data for saving.
+//      */
+//     toJSON() {
+//         // Recursively convert children to plain objects
+//         const childrenJSON = this.children.map(child => {
+//             return child.toJSON();
+//         });
+        
+//         return {
+//             id: this.id,
+//             name: this.name,
+//             content: this.content,
+//             children: childrenJSON,
+//         };
+//     }
+
+//     // --- Instance Methods for Hierarchy Management ---
+
+//     /**
+//      * Recalculates the IDs and 'order' for this node and its entire subtree.
+//      * @param {string} parentId - The new ID of the parent.
+//      * @param {number} newIndex - The new sequential index (e.g., 3 if it's the 3rd child).
+//      */
+//     _recalculateId(parentId, newIndex) {
+//         // 1. Remove old ID from global set
+//         DocumentNode._existingIds.delete(this.id);
+
+//         // 2. Determine new ID and parentId
+//         this.parentId = parentId;
+//         this.order = newIndex;
+
+//         // Replacing ternary: this.id = parentId === null ? newIndex.toString() : `${parentId}-${newIndex}`;
+//         if (parentId === null) {
+//             this.id = newIndex.toString();
+//         } else {
+//             this.id = `${parentId}-${newIndex}`;
+//         }
+
+//         // 3. Add new ID to global set
+//         DocumentNode._existingIds.add(this.id);
+        
+//         // 4. Recursively update children
+//         this.reIndexChildren();
+//     }
+    
+//     /**
+//      * Recalculates the IDs and 'order' properties for all direct children.
+//      * This must be called after any reordering or removal of children.
+//      */
+//     reIndexChildren() {
+//         if (this.children.length === 0) {
+//             return;
+//         }
+
+//         // Ensure children are sorted by their current order before re-indexing.
+//         // Using explicit if/else logic in the comparison function for clarity.
+//         this.children.sort((a, b) => {
+//             if (a.order < b.order) {
+//                 return -1;
+//             } else if (a.order > b.order) {
+//                 return 1;
+//             } else {
+//                 return 0;
+//             }
+//         });
+
+//         this.children.forEach((child, index) => {
+//             const newIndex = index + 1; // 1-based indexing for order
+            
+//             // Recalculate this child's ID and all of its descendants
+//             child._recalculateId(this.id, newIndex);
+//         });
+//     }
+
+//     /**
+//      * Automatically calculates the next sequential ID for a new child node 
+//      * based on the highest existing order.
+//      * @returns {string} The next available hierarchical ID.
+//      */
+//     getAvailableChildId() {
+//         if (this.children.length === 0) {
+//             return `${this.id}-1`;
+//         }
+        
+//         // Replacing the array.reduce() shorthand with a standard for loop
+//         let highestOrder = 0;
+        
+//         for (let i = 0; i < this.children.length; i++) {
+//             const child = this.children[i];
+//             if (child.order > highestOrder) {
+//                 highestOrder = child.order;
+//             }
+//         }
+
+//         const nextOrder = highestOrder + 1;
+        
+//         return `${this.id}-${nextOrder}`;
+//     }
+
+//     /**
+//      * Creates a new DocumentNode instance and adds it to this node's children.
+//      * @param {string} name - The title or heading for the new child.
+//      * @param {string} content - The body text for the new child.
+//      * @returns {DocumentNode} The newly created child node.
+//      */
+//     addChild(name, content) {
+//         const newChildId = this.getAvailableChildId();
+        
+//         const newChild = new DocumentNode(newChildId, name, content, [], this.id);
+//         this.children.push(newChild);
+        
+//         // Sort children array by the 'order' property using explicit if/else
+//         this.children.sort((a, b) => {
+//             if (a.order < b.order) {
+//                 return -1;
+//             } else if (a.order > b.order) {
+//                 return 1;
+//             } else {
+//                 return 0;
+//             }
+//         });
+        
+//         console.log(`\n➕ Child Added: Parent ID ${this.id} -> Child ID ${newChildId}`);
+//         return newChild;
+//     }
+    
+//     // --- Utility Methods (ID Management) ---
+    
+//     getDepth() {
+//         return this.id.split('-').length;
+//     }
+    
+//     // Fallback for ID conflicts (using full if/else for variable assignment)
+//     static getUniqueSequentialId(baseId) {
+//         let newId = baseId;
+//         let iteration = 1;
+        
+//         // Match the last segment: (.*-) is prefix, (\d+)$ is the number
+//         const match = baseId.match(/(.*-)(\d+)$/);
+        
+//         let prefix = '';
+//         let lastSegment = 0; // Default initialization
+
+//         // Use full if...else structure to determine prefix and lastSegment
+//         if (match) {
+//             prefix = match[1]; 
+//             lastSegment = parseInt(match[2], 10);
+//         } else {
+//             // If no hyphen, the baseId itself is the last segment
+//             lastSegment = parseInt(baseId, 10);
+//         }
+        
+//         while (DocumentNode._existingIds.has(newId)) {
+//             const nextSegment = lastSegment + iteration;
+//             newId = `${prefix}${nextSegment}`;
+            
+//             if (iteration > 1000) {
+//                  throw new Error(`[ID Generation Error] Could not find a unique ID after 1000 attempts starting from ${baseId}.`);
+//             }
+//             iteration++;
+//         }
+//         return newId;
+//     }
+// }
+
+// // --- Demonstration of Re-indexing and JSON Workflow ---
+
+// console.log('--- Creating an initial document structure ---');
+// // Clear IDs for the demo
+// DocumentNode._existingIds.clear(); 
+
+// const root = new DocumentNode('1', 'Project Document', 'Root content.');
+// const secA = root.addChild('Section A: Initial', 'Content A'); // ID 1-1
+// const secB = root.addChild('Section B: Initial', 'Content B'); // ID 1-2
+// const subB1 = secB.addChild('Sub-Section B1', 'Content B1');  // ID 1-2-1
+// const secC = root.addChild('Section C: Initial', 'Content C'); // ID 1-3
+
+// console.log('--- 1. Initial Structure ---');
+// console.log(JSON.stringify(root.toJSON(), null, 2));
+
+// // --- SIMULATING USER DRAG AND DROP (Reordering) ---
+
+// console.log('\n--- 2. SIMULATING REORDER: Moving Section C (1-3) before Section A (1-1) ---');
+
+// // We find the objects to manipulate
+// const sectionC = root.children.find(child => {
+//     if (child.id === '1-3') {
+//         return true;
+//     }
+//     return false;
+// });
+// const sectionA = root.children.find(child => {
+//     if (child.id === '1-1') {
+//         return true;
+//     }
+//     return false;
+// });
+
+// // Physical reordering of the array elements
+// root.children.splice(root.children.indexOf(sectionC), 1);
+// root.children.splice(0, 0, sectionC);
+
+// // The IDs are now INCORRECT (C is still 1-3, A is still 1-1)
+// console.log(`Array order (before re-index): ${root.children.map(c => c.id)}`);
+
+// // --- 3. RE-INDEXING THE HIERARCHY ---
+// root.reIndexChildren();
+
+// console.log(`Array order (after re-index): ${root.children.map(c => c.id)}`);
+
+// // Now Section C is 1-1, Section A is 1-2, and Section B's children have been updated (1-3-1)
+// console.log('\n--- 4. Final Structure after Re-indexing ---');
+// // Log the new JSON structure to confirm IDs are updated (1-1, 1-2, 1-3, 1-3-1)
+// const finalJson = JSON.stringify(root.toJSON(), null, 2);
+// console.log(finalJson);
+
+// // --- SIMULATING LOADING FROM JSON (Hydration) ---
+
+// console.log('\n--- 5. SIMULATING LOADING: Hydrating new Root2 from the Final JSON ---');
+// DocumentNode._existingIds.clear(); // Clear IDs for a clean load simulation
+
+// const root2 = DocumentNode.fromJSON(JSON.parse(finalJson));
+
+// console.log(`Root 2 ID: ${root2.id}, Name: ${root2.name}`);
+
+// if (root2.children.length > 0) {
+//     console.log(`First child of Root 2 ID: ${root2.children[0].id}`); // Should be 1-1 (Section C)
+// } else {
+//     console.log('Root 2 has no children.');
+// }
+
+// if (root2.children[2] && root2.children[2].children.length > 0) {
+//     console.log(`Sub-Section B1's ID: ${root2.children[2].children[0].id}`); // Should be 1-3-1
+// } else {
+//     console.log('Sub-Section B1 not found or has no children.');
+// }
+
+///// NEW CLASS BUILD ENDS HERE /////
+
+
 
 // Define classes for Document Elements
 
@@ -108,8 +452,37 @@ STEP 3: THE REVERT OPERATION (Restoring a Previous Version)
 */
 class DocumentNode {
 
-      // STATIC PROPERTY: Tracks all IDs successfully assigned across all instances.
-    static _existingIds = new Set();
+  // STATIC PROPERTIES:
+  // Tracks all IDs successfully assigned across all instances.
+  static _existingIds = new Set();
+  // Tracks all live DocumentNode instances. Used for assigning order.
+  static _instances = new Map();
+
+  // --- Core ID Generation and Validation Methods ---
+
+  /**
+   * Helper function to handle natural sorting (e.g., '1-10' comes after '1-2').
+   * It splits the IDs by hyphens and compares each segment numerically.
+   * @param {string} idA - The first ID string.
+   * @param {string} idB - The second ID string.
+   * @returns {number} Standard comparison value (-1, 0, 1).
+   */
+  static _naturalSortComparator(idA, idB) {
+    const partsA = idA.split('-');
+    const partsB = idB.split('-');
+    const maxLength = Math.max(partsA.length, partsB.length);
+
+    for (let i = 0; i < maxLength; i++) {
+      // Use 0 if a part doesn't exist (e.g., comparing '1' to '1-1')
+      const numA = parseInt(partsA[i] || 0, 10);
+      const numB = parseInt(partsB[i] || 0, 10);
+
+      if (numA < numB) return -1;
+      if (numA > numB) return 1;
+    }
+    return 0;
+  }
+
 
     /**
      * Resolves a potential duplicate ID by incrementing the last numeric segment.
@@ -120,14 +493,13 @@ class DocumentNode {
     static getUniqueSequentialId(baseId) {
         let newId = baseId;
         let iteration = 1;
-
-        // --- 1. Determine Prefix and Last Segment ---
-
         // Regex: /(.*-)(\d+)$/
         const match = baseId.match(/(.*-)(\d+)$/);
 
-        let prefix = '';
-        let lastSegment = 0;
+        let prefix;
+        let lastSegment;
+
+        // --- 1. Determine Prefix and Last Segment ---
 
         if (match) {
             // ID has a prefix (e.g., '123-456')
@@ -145,7 +517,6 @@ class DocumentNode {
         while (DocumentNode._existingIds.has(newId)) {
             // Calculate the next segment value
             const nextSegment = lastSegment + iteration;
-
             // Construct the new ID by rejoining the prefix and the incremented segment
             newId = `${prefix}${nextSegment}`;
 
@@ -159,7 +530,42 @@ class DocumentNode {
 
         return newId;
     }
-    
+
+  // --- Static Methods for Instance Management ---
+
+  /**
+   * **MANDATORY HELPER FUNCTION**
+   * Checks all currently tracked instances, sorts them based on their
+   * hierarchical ID structure (1-1, 1-2, 1-10), and assigns a sequential
+   * `.order` number (starting from 1) to each live object.
+   */
+  static recalculateOrder() {
+    if (DocumentNode._instances.size === 0) {
+      console.log('Order Recalculation Skipped: No instances to order.');
+      return;
+    }
+
+    console.log('\n--- STARTING ORDER RECALCULATION (DocumentNode) ---');
+
+    // 1. Get all currently used IDs
+    const ids = Array.from(DocumentNode._instances.keys());
+
+    // 2. Sort them hierarchically using the custom comparator
+    ids.sort(DocumentNode._naturalSortComparator);
+
+    // 3. Assign the new sequential order property to the live objects
+    ids.forEach((id, index) => {
+      const instance = DocumentNode._instances.get(id);
+      if (instance) {
+        // The .order property is 1-based (Order 1, Order 2, etc.)
+        instance.order = index + 1;
+        console.log(`[Order Update] ID: ${id} assigned Order: ${instance.order}`);
+      }
+    });
+
+    console.log('--- ORDER RECALCULATION COMPLETE ---');
+  }
+
     /**
      * Releases a specific ID, removing it from the global tracker.
      * This makes the ID available for reuse by future CodeValidator instances (Hole-Filling).
@@ -176,7 +582,9 @@ class DocumentNode {
         // We use the Set.delete() method, which returns true if the element 
         // existed and was removed, or false if it was not found.
         const wasReleased = DocumentNode._existingIds.delete(id);
-        if (wasReleased) {
+        const wasInstanceRemoved = DocumentNode._instances.delete(id);
+
+        if (wasReleased || wasInstanceRemoved) {
             console.log(`🗑️ ID Released: ${id} is now available for reuse.`);
         } else {
             console.log(`⚠️ ID Release Warning: ${id} was not found in the tracker.`);
@@ -185,6 +593,8 @@ class DocumentNode {
     }
 
   constructor(id, name, content, order = 0, children = []) {
+
+    const originalId = id;
     
     if (typeof id != 'string' || id.length === 0) {
       throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
@@ -229,27 +639,29 @@ class DocumentNode {
 
     // 3. DUPLICATE CHECK & RESOLUTION: 
     if (DocumentNode._existingIds.has(cleanedId)) {
-      console.log(`⚠️ Duplicate detected: ${cleanedId}. Attempting to resolve sequentially...`);
-
       // Reassign the cleanedId to the new unique ID generated by the helper.
       cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
-
-      console.log(`✅ ID resolved to unique sequential ID: ${cleanedId}`);
+      console.log(`✅ Duplicate resolved. Original ID: ${originalId} -> Final ID: ${cleanedId}`);
+    } else {
+      console.log(`✅ Success: Cleaned ID: ${cleanedId} is unique.`);
     }
 
     // --- Assignment (Only runs if validation and resolution pass) ---
 
     // Register the unique ID in the static Set
     DocumentNode._existingIds.add(cleanedId);
-
-
     // Assignment of inputs
     this.id = cleanedId; // Use the cleaned and validated ID
     this.name = name;
     this.content = content;
-    this.order = order;
-
+    this.order = null;
     this.children = children; // Array of DocumentNode
+
+    // Track the live instance
+    DocumentNode._instances.set(this.id, this);
+
+    // Recalculate the order for *all* objects after a new one is added
+    DocumentNode.recalculateOrder();    
   }
 
   // Add a child
@@ -296,7 +708,12 @@ const debugMode = true; // Set to true to enable debug messages
 function debugMessage(message, data = []) {
   if (!debugMode) return false; // Exit if debug mode is off
 
-  console.log("DEBUG:", message, data); // Log the debug message
+  if (data[0] == undefined) {
+    console.log("DEBUG:", message); // Log the debug message  
+    return true;
+  } else {
+    console.log("DEBUG:", message, data); // Log the debug message
+  }
 
   return true;
 }
@@ -308,7 +725,7 @@ const node_1_1_1 = new DocumentNode(
   '1-1-1',
   'T 1.1.1',
   'List all necessary tools and access credentials.',
-  1,
+  15,
 );
 
 // Level 1.1
@@ -316,7 +733,7 @@ const node_1_1 = new DocumentNode(
   '1-1',
   'T 1.1',
   'Initial steps before starting the procedure.',
-  2,
+  14,
   // [node_1_1_1] // Contains node_1_1_1
 );
 
@@ -325,7 +742,7 @@ const node_1_2 = new DocumentNode(
   '1-2',
   'T 1.2',
   'The main procedural steps.',
-  3
+  13
 );
 
 
@@ -334,7 +751,7 @@ const node_1_2b = new DocumentNode(
   '1-2',
   'T 1.2 Duplicate',
   'Citations and reference materials.',
-  4
+  12
 );
 
 //
@@ -342,7 +759,7 @@ const node_1_2_2 = new DocumentNode(
   '1-2-2',
   'T 1.22',
   'The main procedural steps.',
-  5
+  11
 );
 
 
@@ -351,7 +768,7 @@ const node_1_2_2b = new DocumentNode(
   '1-2-2b',
   'T 1.22 Duplicate',
   'Citations and reference materials.',
-  6
+  10
 );
 
 // Subsequent Level 2 for testing re-ordering of duplicates (1-2b should come after 1-3 after re-parenting -- or should become 1-3??)
@@ -359,7 +776,7 @@ const node_1_3 = new DocumentNode(
   '1-3',
   'T 1.3',
   'Citations and reference materials.',
-  7
+  9
 );
 
 // Level 1 (The Root/Main Headings)
@@ -375,14 +792,14 @@ const node_2 = new DocumentNode(
   '2',
   'T 2',
   'Checklist for final review.',
-  9
+  7
 );
 
 const node_3 = new DocumentNode(
   '3',
   'T 3',
   'Supplementary information and resources.',
-  10
+  6
 );
 
 // Level 3 under node_3 but with poor initial ID structure to test re-parenting
@@ -390,7 +807,7 @@ const node_3_1_1 = new DocumentNode(
   '3-1-1-1',
   'T 3.1.1.1',
   'Links to external resources and references.',
-  11
+  5
 );
 
 // Another Level 2 under node_3 with poor initial ID structure to test re-parenting and ordering
@@ -398,7 +815,7 @@ const node_3_22 = new DocumentNode(
   '3-22',
   'T 3.22',
   'Extra documents and materials for reference.',
-  12,
+  4,
 
 );
 
@@ -407,7 +824,7 @@ const node_3_22b = new DocumentNode(
   '3-22',
   'T 3.22b',
   'A duplicate ID',
-  13,
+  2,
 
 );
 
@@ -416,7 +833,7 @@ const node_3_22c = new DocumentNode(
   '3-22',
   'T 3.22c',
   'A duplicate ID',
-  14,
+  1,
 
 );
 
@@ -490,11 +907,6 @@ function removeChildren(flatNodes) {
 } 
 
 
-function sortNodesByHierarchy() {
-  
-  return -1;
-}
-
 
 // A function that will take a flat array of nodes (not a matrix) and build the hierarchy based on the IDs (if they aren't already nested) (OLD WAY)
 function buildHierarchy(flatNodes) {
@@ -523,7 +935,6 @@ function buildHierarchy(flatNodes) {
 
       // This node has a parent - determine the parent ID
       const parentId = idParts.slice(0, -1).join('-');
-      //debugMessage(`Node ID: ${node.id} has parent ID: ${parentId}`); //TEST LOG
 
       // Look up the parent node in the map
       const parentNode = nodeMap.get(parentId);
@@ -578,18 +989,9 @@ function buildHierarchy(flatNodes) {
 
 
   /**
-   * Then iterate again so that the root nodes are ordered consecutively according to closest prior formatting
-   *  TODO - this needs to be based on the heirarchy established by the hyphenation, not the order;
-   *         the .order may be useful later on for the drag and drop functionality in rebuilding / moving things around the page visually
-   * 
+   * Then iterate again so that the root nodes are ordered consecutively according to closest prior formatting 
    * */
-  rootNodes.sort((a, b) => a.order - b.order);  // Sort root nodes by order - TEMPORARY
-
-  //Call to a sort function that creates an order based on the given hierarchy using the numbers & hyphenation
-  //pass rootnodes in to a new function.
-
-  const tempRootNodes = sortNodesByHierarchy(rootNodes);
-
+  rootNodes.sort((a, b) => a.order - b.order);  // Sort root nodes by order (calculated in the DocumentNode class)
 
   /*
   *At this point, all nodes should be properly nested. Now we need to ensure that all nodes (root and children) are numbered consecutively.
@@ -600,7 +1002,7 @@ function buildHierarchy(flatNodes) {
     node.order = index + 1; // Assign order starting from 1
     //console.log(`String Order for Root Node: ${node.order}`); //TEST LOG
     node.id = (index + 1).toString(); // Assign ID to be consecutive numbers as strings
-    //console.log(`Assigned Node ID: ${node.id}, Order: ${node.order}`); //TEST LOG
+  
 
     // Now handle children recursively
     function assignChildOrderAndIds(parentNode) {
@@ -635,6 +1037,7 @@ function buildHierarchy(flatNodes) {
 
 
 
+  debugMessage(`Nodes exist as follow: `, rootNodes);
   return rootNodes;
 }
 
