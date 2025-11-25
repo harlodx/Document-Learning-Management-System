@@ -1,0 +1,20 @@
+{
+  "name": "dlms-document-learning-and-management-system",
+  "version": "1.0.0",
+  "description": "A system that allows easy technical document authoring and editing.",
+  "homepage": "https://github.com/harlodx/Document-Learning-Management-System#readme",
+  "bugs": {
+    "url": "https://github.com/harlodx/Document-Learning-Management-System/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harlodx/Document-Learning-Management-System.git"
+  },
+  "license": "ISC",
+  "author": "David Harlock",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

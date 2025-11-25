@@ -1,0 +1,22 @@
+# Dependencies
+/node_modules
+
+# Configuration files from package managers
+package-lock.json
+
+# Environment variables (Critical for security)
+.env
+.env.local
+
+# Build output (If you ever use a bundler like Webpack/Vite)
+/dist
+/build
+
+# IDE/VS Code files (Personal settings that don't need sharing)
+.vscode/
+*.code-workspace
+
+# Temporary files (Including the config files you just created)
+.eslintcache
+.DS_Store # Mac operating system files
+Thumbs.db # Windows operating system files
