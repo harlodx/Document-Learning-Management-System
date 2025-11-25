@@ -14,6 +14,10 @@
     /* Darker Grey */
     --link-color: #1E90FF;
     /* Dodger Blue */
+    --line-color: #3b82f6; /* Blue line color */
+    --line-thickness: 2px;
+    --indent-width: 2rem; /* The horizontal space for the lines */
+
 }
 
 /* clear default margin and padding */
@@ -55,10 +59,10 @@ main {
     grid-template-columns: 1fr 4fr;
 
 }
-/* 
-li {
-    list-style: none;
-} */
+
+
+
+
 
 .title {
     grid-area: title;
@@ -172,6 +176,7 @@ aside {
     background-color: var(--header-bg-color)
 }
 
+
 textarea {
   width: 100%;
   box-sizing: border-box; /* This ensures padding and borders are included in the 100% width */
@@ -219,6 +224,27 @@ footer {
 .hidden {
     display: none;
 }
+/* 
+.main-node:not(:first-child) {
+    border-left: 2px solid blue;
+} */
+
+#document-structure-container > ul > li, .list-container:last-child {
+
+    /* border-left: 1px solid red; */
+    border-left: none;
+
+    > ul {
+        border-left: none;
+    }
+
+}
+
+.list-container {
+
+    border-left: 1px solid blue;
+}
+
 
 .sortable-list {
   /* list-style-type: none; */
@@ -227,16 +253,18 @@ footer {
   
 }
 
-.sortable-item {
+#document-structure-container > ul > li {
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.list-container {
   padding: 15px;
-  padding-left: 7.5px;
-  padding-right: 5px;
-  margin-bottom: 5px;
+  padding-left: 15px;
+  /* padding-right: 5px; */
+  /* margin-bottom: 5px; */
   background-color: #f4f4f4;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  cursor: grab;
-  transition: transform 0.2s ease-in-out;
+  /* border-radius: 5px; */
   list-style-type: none;
 }
 
@@ -256,13 +284,12 @@ footer {
     /* 1. Enable Flexbox layout */
     display: flex; 
     align-items: baseline;
-    /* justify-content: space-around; */
-    
     /* Optional: Ensure it takes full width for clear separation */
     width: 100%; 
-    /* margin: 20px auto; */
-    /* border: 1px solid #ccc; */
-    /* padding: 10px; */
+}
+
+.section-link:first-of-type(ul) > li {
+    margin-left: 5px;
 }
 
 .left-block {

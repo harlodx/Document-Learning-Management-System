@@ -631,7 +631,7 @@ const rootNodes = nestedJsonStructure.map(jsonNode => DocumentNode.fromJSON(json
 
 
 // The final data structure is an array of the top-level nodes
-const documentStructure = [...rootNodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system)
+const documentStructure = [...rootNodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system) -- currently using test data from a set of static data. TODO: create a test API that provides a few hundred random nodes that we can use to test with [ ].
 
 
 /*
@@ -639,10 +639,17 @@ const documentStructure = [...rootNodes]; // Used to populate the document struc
 * @{DocumentNode[]} nodes - Array of DocumentNode to render.
 * @{HTMLElement} container - The DOM element to append the <ol> to.
 */
-function buildNestedList(nodes, parentElement) {
+function buildNestedList(nodes, parentElement, isChild) {
+
+  //depth monitor
+  //let depthOfTree = 0;
+
   // 1. Create the <ol> for the current level
   const orderedList = document.createElement('ul'); //was <ol>
-  // orderedList.classList.add('sortable-list');
+  //orderedList.classList.add('main-node');
+  // if (isChild) {
+  //   orderedList.classList.add('child-node');
+  // }
 
   // 2. Sort the nodes based on their order property
   nodes.sort((a, b) => a.order - b.order);
@@ -653,6 +660,10 @@ function buildNestedList(nodes, parentElement) {
     listItem.classList.add('sortable-item');
     listItem.classList.add('list-container');
     listItem.setAttribute('draggable', 'true');
+
+    if (isChild) {
+      listItem.classList.add('child-node')
+    }
 
     // Create an anchor tag (<a>) for the clickable heading
     const sectionLink = document.createElement('div');
@@ -683,7 +694,8 @@ function buildNestedList(nodes, parentElement) {
 
     //Check for children and recursively build their lists
     if (node.children && node.children.length > 0) {
-      buildNestedList(node.children, listItem);
+      // console.log(`Depth of tree value is: ${depthOfTree}`);
+      buildNestedList(node.children, listItem, true);
     };
     // Append the list item to the ordered list
     orderedList.appendChild(listItem);
@@ -692,6 +704,7 @@ function buildNestedList(nodes, parentElement) {
   // 4. Append the constructed ordered list to the parent element
   parentElement.appendChild(orderedList);
 }
+
 
 function renderDocumentStructure() {
   const container = document.getElementById('document-structure-container');
@@ -707,9 +720,19 @@ function renderDocumentStructure() {
   buildNestedList(documentStructure, container);
 }
 
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   renderDocumentStructure();
 });
+
+
+
+/**
+ * Click Handling below:
+ */
 
 
 // I need an onclick function for the show-hide button that will toggle the hidden class on and off
