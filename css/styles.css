@@ -224,26 +224,12 @@ footer {
 .hidden {
     display: none;
 }
-/* 
-.main-node:not(:first-child) {
+
+.main-node:not(:nth-child(1)) {
     border-left: 2px solid blue;
-} */
-
-#document-structure-container > ul > li, .list-container:last-child {
-
-    /* border-left: 1px solid red; */
-    border-left: none;
-
-    > ul {
-        border-left: none;
-    }
-
 }
 
-.list-container {
 
-    border-left: 1px solid blue;
-}
 
 
 .sortable-list {
@@ -261,18 +247,10 @@ footer {
 .list-container {
   padding: 15px;
   padding-left: 15px;
-  /* padding-right: 5px; */
-  /* margin-bottom: 5px; */
   background-color: #f4f4f4;
-  /* border-radius: 5px; */
   list-style-type: none;
 }
 
-.sortable-item.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
-  cursor: grabbing;
-}
 
 #myList {
     /* list-style-type: decimal; */

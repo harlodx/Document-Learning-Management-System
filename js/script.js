@@ -105,12 +105,10 @@ STEP 3: THE REVERT OPERATION (Restoring a Previous Version)
 
 /**
  * Class designed to represent a node in a hierarchical document structure.
- * This version optimizes the 'addChild' method by removing the redundant sort, 
- * as new children are always appended to the end (which maintains order).
  */
 
 class TestJsonDocument {
-  constructor(id, name, content, order, children = []) {
+  constructor(id, name, content = [], order, children = []) {
     this.id = id;
     this.name = name;
     this.content = content;
@@ -125,212 +123,269 @@ class TestJsonDocument {
  * recursive traversal (DFS), and complete JSON serialization/deserialization.
  */
 class DocumentNode {
-    // Tracks all existing IDs globally to prevent duplicates across the document tree.
-    static _existingIds = new Set();
+  // Tracks all existing IDs globally to prevent duplicates across the document tree.
+  static _existingIds = new Set();
 
-    // --- Core Constructor ---
-    constructor(id, name, content, children = [], parentId = null) {
-        if (typeof id !== 'string' || id.length === 0) {
-            throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
-        }
-
-        // Basic sanitation and validation for IDs (e.g., '1', '1-2', '1-2-1')
-        let cleanedId = id.replace(/[^\d-]/g, '');
-        const idRegex = /^[\d]+(-[\d]+)*$/; 
-
-        if (!idRegex.test(cleanedId)) {
-            // For reconstruction, we will allow non-conforming IDs to be cleaned later.
-            // console.warn(`[ID Warning] ID format is suspicious: ${id}. Attempting to clean.`);
-        }
-
-        // Ensure uniqueness; if duplicate, try to find a sequential unique ID
-        if (DocumentNode._existingIds.has(cleanedId)) {
-            cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
-        }
-        DocumentNode._existingIds.add(cleanedId);
-
-        this.id = cleanedId;
-        this.name = name;
-        this.content = content;
-        this.children = Array.isArray(children) ? children : [];
-        this.parentId = parentId;
-
-        // The 'order' is the last segment of the hierarchical ID (e.g., '2' in '1-2').
-        const parts = cleanedId.split('-');
-        this.order = parseInt(parts[parts.length - 1], 10);
+  // --- Core Constructor ---
+  constructor(id, name, content = [], children = [], parentId = null) {
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
     }
 
-    // --- Recursive Traversal Method (Depth-First Search) ---
-    traverseAndCollectIds(idList = []) {
-        idList.push(this.id);
-        for (const child of this.children) {
-            child.traverseAndCollectIds(idList);
-        }
-        return idList;
-    }
-    // ----------------------------------------------------
+    // Basic sanitation and validation for IDs (e.g., '1', '1-2', '1-2-1')
+    let cleanedId = id.replace(/[^\d-]/g, '');
+    const idRegex = /^[\d]+(-[\d]+)*$/;
 
-    // --- Hierarchy Management ---
-
-    _recalculateId(parentId, newIndex) {
-        DocumentNode._existingIds.delete(this.id);
-        
-        this.parentId = parentId;
-        this.order = newIndex;
-
-        if (parentId === null) {
-            this.id = newIndex.toString();
-        } else {
-            this.id = `${parentId}-${newIndex}`;
-        }
-        
-        DocumentNode._existingIds.add(this.id);
-        
-        this.reIndexChildren();
-    }
-    
-    reIndexChildren() {
-        if (this.children.length === 0) {
-            return;
-        }
-
-        // Sort children based on their current 'order' property before re-indexing
-        this.children.sort((a, b) => a.order - b.order);
-
-        // Apply new sequential indices (1, 2, 3...)
-        this.children.forEach((child, index) => {
-            const newIndex = index + 1;
-            child._recalculateId(this.id, newIndex);
-        });
+    if (!idRegex.test(cleanedId)) {
+      // For reconstruction, we will allow non-conforming IDs to be cleaned later.
+      // console.warn(`[ID Warning] ID format is suspicious: ${id}. Attempting to clean.`);
     }
 
-    getAvailableChildId() {
-        let highestOrder = 0;
-        
-        for (let i = 0; i < this.children.length; i++) {
-            const child = this.children[i];
-            if (child.order > highestOrder) {
-                highestOrder = child.order;
-            }
-        }
+    // Ensure uniqueness; if duplicate, try to find a sequential unique ID
+    if (DocumentNode._existingIds.has(cleanedId)) {
+      cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
+    }
+    DocumentNode._existingIds.add(cleanedId);
 
-        const nextOrder = highestOrder + 1;
-        
-        return `${this.id}-${nextOrder}`;
+    this.id = cleanedId;
+    this.name = name;
+    this.content = content;
+    this.children = Array.isArray(children) ? children : [];
+    this.parentId = parentId;
+
+    // The 'order' is the last segment of the hierarchical ID (e.g., '2' in '1-2').
+    const parts = cleanedId.split('-');
+    this.order = parseInt(parts[parts.length - 1], 10);
+  }
+
+  // --- Recursive Traversal Method (Depth-First Search) ---
+  traverseAndCollectIds(idList = []) {
+    idList.push(this.id);
+    for (const child of this.children) {
+      child.traverseAndCollectIds(idList);
+    }
+    return idList;
+  }
+  // ----------------------------------------------------
+
+  // --- Hierarchy Management ---
+
+  _recalculateId(parentId, newIndex) {
+    DocumentNode._existingIds.delete(this.id);
+
+    this.parentId = parentId;
+    this.order = newIndex;
+
+    if (parentId === null) {
+      this.id = newIndex.toString();
+    } else {
+      this.id = `${parentId}-${newIndex}`;
     }
 
-    addChild(name, content) {
-        const newChildId = this.getAvailableChildId();
-        const newChild = new DocumentNode(newChildId, name, content, [], this.id);
-        this.children.push(newChild); 
-        return newChild;
-    }
-    
-    deleteChild(childIdToDelete) {
-        const initialLength = this.children.length;
-        
-        this.children = this.children.filter(child => {
-            if (child.id === childIdToDelete) {
-                const descendantIds = child.traverseAndCollectIds();
-                descendantIds.forEach(id => DocumentNode._existingIds.delete(id));
-                return false; 
-            }
-            return true; // Keep other children
-        });
+    DocumentNode._existingIds.add(this.id);
 
-        if (this.children.length < initialLength) {
-            console.log(`\t> Deleted child ${childIdToDelete}. Re-indexing children of ${this.id}...`);
-            this.reIndexChildren();
-            return true;
-        }
+    this.reIndexChildren();
+  }
+
+  reIndexChildren() {
+    if (this.children.length === 0) {
+      return;
+    }
+
+    // Sort children based on their current 'order' property before re-indexing
+    this.children.sort((a, b) => a.order - b.order);
+
+    // Apply new sequential indices (1, 2, 3...)
+    this.children.forEach((child, index) => {
+      const newIndex = index + 1;
+      child._recalculateId(this.id, newIndex);
+    });
+  }
+
+  getAvailableChildId() {
+    let highestOrder = 0;
+
+    for (let i = 0; i < this.children.length; i++) {
+      const child = this.children[i];
+      if (child.order > highestOrder) {
+        highestOrder = child.order;
+      }
+    }
+
+    const nextOrder = highestOrder + 1;
+
+    return `${this.id}-${nextOrder}`;
+  }
+
+  addChild(name, content) {
+    const newChildId = this.getAvailableChildId();
+    const newChild = new DocumentNode(newChildId, name, content, [], this.id);
+    this.children.push(newChild);
+    return newChild;
+  }
+
+  deleteChild(childIdToDelete) {
+    const initialLength = this.children.length;
+
+    this.children = this.children.filter(child => {
+      if (child.id === childIdToDelete) {
+        const descendantIds = child.traverseAndCollectIds();
+        descendantIds.forEach(id => DocumentNode._existingIds.delete(id));
         return false;
-    }
+      }
+      return true; // Keep other children
+    });
 
-    getDepth() {
-        return this.id.split('-').length;
+    if (this.children.length < initialLength) {
+      console.log(`\t> Deleted child ${childIdToDelete}. Re-indexing children of ${this.id}...`);
+      this.reIndexChildren();
+      return true;
     }
+    return false;
+  }
+
+  getDepth() {
+    return this.id.split('-').length;
+  }
+
+    // --- Search Utility (Core Recursive Search on a Single Tree) ---
     
-    // --- Serialization ---
-    toJSON() {
-        return {
-            id: this.id,
-            name: this.name,
-            content: this.content,
-            parentId: this.parentId,
-            children: this.children.map(child => child.toJSON())
-        };
-    }
-
-    // --- Deserialization ---
-    static fromJSON(jsonNode, parentId = null) {
-        if (!jsonNode || typeof jsonNode.id !== 'string') {
-            throw new Error('[fromJSON Error] Invalid JSON node structure.');
+    /**
+     * Recursively searches a single DocumentNode tree for the given ID.
+     * This is the core logic and is now used by the new multi-root function.
+     * @param {DocumentNode} node The current node to check.
+     * @param {string} targetId The hierarchical ID to find.
+     * @returns {DocumentNode | null} The found node or null.
+     */
+    static findNodeById(node, targetId) {
+        if (!node || node.id === undefined) {
+            return null;
         }
 
-        const node = new DocumentNode(
-            jsonNode.id, 
-            jsonNode.name, 
-            jsonNode.content, 
-            [], 
-            parentId 
-        );
-
-        if (Array.isArray(jsonNode.children)) {
-            // Note: The parentId argument is crucial here for the recursion.
-            node.children = jsonNode.children.map(childJson => {
-                return DocumentNode.fromJSON(childJson, node.id);
-            });
+        // 1. Check the current node
+        if (node.id === targetId) {
+            return node;
         }
-        
-        // After loading a potentially messy structure, ensure the children are indexed correctly.
-        node.reIndexChildren();
-        
-        return node;
-    }
 
-    // --- Utility Methods ---
-    static getUniqueSequentialId(baseId) {
-        let newId = baseId;
-        let iteration = 1;
-        const match = baseId.match(/(.*-)(\d+)$/);
-        
-        let prefix = '';
-        let lastSegment = 0;
-
-        if (match) {
-            prefix = match[1]; 
-            lastSegment = parseInt(match[2], 10);
-        } else {
-            lastSegment = parseInt(baseId, 10);
-        }
-        
-        while (DocumentNode._existingIds.has(newId)) {
-            const nextSegment = lastSegment + iteration;
-            newId = `${prefix}${nextSegment}`;
-            
-            if (iteration > 1000) {
-                 throw new Error(`[ID Generation Error] Could not find a unique ID after 1000 attempts starting from ${baseId}.`);
+        // 2. Recursively search children
+        for (const child of node.children) {
+            const found = DocumentNode.findNodeById(child, targetId);
+            if (found) {
+                return found;
             }
-            iteration++;
         }
-        return newId;
+
+        return null;
     }
+
+    /**
+     * Public static method to search across multiple root nodes (multiple trees).
+     * @param {DocumentNode[]} roots An array of DocumentNode objects (the root nodes of independent trees).
+     * @param {string} targetId The hierarchical ID to find.
+     * @returns {DocumentNode | null} The found node or null if not found.
+     */
+    static searchMultipleRootsById(roots, targetId) {
+        if (!Array.isArray(roots) || !targetId) {
+            console.log("Error: Must supply an array of roots and a targetId.");
+            return null;
+        }
+        
+        // Iterate over each root node and run the single-tree search function
+        for (const root of roots) {
+            const found = DocumentNode.findNodeById(root, targetId);
+            if (found) {
+                // Return immediately upon first match
+                return found;
+            }
+        }
+
+        // If the loop completes without finding anything
+        return null;
+    }
+
+  // --- Serialization ---
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      content: this.content,
+      parentId: this.parentId,
+      children: this.children.map(child => child.toJSON())
+    };
+  }
+
+  // --- Deserialization ---
+  static fromJSON(jsonNode, parentId = null) {
+    if (!jsonNode || typeof jsonNode.id !== 'string') {
+      throw new Error('[fromJSON Error] Invalid JSON node structure.');
+    }
+
+    const node = new DocumentNode(
+      jsonNode.id,
+      jsonNode.name,
+      jsonNode.content,
+      [],
+      parentId
+    );
+
+    if (Array.isArray(jsonNode.children)) {
+      // Note: The parentId argument is crucial here for the recursion.
+      node.children = jsonNode.children.map(childJson => {
+        return DocumentNode.fromJSON(childJson, node.id);
+      });
+    }
+
+    // After loading a potentially messy structure, ensure the children are indexed correctly.
+    node.reIndexChildren();
+
+    return node;
+  }
+
+  // --- Utility Methods ---
+  static getUniqueSequentialId(baseId) {
+    let newId = baseId;
+    let iteration = 1;
+    const match = baseId.match(/(.*-)(\d+)$/);
+
+    let prefix = '';
+    let lastSegment = 0;
+
+    if (match) {
+      prefix = match[1];
+      lastSegment = parseInt(match[2], 10);
+    } else {
+      lastSegment = parseInt(baseId, 10);
+    }
+
+    while (DocumentNode._existingIds.has(newId)) {
+      const nextSegment = lastSegment + iteration;
+      newId = `${prefix}${nextSegment}`;
+
+      if (iteration > 1000) {
+        throw new Error(`[ID Generation Error] Could not find a unique ID after 1000 attempts starting from ${baseId}.`);
+      }
+      iteration++;
+    }
+    return newId;
+  }
 }
 
 ///// NEW CLASS BUILD ENDS HERE /////
 
 // --- Utility function to find a node anywhere in the tree ---
 function findNodeById(nodes, targetId) {
-    for (const node of nodes) {
-        if (node.id === targetId) {
-            return node;
-        }
-        const found = findNodeById(node.children, targetId);
-        if (found) {
-            return found;
-        }
+  console.log(`Target id: `, targetId);
+  for (const node of nodes) {
+    console.log(`Node id: `, node.id);
+    if (node.id == targetId) {
+      return node;
     }
-    return null;
+    const found = findNodeById(node.children, targetId);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
 }
 
 
@@ -342,126 +397,126 @@ function findNodeById(nodes, targetId) {
  * @returns {Object[]} The array of root nodes with nested children.
  */
 function reconstructTreeFromFlatList(flatList) {
-    // 1. Sort the list to ensure consistent processing order 
-    flatList.sort((a, b) => {
-        if (a.order !== b.order) {
-            return a.order - b.order;
-        }
-        return a.id.localeCompare(b.id);
-    });
-
-    // 2. Map nodes by ID for fast parent lookup
-    const nodeMap = new Map();
-    const rawNodes = [];
-
-    for (const raw of flatList) {
-        const node = { ...raw, children: [] }; 
-        nodeMap.set(node.id, node);
-        rawNodes.push(node);
+  // 1. Sort the list to ensure consistent processing order 
+  flatList.sort((a, b) => {
+    if (a.order !== b.order) {
+      return a.order - b.order;
     }
-    
-    const rootNodes = [];
-    // Map to hold the cleanup box and its internal group placeholders for each ancestor root
-    // Format: { 'RootId': { cleanupBox: POJO, groups: { 'GroupKey': POJO } } }
-    const cleanupMap = new Map(); 
+    return a.id.localeCompare(b.id);
+  });
 
-    // 3. Attach children to parents (Iterative Ancestor Search + Nested Targeted Grouping)
-    for (const node of rawNodes) {
-        let currentIdParts = node.id.split('-');
-        
-        // Handle true root nodes
-        if (currentIdParts.length === 1) {
-            rootNodes.push(node);
-            continue;
-        }
+  // 2. Map nodes by ID for fast parent lookup
+  const nodeMap = new Map();
+  const rawNodes = [];
 
-        let foundAncestor = null;
-        
-        // Find the highest existing ancestor
-        let tempParts = [...currentIdParts];
-        while (tempParts.length > 1) {
-            tempParts.pop(); 
-            const potentialParentId = tempParts.join('-');
+  for (const raw of flatList) {
+    const node = { ...raw, children: [] };
+    nodeMap.set(node.id, node);
+    rawNodes.push(node);
+  }
 
-            const ancestorNode = nodeMap.get(potentialParentId);
+  const rootNodes = [];
+  // Map to hold the cleanup box and its internal group placeholders for each ancestor root
+  // Format: { 'RootId': { cleanupBox: POJO, groups: { 'GroupKey': POJO } } }
+  const cleanupMap = new Map();
 
-            if (ancestorNode) {
-                foundAncestor = ancestorNode;
-                break; 
-            }
-        }
-        
-        let currentParent = foundAncestor;
+  // 3. Attach children to parents (Iterative Ancestor Search + Nested Targeted Grouping)
+  for (const node of rawNodes) {
+    let currentIdParts = node.id.split('-');
 
-        if (currentParent) {
-            // Check if the actual parent exists right above this node. If not, it's messy.
-            const intendedParentId = currentIdParts.slice(0, currentIdParts.length - 1).join('-');
-            const isBrokenChain = currentParent.id !== intendedParentId;
-            
-            // Check for non-standard IDs (high numbers like 3-22, or broken chains)
-            const isNonStandard = (currentIdParts.length > 1 && parseInt(currentIdParts[1], 10) > 10) || isBrokenChain;
-
-
-            if (isBrokenChain || isNonStandard) {
-                
-                const rootAncestorId = currentParent.id.split('-')[0];
-                let rootData = cleanupMap.get(rootAncestorId);
-                
-                if (!rootData) {
-                    // 3a. Create the top-level Cleanup Box
-                    const cleanupBoxId = `${rootAncestorId}-99999`;
-                    const cleanupBox = {
-                        id: cleanupBoxId,
-                        name: `${rootAncestorId} - AUTO`,
-                        content: `This node groups items with problematic, duplicated, or non-sequential IDs. Please review and re-parent the groups below.`,
-                        order: 9999, 
-                        children: []
-                    };
-
-                    const rootNode = nodeMap.get(rootAncestorId);
-                    if (rootNode) {
-                        rootNode.children.push(cleanupBox);
-                        nodeMap.set(cleanupBoxId, cleanupBox); 
-                        rootData = { cleanupBox: cleanupBox, groups: new Map() };
-                        cleanupMap.set(rootAncestorId, rootData);
-                    }
-                }
-                
-                // 3b. Determine the Group Key (the second segment of the messy ID)
-                const groupKey = currentIdParts.length > 1 ? currentIdParts[1] : '0'; // Use '0' if no segment exists (shouldn't happen here)
-                const groupPlaceholderId = `${rootAncestorId}-${groupKey}`; // e.g., '3-2' for 3-22
-                
-                let groupPlaceholder = rootData.groups.get(groupPlaceholderId);
-
-                if (!groupPlaceholder) {
-                    // 3c. Create the Nested Group Placeholder
-                    groupPlaceholder = {
-                        id: groupPlaceholderId,
-                        name: `${groupPlaceholderId}-${groupKey}`,
-                        content: `This group contains messy IDs whose second segment is '${groupKey}'. Original IDs include ${node.id}.`,
-                        order: parseInt(groupKey, 10), // Use the group key for internal sorting
-                        children: []
-                    };
-                    rootData.groups.set(groupPlaceholderId, groupPlaceholder);
-                    rootData.cleanupBox.children.push(groupPlaceholder);
-                    nodeMap.set(groupPlaceholderId, groupPlaceholder); // Add to map for completeness
-                }
-                
-                // 3d. Attach the messy node to the Group Placeholder
-                currentParent = groupPlaceholder;
-
-            }
-            
-            // Attach the node to its determined parent (normal or group placeholder)
-            currentParent.children.push(node);
-
-        } else {
-            // Truly an orphaned root node (e.g., its ID '1-2-3' but '1' is missing)
-            rootNodes.push(node);
-        }
+    // Handle true root nodes
+    if (currentIdParts.length === 1) {
+      rootNodes.push(node);
+      continue;
     }
-    
-    return rootNodes;
+
+    let foundAncestor = null;
+
+    // Find the highest existing ancestor
+    let tempParts = [...currentIdParts];
+    while (tempParts.length > 1) {
+      tempParts.pop();
+      const potentialParentId = tempParts.join('-');
+
+      const ancestorNode = nodeMap.get(potentialParentId);
+
+      if (ancestorNode) {
+        foundAncestor = ancestorNode;
+        break;
+      }
+    }
+
+    let currentParent = foundAncestor;
+
+    if (currentParent) {
+      // Check if the actual parent exists right above this node. If not, it's messy.
+      const intendedParentId = currentIdParts.slice(0, currentIdParts.length - 1).join('-');
+      const isBrokenChain = currentParent.id !== intendedParentId;
+
+      // Check for non-standard IDs (high numbers like 3-22, or broken chains)
+      const isNonStandard = (currentIdParts.length > 1 && parseInt(currentIdParts[1], 10) > 10) || isBrokenChain;
+
+
+      if (isBrokenChain || isNonStandard) {
+
+        const rootAncestorId = currentParent.id.split('-')[0];
+        let rootData = cleanupMap.get(rootAncestorId);
+
+        if (!rootData) {
+          // 3a. Create the top-level Cleanup Box
+          const cleanupBoxId = `${rootAncestorId}-99999`;
+          const cleanupBox = {
+            id: cleanupBoxId,
+            name: `${rootAncestorId} - AUTO`,
+            content: `This node groups items with problematic, duplicated, or non-sequential IDs. Please review and re-parent the groups below.`,
+            order: 9999,
+            children: []
+          };
+
+          const rootNode = nodeMap.get(rootAncestorId);
+          if (rootNode) {
+            rootNode.children.push(cleanupBox);
+            nodeMap.set(cleanupBoxId, cleanupBox);
+            rootData = { cleanupBox: cleanupBox, groups: new Map() };
+            cleanupMap.set(rootAncestorId, rootData);
+          }
+        }
+
+        // 3b. Determine the Group Key (the second segment of the messy ID)
+        const groupKey = currentIdParts.length > 1 ? currentIdParts[1] : '0'; // Use '0' if no segment exists (shouldn't happen here)
+        const groupPlaceholderId = `${rootAncestorId}-${groupKey}`; // e.g., '3-2' for 3-22
+
+        let groupPlaceholder = rootData.groups.get(groupPlaceholderId);
+
+        if (!groupPlaceholder) {
+          // 3c. Create the Nested Group Placeholder
+          groupPlaceholder = {
+            id: groupPlaceholderId,
+            name: `${groupPlaceholderId}-${groupKey}`,
+            content: `This group contains messy IDs whose second segment is '${groupKey}'. Original IDs include ${node.id}.`,
+            order: parseInt(groupKey, 10), // Use the group key for internal sorting
+            children: []
+          };
+          rootData.groups.set(groupPlaceholderId, groupPlaceholder);
+          rootData.cleanupBox.children.push(groupPlaceholder);
+          nodeMap.set(groupPlaceholderId, groupPlaceholder); // Add to map for completeness
+        }
+
+        // 3d. Attach the messy node to the Group Placeholder
+        currentParent = groupPlaceholder;
+
+      }
+
+      // Attach the node to its determined parent (normal or group placeholder)
+      currentParent.children.push(node);
+
+    } else {
+      // Truly an orphaned root node (e.g., its ID '1-2-3' but '1' is missing)
+      rootNodes.push(node);
+    }
+  }
+
+  return rootNodes;
 }
 
 
@@ -471,7 +526,7 @@ const debugMode = true; // Set to true to enable debug messages
 function debugMessage(message, data = []) {
   if (!debugMode) return false; // Exit if debug mode is off
 
-  if (data[0] == undefined) {
+  if (data[0] == undefined || data[0] == undefined || data[0] == null) {
     console.log("DEBUG:", message); // Log the debug message  
     return true;
   } else {
@@ -642,11 +697,11 @@ const documentStructure = [...rootNodes]; // Used to populate the document struc
 function buildNestedList(nodes, parentElement, isChild) {
 
   //depth monitor
-  //let depthOfTree = 0;
+  let depthOfTree = 0;
 
   // 1. Create the <ol> for the current level
   const orderedList = document.createElement('ul'); //was <ol>
-  //orderedList.classList.add('main-node');
+  orderedList.classList.add('main-node');
   // if (isChild) {
   //   orderedList.classList.add('child-node');
   // }
@@ -657,7 +712,6 @@ function buildNestedList(nodes, parentElement, isChild) {
   // 3. Iterate through each node to create <li> elements
   nodes.forEach(node => {
     const listItem = document.createElement('li');
-    listItem.classList.add('sortable-item');
     listItem.classList.add('list-container');
     listItem.setAttribute('draggable', 'true');
 
@@ -666,11 +720,13 @@ function buildNestedList(nodes, parentElement, isChild) {
     }
 
     // Create an anchor tag (<a>) for the clickable heading
-    const sectionLink = document.createElement('div');
-    sectionLink.setAttribute('data-section-id', node.id);
+    const sectionLink = document.createElement('a');
+    sectionLink.setAttribute('id', node.id);
     sectionLink.classList.add('section-link');
 
-    //sectionLink.setAttribute('clickable', 'true');
+    sectionLink.setAttribute('onclick', `registerTreeElementClick("${node.id}")`);
+
+    sectionLink.setAttribute('clickable', 'true');
 
     //ID on the left, Name on the right
     const leftText = document.createElement('div');
@@ -682,7 +738,6 @@ function buildNestedList(nodes, parentElement, isChild) {
 
     const rightText = document.createElement('div');
     rightText.textContent = node.name;
-    //debugMessage(`Node name is: ${node.name}`, node);
     rightText.classList.add('right-block');
 
     // Append left and right blocks to the section link
@@ -752,9 +807,58 @@ function toggleRevisionList() {
 }
 
 
+
+
+
+
+
+
+
+/**
+ * 
+ * @param {string} id - supplies whatever the clicked ID was 
+ * 
+ * TODO:
+ * Use the id to search the list of entries
+ * Load the id and title into the contentTitle area
+ * Load the content into the textarea (currently has demonstrator code, but will need breaking)
+ */
+function registerTreeElementClick(id) {
+  debugMessage(`Clicked Tree Element ID: ${id}`);
+
+  //Search the documentstructure
+  const foundNode = DocumentNode.searchMultipleRootsById(documentStructure, id);
+
+  // Assign variable for building the Tile Title
+  const sectionHeading = document.getElementById(`contentTitle`);
+  // Build the Heading
+  sectionHeading.textContent = foundNode.id + '. ' + foundNode.name;
+
+  // Populate the TextBox
+  const sectionText = document.getElementById(`myTextarea`);
+  // Populate the textarea
+  sectionText.textContent = foundNode.content;
+
+  // debugMessage(`Searched for id ${id}, found: `, foundNode.id);
+  // console.log(`Return object of: `,foundNode);
+
+  const sectionDetail = '';
+
+}
+
+
+
+
+
+
+
+
+
+
 // Select the HTML elements we need to work with
 const myList = document.getElementById('myList');
 const myTextarea = document.getElementById('myTextarea');
+
 // const addToListBtn = document.getElementById('addToListBtn');
 
 // Function to handle adding the item to the list
