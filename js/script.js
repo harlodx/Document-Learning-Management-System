@@ -13,12 +13,12 @@
 // 1. FRONT-END BINDING & CONTEXT
 // --------------------------------------------------------------------------
 
-// [ ] Write a recursive 'findNodeById' function to locate any SectionNode object.
+// [x] Write a recursive 'findNodeById' function to locate any SectionNode object.
 
-// [ ] Re-Bind the 'contextmenu' event listener specifically to the list links 
+// [x] Re-Bind the 'contextmenu' event listener specifically to the list links 
 //     (.section-heading-link) and capture the target node's ID.
 
-// [ ] Use the captured ID and 'findNodeById' to set the custom menu's title 
+// [x] Use the captured ID and 'findNodeById' to set the custom menu's title 
 //     (e.g., "Options for: [Section Name]").
 
 
@@ -61,7 +61,7 @@ STEP 1: INITIAL SETUP & HYDRATION
     (the full JSON string) from Firestore or local storage on app load.
 2.  [ ] **Initial State**: If no saved data exists, initialize 'selfContainedDocument'
     with the 'document' structure set to 'initialDocumentStructure' and an empty 'history' array.
-3.  [ ] **Hydration**: When loading the document, consider writing a recursive function
+3.  [x] **Hydration**: When loading the document, consider writing a recursive function
     to convert the plain objects in the loaded JSON back into 'SectionNode' class instances 
     if you need to use the class methods (like node.addChild()).
 
