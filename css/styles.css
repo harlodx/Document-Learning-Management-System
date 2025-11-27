@@ -186,6 +186,13 @@ textarea {
 
 }
 
+#contentTitle {
+    border: none;
+    /* justify-content: start; */
+}
+
+
+
 footer {
     background-color: var(--footer-bg-color);
     color: #fff;

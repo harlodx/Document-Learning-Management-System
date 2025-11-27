@@ -99,9 +99,10 @@ STEP 3: THE REVERT OPERATION (Restoring a Previous Version)
     - **Re-Render**: Call your existing `renderDocumentStructure()` function to update the DOM.
 */
 
-/**
- * Suggest that we redo the DocumentNode class to handle the full functionality for this page. See below:
- */
+
+// Import DocumentNode class
+import DocumentNode from "./documentnode.js";
+
 
 /**
  * Class designed to represent a node in a hierarchical document structure.
@@ -122,257 +123,259 @@ class TestJsonDocument {
  * It supports arbitrary nesting depth, hierarchical ID generation, 
  * recursive traversal (DFS), and complete JSON serialization/deserialization.
  */
-class DocumentNode {
-  // Tracks all existing IDs globally to prevent duplicates across the document tree.
-  static _existingIds = new Set();
 
-  // --- Core Constructor ---
-  constructor(id, name, content = [], children = [], parentId = null) {
-    if (typeof id !== 'string' || id.length === 0) {
-      throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
-    }
+// class DocumentNode {
+//   // Tracks all existing IDs globally to prevent duplicates across the document tree.
+//   static _existingIds = new Set();
 
-    // Basic sanitation and validation for IDs (e.g., '1', '1-2', '1-2-1')
-    let cleanedId = id.replace(/[^\d-]/g, '');
-    const idRegex = /^[\d]+(-[\d]+)*$/;
+//   // --- Core Constructor ---
+//   constructor(id, name, content = [], children = [], parentId = null) {
+//     if (typeof id !== 'string' || id.length === 0) {
+//       throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
+//     }
 
-    if (!idRegex.test(cleanedId)) {
-      // For reconstruction, we will allow non-conforming IDs to be cleaned later.
-      // console.warn(`[ID Warning] ID format is suspicious: ${id}. Attempting to clean.`);
-    }
+//     // Basic sanitation and validation for IDs (e.g., '1', '1-2', '1-2-1')
+//     let cleanedId = id.replace(/[^\d-]/g, '');
+//     const idRegex = /^[\d]+(-[\d]+)*$/;
 
-    // Ensure uniqueness; if duplicate, try to find a sequential unique ID
-    if (DocumentNode._existingIds.has(cleanedId)) {
-      cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
-    }
-    DocumentNode._existingIds.add(cleanedId);
+//     if (!idRegex.test(cleanedId)) {
+//       // For reconstruction, we will allow non-conforming IDs to be cleaned later.
+//       // console.warn(`[ID Warning] ID format is suspicious: ${id}. Attempting to clean.`);
+//     }
 
-    this.id = cleanedId;
-    this.name = name;
-    this.content = content;
-    this.children = Array.isArray(children) ? children : [];
-    this.parentId = parentId;
+//     // Ensure uniqueness; if duplicate, try to find a sequential unique ID
+//     if (DocumentNode._existingIds.has(cleanedId)) {
+//       cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
+//     }
+//     DocumentNode._existingIds.add(cleanedId);
 
-    // The 'order' is the last segment of the hierarchical ID (e.g., '2' in '1-2').
-    const parts = cleanedId.split('-');
-    this.order = parseInt(parts[parts.length - 1], 10);
-  }
+//     this.id = cleanedId;
+//     this.name = name;
+//     this.content = content;
+//     this.children = Array.isArray(children) ? children : [];
+//     this.parentId = parentId;
 
-  // --- Recursive Traversal Method (Depth-First Search) ---
-  traverseAndCollectIds(idList = []) {
-    idList.push(this.id);
-    for (const child of this.children) {
-      child.traverseAndCollectIds(idList);
-    }
-    return idList;
-  }
-  // ----------------------------------------------------
+//     // The 'order' is the last segment of the hierarchical ID (e.g., '2' in '1-2').
+//     const parts = cleanedId.split('-');
+//     this.order = parseInt(parts[parts.length - 1], 10);
+//   }
 
-  // --- Hierarchy Management ---
+//   // --- Recursive Traversal Method (Depth-First Search) ---
+//   traverseAndCollectIds(idList = []) {
+//     idList.push(this.id);
+//     for (const child of this.children) {
+//       child.traverseAndCollectIds(idList);
+//     }
+//     return idList;
+//   }
+//   // ----------------------------------------------------
 
-  _recalculateId(parentId, newIndex) {
-    DocumentNode._existingIds.delete(this.id);
+//   // --- Hierarchy Management ---
 
-    this.parentId = parentId;
-    this.order = newIndex;
+//   _recalculateId(parentId, newIndex) {
+//     DocumentNode._existingIds.delete(this.id);
 
-    if (parentId === null) {
-      this.id = newIndex.toString();
-    } else {
-      this.id = `${parentId}-${newIndex}`;
-    }
+//     this.parentId = parentId;
+//     this.order = newIndex;
 
-    DocumentNode._existingIds.add(this.id);
+//     if (parentId === null) {
+//       this.id = newIndex.toString();
+//     } else {
+//       this.id = `${parentId}-${newIndex}`;
+//     }
 
-    this.reIndexChildren();
-  }
+//     DocumentNode._existingIds.add(this.id);
 
-  reIndexChildren() {
-    if (this.children.length === 0) {
-      return;
-    }
+//     this.reIndexChildren();
+//   }
 
-    // Sort children based on their current 'order' property before re-indexing
-    this.children.sort((a, b) => a.order - b.order);
+//   reIndexChildren() {
+//     if (this.children.length === 0) {
+//       return;
+//     }
 
-    // Apply new sequential indices (1, 2, 3...)
-    this.children.forEach((child, index) => {
-      const newIndex = index + 1;
-      child._recalculateId(this.id, newIndex);
-    });
-  }
+//     // Sort children based on their current 'order' property before re-indexing
+//     this.children.sort((a, b) => a.order - b.order);
 
-  getAvailableChildId() {
-    let highestOrder = 0;
+//     // Apply new sequential indices (1, 2, 3...)
+//     this.children.forEach((child, index) => {
+//       const newIndex = index + 1;
+//       child._recalculateId(this.id, newIndex);
+//     });
+//   }
 
-    for (let i = 0; i < this.children.length; i++) {
-      const child = this.children[i];
-      if (child.order > highestOrder) {
-        highestOrder = child.order;
-      }
-    }
+//   getAvailableChildId() {
+//     let highestOrder = 0;
 
-    const nextOrder = highestOrder + 1;
+//     for (let i = 0; i < this.children.length; i++) {
+//       const child = this.children[i];
+//       if (child.order > highestOrder) {
+//         highestOrder = child.order;
+//       }
+//     }
 
-    return `${this.id}-${nextOrder}`;
-  }
+//     const nextOrder = highestOrder + 1;
 
-  addChild(name, content) {
-    const newChildId = this.getAvailableChildId();
-    const newChild = new DocumentNode(newChildId, name, content, [], this.id);
-    this.children.push(newChild);
-    return newChild;
-  }
+//     return `${this.id}-${nextOrder}`;
+//   }
 
-  deleteChild(childIdToDelete) {
-    const initialLength = this.children.length;
+//   addChild(name, content) {
+//     const newChildId = this.getAvailableChildId();
+//     const newChild = new DocumentNode(newChildId, name, content, [], this.id);
+//     this.children.push(newChild);
+//     return newChild;
+//   }
 
-    this.children = this.children.filter(child => {
-      if (child.id === childIdToDelete) {
-        const descendantIds = child.traverseAndCollectIds();
-        descendantIds.forEach(id => DocumentNode._existingIds.delete(id));
-        return false;
-      }
-      return true; // Keep other children
-    });
+//   deleteChild(childIdToDelete) {
+//     const initialLength = this.children.length;
 
-    if (this.children.length < initialLength) {
-      console.log(`\t> Deleted child ${childIdToDelete}. Re-indexing children of ${this.id}...`);
-      this.reIndexChildren();
-      return true;
-    }
-    return false;
-  }
+//     this.children = this.children.filter(child => {
+//       if (child.id === childIdToDelete) {
+//         const descendantIds = child.traverseAndCollectIds();
+//         descendantIds.forEach(id => DocumentNode._existingIds.delete(id));
+//         return false;
+//       }
+//       return true; // Keep other children
+//     });
 
-  getDepth() {
-    return this.id.split('-').length;
-  }
+//     if (this.children.length < initialLength) {
+//       console.log(`\t> Deleted child ${childIdToDelete}. Re-indexing children of ${this.id}...`);
+//       this.reIndexChildren();
+//       return true;
+//     }
+//     return false;
+//   }
 
-    // --- Search Utility (Core Recursive Search on a Single Tree) ---
+//   getDepth() {
+//     return this.id.split('-').length;
+//   }
+
+//     // --- Search Utility (Core Recursive Search on a Single Tree) ---
     
-    /**
-     * Recursively searches a single DocumentNode tree for the given ID.
-     * This is the core logic and is now used by the new multi-root function.
-     * @param {DocumentNode} node The current node to check.
-     * @param {string} targetId The hierarchical ID to find.
-     * @returns {DocumentNode | null} The found node or null.
-     */
-    static findNodeById(node, targetId) {
-        if (!node || node.id === undefined) {
-            return null;
-        }
+//     /**
+//      * Recursively searches a single DocumentNode tree for the given ID.
+//      * This is the core logic and is now used by the new multi-root function.
+//      * @param {DocumentNode} node The current node to check.
+//      * @param {string} targetId The hierarchical ID to find.
+//      * @returns {DocumentNode | null} The found node or null.
+//      */
+//     static findNodeById(node, targetId) {
+//         if (!node || node.id === undefined) {
+//             return null;
+//         }
 
-        // 1. Check the current node
-        if (node.id === targetId) {
-            return node;
-        }
+//         // 1. Check the current node
+//         if (node.id === targetId) {
+//             return node;
+//         }
 
-        // 2. Recursively search children
-        for (const child of node.children) {
-            const found = DocumentNode.findNodeById(child, targetId);
-            if (found) {
-                return found;
-            }
-        }
+//         // 2. Recursively search children
+//         for (const child of node.children) {
+//             const found = DocumentNode.findNodeById(child, targetId);
+//             if (found) {
+//                 return found;
+//             }
+//         }
 
-        return null;
-    }
+//         return null;
+//     }
 
-    /**
-     * Public static method to search across multiple root nodes (multiple trees).
-     * @param {DocumentNode[]} roots An array of DocumentNode objects (the root nodes of independent trees).
-     * @param {string} targetId The hierarchical ID to find.
-     * @returns {DocumentNode | null} The found node or null if not found.
-     */
-    static searchMultipleRootsById(roots, targetId) {
-        if (!Array.isArray(roots) || !targetId) {
-            console.log("Error: Must supply an array of roots and a targetId.");
-            return null;
-        }
+//     /**
+//      * Public static method to search across multiple root nodes (multiple trees).
+//      * @param {DocumentNode[]} roots An array of DocumentNode objects (the root nodes of independent trees).
+//      * @param {string} targetId The hierarchical ID to find.
+//      * @returns {DocumentNode | null} The found node or null if not found.
+//      */
+//     static searchMultipleRootsById(roots, targetId) {
+//         if (!Array.isArray(roots) || !targetId) {
+//             console.log("Error: Must supply an array of roots and a targetId.");
+//             return null;
+//         }
         
-        // Iterate over each root node and run the single-tree search function
-        for (const root of roots) {
-            const found = DocumentNode.findNodeById(root, targetId);
-            if (found) {
-                // Return immediately upon first match
-                return found;
-            }
-        }
+//         // Iterate over each root node and run the single-tree search function
+//         for (const root of roots) {
+//             const found = DocumentNode.findNodeById(root, targetId);
+//             if (found) {
+//                 // Return immediately upon first match
+//                 return found;
+//             }
+//         }
 
-        // If the loop completes without finding anything
-        return null;
-    }
+//         // If the loop completes without finding anything
+//         return null;
+//     }
 
-  // --- Serialization ---
-  toJSON() {
-    return {
-      id: this.id,
-      name: this.name,
-      content: this.content,
-      parentId: this.parentId,
-      children: this.children.map(child => child.toJSON())
-    };
-  }
+//   // --- Serialization ---
+//   toJSON() {
+//     return {
+//       id: this.id,
+//       name: this.name,
+//       content: this.content,
+//       parentId: this.parentId,
+//       children: this.children.map(child => child.toJSON())
+//     };
+//   }
 
-  // --- Deserialization ---
-  static fromJSON(jsonNode, parentId = null) {
-    if (!jsonNode || typeof jsonNode.id !== 'string') {
-      throw new Error('[fromJSON Error] Invalid JSON node structure.');
-    }
+//   // --- Deserialization ---
+//   static fromJSON(jsonNode, parentId = null) {
+//     if (!jsonNode || typeof jsonNode.id !== 'string') {
+//       throw new Error('[fromJSON Error] Invalid JSON node structure.');
+//     }
 
-    const node = new DocumentNode(
-      jsonNode.id,
-      jsonNode.name,
-      jsonNode.content,
-      [],
-      parentId
-    );
+//     const node = new DocumentNode(
+//       jsonNode.id,
+//       jsonNode.name,
+//       jsonNode.content,
+//       [],
+//       parentId
+//     );
 
-    if (Array.isArray(jsonNode.children)) {
-      // Note: The parentId argument is crucial here for the recursion.
-      node.children = jsonNode.children.map(childJson => {
-        return DocumentNode.fromJSON(childJson, node.id);
-      });
-    }
+//     if (Array.isArray(jsonNode.children)) {
+//       // Note: The parentId argument is crucial here for the recursion.
+//       node.children = jsonNode.children.map(childJson => {
+//         return DocumentNode.fromJSON(childJson, node.id);
+//       });
+//     }
 
-    // After loading a potentially messy structure, ensure the children are indexed correctly.
-    node.reIndexChildren();
+//     // After loading a potentially messy structure, ensure the children are indexed correctly.
+//     node.reIndexChildren();
 
-    return node;
-  }
+//     return node;
+//   }
 
-  // --- Utility Methods ---
-  static getUniqueSequentialId(baseId) {
-    let newId = baseId;
-    let iteration = 1;
-    const match = baseId.match(/(.*-)(\d+)$/);
+//   // --- Utility Methods ---
+//   static getUniqueSequentialId(baseId) {
+//     let newId = baseId;
+//     let iteration = 1;
+//     const match = baseId.match(/(.*-)(\d+)$/);
 
-    let prefix = '';
-    let lastSegment = 0;
+//     let prefix = '';
+//     let lastSegment = 0;
 
-    if (match) {
-      prefix = match[1];
-      lastSegment = parseInt(match[2], 10);
-    } else {
-      lastSegment = parseInt(baseId, 10);
-    }
+//     if (match) {
+//       prefix = match[1];
+//       lastSegment = parseInt(match[2], 10);
+//     } else {
+//       lastSegment = parseInt(baseId, 10);
+//     }
 
-    while (DocumentNode._existingIds.has(newId)) {
-      const nextSegment = lastSegment + iteration;
-      newId = `${prefix}${nextSegment}`;
+//     while (DocumentNode._existingIds.has(newId)) {
+//       const nextSegment = lastSegment + iteration;
+//       newId = `${prefix}${nextSegment}`;
 
-      if (iteration > 1000) {
-        throw new Error(`[ID Generation Error] Could not find a unique ID after 1000 attempts starting from ${baseId}.`);
-      }
-      iteration++;
-    }
-    return newId;
-  }
-}
+//       if (iteration > 1000) {
+//         throw new Error(`[ID Generation Error] Could not find a unique ID after 1000 attempts starting from ${baseId}.`);
+//       }
+//       iteration++;
+//     }
+//     return newId;
+//   }
+// }
 
 ///// NEW CLASS BUILD ENDS HERE /////
 
 // --- Utility function to find a node anywhere in the tree ---
+
 function findNodeById(nodes, targetId) {
   console.log(`Target id: `, targetId);
   for (const node of nodes) {
@@ -721,10 +724,11 @@ function buildNestedList(nodes, parentElement, isChild) {
 
     // Create an anchor tag (<a>) for the clickable heading
     const sectionLink = document.createElement('a');
-    sectionLink.setAttribute('id', node.id);
+    sectionLink.setAttribute('id', 'T-' + node.id);
     sectionLink.classList.add('section-link');
+    sectionLink.classList.add('dynamic-item');
 
-    sectionLink.setAttribute('onclick', `registerTreeElementClick("${node.id}")`);
+    //sectionLink.setAttribute('onclick', `registerTreeElementClick("${node.id}")`);  //OLD
 
     sectionLink.setAttribute('clickable', 'true');
 
@@ -807,13 +811,6 @@ function toggleRevisionList() {
 }
 
 
-
-
-
-
-
-
-
 /**
  * 
  * @param {string} id - supplies whatever the clicked ID was 
@@ -830,10 +827,13 @@ function registerTreeElementClick(id) {
   const foundNode = DocumentNode.searchMultipleRootsById(documentStructure, id);
 
   // Assign variable for building the Tile Title
-  const sectionHeading = document.getElementById(`contentTitle`);
+  const sectionId = document.getElementById(`contentID`);
+  const sectionTitle = document.getElementById(`contentTitle`);
   // Build the Heading
-  sectionHeading.textContent = foundNode.id + '. ' + foundNode.name;
 
+  sectionId.textContent = foundNode.id;
+  sectionTitle.textContent = foundNode.name;
+  
   // Populate the TextBox
   const sectionText = document.getElementById(`myTextarea`);
   // Populate the textarea
@@ -859,7 +859,6 @@ function registerTreeElementClick(id) {
 const myList = document.getElementById('myList');
 const myTextarea = document.getElementById('myTextarea');
 
-// const addToListBtn = document.getElementById('addToListBtn');
 
 // Function to handle adding the item to the list
 function addListItem() {
@@ -929,3 +928,93 @@ function populateDocumentElements() {
   const container = document.getElementById(document - elements - list);
 
 }
+
+
+
+/**
+ * Sets up a single event listener on a parent container 
+ * to handle clicks on all dynamically generated children.
+ * @param {string} parentId The ID of the static parent container (e.g., 'dynamic-container').
+ * @param {string} targetClass The class shared by all dynamic children (e.g., 'dynamic-item').
+ */
+export function initializeDynamicClickHandler(parentId, targetClass) {
+    
+    const parentElement = document.getElementById(parentId);
+
+    if (!parentElement) {
+        console.error(`Parent element with ID '${parentId}' not found.`);
+        return;
+    }
+
+    // Attach the single listener to the static parent
+    parentElement.addEventListener('click', (event) => {
+        
+        // Use .closest() to check if the click target or any of its parents 
+        // matches the targetClass. This handles clicks on text/spans inside the item.
+        const clickedElement = event.target.closest(`.${targetClass}`);
+
+        if (clickedElement) {
+            // --- CORE LOGIC START ---
+            
+            const elementId = clickedElement.id;
+            console.log(`Clicked ID: ${elementId}`);
+
+            // You can use a switch statement or an if/else chain here
+            // to execute specific logic based on the ID.
+
+            if (elementId.startsWith('item-')) {
+                // Example: Extract the unique part of the ID (e.g., 'A1', 'B2')
+                const uniqueId = elementId.substring(5); 
+                
+                // Call your main business logic function
+                handleItemAction(uniqueId);
+            }
+
+            //Is a Tree (Document) Element
+            else if (elementId.startsWith('T-')) {
+                // Example: Extract the unique part of the ID (e.g., 'A1', 'B2')
+                // const uniqueId = elementId.substring(5);
+
+                const firstHyphenIndex = elementId.indexOf('-');
+                const result = elementId.slice(firstHyphenIndex + 1);
+
+                //console.log(`Got a uniqueID of ${elementId}`, result); 
+                
+                // Call your main business logic function
+                //handleItemAction(uniqueId);
+                registerTreeElementClick(result);
+
+                
+            }
+            
+            // --- CORE LOGIC END ---
+        }
+    });
+
+    console.log(`Dynamic click handler initialized on #${parentId}`);
+}
+
+
+
+// Example usage (inside script.js or another module)
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDynamicClickHandler('dynamic-container', 'dynamic-item');
+});
+
+
+
+// --FYI - the onclicks are breaking because of the mode to: type="module" in the Javascript import on the HTML File. 
+// -- I did this to allow me to move the DocumentNode class into its own file for separation and simplicity of code changes going forwards.DocumentNode
+
+/**
+ * TODO:
+ * 
+ * [ ] Add event listeners for each of the existing onClicks
+ * [ ] Change over logic to UN-break the file (GOod lucK!!)
+ * 
+ * Fast
+ * Easy
+ * FUN
+ * 
+ * 
+ */

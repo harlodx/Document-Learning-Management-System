@@ -32,7 +32,7 @@
     <!-- Load sytlesheet -->
     <link rel="stylesheet" href="./css/styles.css">
     <!-- Defer loading of the main script file -->
-    <script src="./js/script.js" defer></script>
+    <script type="module" src="./js/script.js" defer></script>
 
 </head>
 
@@ -40,7 +40,7 @@
     <header>
         <h1>Company Logo</h1>
     </header>
-    <main>
+    <main id="dynamic-container">
 
         <!-- Document title (that is being edited) -->
         <section class="title">
@@ -53,7 +53,7 @@
                             button).</i></p>
                 </div>
                 <div class="right-buttons">
-                    <button class="show-hide" onclick="toggleDetails() "><img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more">ICON: Show / Hide Details of this
+                    <button id="toggleDetails"  class="show-hide dynamic-item" onclick="toggleDetails() "><img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more">ICON: Show / Hide Details of this
                         Section</button>
                 </div>
 
@@ -68,7 +68,7 @@
                         <h3>Revision Tracking</h3>
                     </div>
                     <div class="right-buttons">
-                        <button onclick="toggleRevisionList()"> <img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"> ICON: Expand / Shrink Icon</button>
+                        <button id="toggleRevisionList" class="dynamic-item" onclick="toggleRevisionList()"> <img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"> ICON: Expand / Shrink Icon</button>
                     </div>
 
                 </div>
@@ -77,24 +77,25 @@
                     <li class="revision-item content-container">
                         <div class="content-left">Revision 3 - Date - User - Short Commit Notes</div>
                         <div class="right-buttons">
-                            <button onclick="viewRevision(3)">View</button>
-                            <button onclick="revertDocument(title, 3)">Revert</button>
+                            <button id="viewRevisions" class="dynamic-item" onclick="viewRevision(3)">View</button>
+                            <button id="revertDocument" class="dynamic-item" onclick="revertDocument(title, 3)">Revert</button>
                         </div>
                     </li>
 
+                    <!-- TODO: Temporary placeholders as these should be loaded in by script based on availability -->
                     <li class="revision-item content-container">
                         <div class="content-left">Revision 2 - Date - User - Short Commit Notes</div>
                         <div class="right-buttons">
-                            <button onclick="viewRevision(2)">View</button>
-                            <button onclick="revertDocument(title, 2)">Revert</button>
+                            <button class="dynamic-item" onclick="viewRevision(2)">View</button>
+                            <button class="dynamic-item" onclick="revertDocument(title, 2)">Revert</button>
                         </div>
                     </li>
 
                     <li class="revision-item content-container">
                         <div class="content-left">Revision 1 - Date - User -Short Commit Notes</div>
                         <div class="right-buttons">
-                            <button onclick="viewRevision(1)">View</button>
-                            <button onclick="revertDocument(title, 1)">Revert</button>
+                            <button class="dynamic-item" onclick="viewRevision(1)">View</button>
+                            <button class="dynamic-item" onclick="revertDocument(title, 1)">Revert</button>
                         </div>
                     </li>
                 </ul>
@@ -103,9 +104,9 @@
             <!-- Nav section -->
             <nav>
 
-                <button onclick="unlockDocument(title)">Edit</button>
-                <button onclick="saveDocument(title)">Save Draft</button>
-                <button onclick="commitDocument(title)">Commit</button>
+                <button id="unlockDocument" class="dynamic-item" onclick="unlockDocument(title)">Edit</button>
+                <button id="saveDocument" class="dynamic-item" onclick="saveDocument(title)">Save Draft</button>
+                <button id="commitDocument" class="dynamic-item" onclick="commitDocument(title)">Commit</button>
                 <!-- <li onclick="revertDocument(title, revision)">Revert</li> -->
 
             </nav>
@@ -123,16 +124,16 @@
                     <!-- Main content from code goes in here -->
                 </div>
                 <div class="controls index">
-                    <button>Add</button>
-                    <button>Scrap</button>
+                    <button class="dynamic-item">Add</button>
+                    <button class="dynamic-item">Scrap</button>
                 </div>
             </section>
 
             <section class="junk">
                 <div>This section holds any junked outline elements</div>
                 <div class="controls junk">
-                    <button>Insert</button>
-                    <button>Destroy</button>
+                    <button class="dynamic-item">Insert</button>
+                    <button class="dynamic-item">Destroy</button>
                 </div>
             </section>
         </aside>
@@ -140,9 +141,12 @@
         <!-- Main Document Content Area -->
         <section class="document-content">
             <form id="contentForm" class="section 1" action="">
-                <h3 id="contentTitle">
-                    Section Title (from the index on the Left)
-                </h3>
+                <span>
+                    <h3 id="contentID">Item Label</h3>
+                    <textarea id="contentTitle">
+                        Section Title (from the index on the Left)
+                    </textarea>
+                </span>
                 <ol id="myList">
                 </ol>
 
@@ -152,12 +156,12 @@
                 <!-- <button id="addToListBtn">Add to List</button> -->
             </form>
 
-            <form class="section 3" action="">
+            <!-- <form class="section 3" action="">
                 <h3>Section 3 - Name of Section (from the index)</h3>
                 <label for="section3">3.1</label>
                 <textarea name="section3" id="section3" cols="30" rows="10"
                     placeholder="Start writing your document here..."></textarea>
-            </form>
+            </form> -->
 
         </section>
     </main>
