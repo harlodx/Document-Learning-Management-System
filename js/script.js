@@ -953,11 +953,12 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
         // matches the targetClass. This handles clicks on text/spans inside the item.
         const clickedElement = event.target.closest(`.${targetClass}`);
 
+        // Is this a general
         if (clickedElement) {
             // --- CORE LOGIC START ---
             
             const elementId = clickedElement.id;
-            console.log(`Clicked ID: ${elementId}`);
+            console.log(`Clicked ID: ${elementId}`);  //DEBUG
 
             // You can use a switch statement or an if/else chain here
             // to execute specific logic based on the ID.
@@ -970,20 +971,14 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
                 handleItemAction(uniqueId);
             }
 
-            //Is a Tree (Document) Element
+            //Is this a Tree (Document) Element
             else if (elementId.startsWith('T-')) {
-                // Example: Extract the unique part of the ID (e.g., 'A1', 'B2')
-                // const uniqueId = elementId.substring(5);
-
+                
                 const firstHyphenIndex = elementId.indexOf('-');
                 const result = elementId.slice(firstHyphenIndex + 1);
-
-                //console.log(`Got a uniqueID of ${elementId}`, result); 
                 
-                // Call your main business logic function
-                //handleItemAction(uniqueId);
+                // Handle the Tree Click
                 registerTreeElementClick(result);
-
                 
             }
             
