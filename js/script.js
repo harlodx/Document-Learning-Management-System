@@ -803,6 +803,7 @@ function toggleDetails() {
 // I need an onclick function for the expand-shrink button that will toggle the hidden class on and off for each revision item except the first one which should always be visible
 function toggleRevisionList() {
   const revisions = document.querySelectorAll('.revision-item');
+  // const revisions = document.querySelectorAll('[id^="revision-'); // This works too
   revisions.forEach((item, index) => {
     if (index !== 0) { // Skip the first item
       item.classList.toggle('hidden');
@@ -924,11 +925,19 @@ myTextarea.addEventListener('keydown', (event) => {
   }
 });
 
-function populateDocumentElements() {
-  const container = document.getElementById(document - elements - list);
 
+// function populateDocumentElements() {
+//   const container = document.getElementById(document - elements - list);
+
+// }
+
+function viewRevision(revisionId) {
+  console.log(`TODO: Implement viewRevision() logic, clicked: `, revisionId);
 }
 
+function revertDocument(revisionId) {
+  console.log(`TODO: Implement revertDocument() logic, clicked: `, revisionId);
+}
 
 
 /**
@@ -960,19 +969,9 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
             const elementId = clickedElement.id;
             console.log(`Clicked ID: ${elementId}`);  //DEBUG
 
-            // You can use a switch statement or an if/else chain here
-            // to execute specific logic based on the ID.
-
-            if (elementId.startsWith('item-')) {
-                // Example: Extract the unique part of the ID (e.g., 'A1', 'B2')
-                const uniqueId = elementId.substring(5); 
-                
-                // Call your main business logic function
-                handleItemAction(uniqueId);
-            }
 
             //Is this a Tree (Document) Element
-            else if (elementId.startsWith('T-')) {
+            if (elementId.startsWith('T-')) {
                 
                 const firstHyphenIndex = elementId.indexOf('-');
                 const result = elementId.slice(firstHyphenIndex + 1);
@@ -981,6 +980,48 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
                 registerTreeElementClick(result);
                 
             }
+
+            // REVISIONS
+            else if (elementId.startsWith('view-revision-')){
+              // Temporary placeholder
+              //console.log(`TODO: Build logic of viewRevision(n). Clicked id of: ${elementId} was clicked`);
+              
+              const revisionId = elementId.lastIndexOf('-');
+              const resultId = elementId.slice(revisionId + 1);
+              console.log(revisionId + " " + resultId);
+
+              viewRevision(resultId);  // TODO
+            }
+
+            // REVERTS
+            else if (elementId.startsWith('revert-to-document-')){
+              // Temporary placeholder
+              //console.log(`TODO: Build logic of viewRevision(n). Clicked id of: ${elementId} was clicked`);
+              
+              const documentId = elementId.lastIndexOf('-');
+              const resultId = elementId.slice(documentId + 1);
+              //console.log(revisionId + " " + resultId);
+
+              revertDocument(resultId);  // TODO
+            }
+
+
+            else if (elementId.startsWith('revert-to-document-')){
+              console.log(`TODO: Build logic of revertToDocument(n). Clicked id of: ${elementId} was clicked`);
+            }
+
+            else {
+              switch(elementId){
+                case "toggleDetails":
+                  toggleDetails();                  
+                break;
+
+                case "toggleRevisionList":
+                  toggleRevisionList();
+                break;
+
+              }
+            };
             
             // --- CORE LOGIC END ---
         }
@@ -996,20 +1037,3 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeDynamicClickHandler('dynamic-container', 'dynamic-item');
 });
 
-
-
-// --FYI - the onclicks are breaking because of the mode to: type="module" in the Javascript import on the HTML File. 
-// -- I did this to allow me to move the DocumentNode class into its own file for separation and simplicity of code changes going forwards.DocumentNode
-
-/**
- * TODO:
- * 
- * [ ] Add event listeners for each of the existing onClicks
- * [ ] Change over logic to UN-break the file (GOod lucK!!)
- * 
- * Fast
- * Easy
- * FUN
- * 
- * 
- */

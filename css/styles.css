@@ -177,7 +177,7 @@ aside {
 }
 
 
-textarea {
+#myTextarea {
   width: 100%;
   box-sizing: border-box; /* This ensures padding and borders are included in the 100% width */
   resize: vertical; /* Allows the user to resize it vertically, but not horizontally */
@@ -186,17 +186,34 @@ textarea {
 
 }
 
+#contentID {
+    min-width: 10%;
+    max-width: fit-content + 10px;
+    /* margin: 5px; */
+    /* border: 1px solid grey; */
+    border-radius: 5px;
+    text-align: left;
+    /* padding: 10px; */
+    margin-bottom: 5px;
+}
+
 #contentTitle {
     border: none;
     font-size: x-large;
-    /* justify-content: start; */
+    text-align: left;
+    padding: 2px;
+    margin-left: 5px;
+    width: 100%;
+    field-sizing: content;  /* Experimental to size the text input block automatically*/
 }
 
 .content-title-container {
     display: flex;
     justify-content: space-between;
     align-items: start;
-    margin: 5px;
+    margin: 0px;
+    width: 100%;
+    padding: 0px;
 
 }
 
