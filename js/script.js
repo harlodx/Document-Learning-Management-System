@@ -830,15 +830,15 @@ function registerTreeElementClick(id) {
   // Assign variable for building the Tile Title
   const sectionId = document.getElementById(`contentID`);
   const sectionTitle = document.getElementById(`contentTitle`);
+  
   // Build the Heading
-
-  sectionId.textContent = foundNode.id;
-  sectionTitle.textContent = foundNode.name;
+  sectionId.textContent = foundNode.id; // This updates a <h4> tag so must be a .textContent or .innerHTML
+  sectionTitle.value = foundNode.name;  // This updates a <teaxtarea> so must use the .value property
   
   // Populate the TextBox
-  const sectionText = document.getElementById(`myTextarea`);
+  //const sectionText = document.getElementById(`contentTitle`);
   // Populate the textarea
-  sectionText.textContent = foundNode.content;
+  //sectionText.textContent = foundNode.content;
 
   // debugMessage(`Searched for id ${id}, found: `, foundNode.id);
   // console.log(`Return object of: `,foundNode);
@@ -1029,6 +1029,23 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
 
     console.log(`Dynamic click handler initialized on #${parentId}`);
 }
+
+
+const titleTextarea = document.getElementById('contentTitle');  // Get the element within the Title section
+let currentlyEditingItem = null;
+
+function updateSourceData(itemId, newValue){
+  console.log(`TODO: updateSourceData - should be saving edits for ID: ${itemId}`);
+}
+
+titleTextarea.addEventListener('input', (event) => {
+  console.log(`Registered event within titleTeaxtarea with ID of ${event.target.id}: ${event.target.value}`);
+  
+  if (currentlyEditingItem) {
+    // As the item is typed in, update the source of truth
+    updateSourceData(currentlyEditingItem.id, event.target.value);
+  }
+});
 
 
 
