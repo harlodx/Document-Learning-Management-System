@@ -704,7 +704,7 @@ function buildNestedList(nodes, parentElement, isChild) {
 
   // 1. Create the <ol> for the current level
   const orderedList = document.createElement('ul'); //was <ol>
-  orderedList.classList.add('main-node');
+  // orderedList.classList.add('main-node');
   // if (isChild) {
   //   orderedList.classList.add('child-node');
   // }
@@ -718,9 +718,11 @@ function buildNestedList(nodes, parentElement, isChild) {
     listItem.classList.add('list-container');
     listItem.setAttribute('draggable', 'true');
 
-    if (isChild) {
-      listItem.classList.add('child-node')
-    }
+
+    // Removed
+    // if (isChild) {
+    //   listItem.classList.add('child-node')
+    // }
 
     // Create an anchor tag (<a>) for the clickable heading
     const sectionLink = document.createElement('a');
@@ -975,6 +977,8 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
         console.error(`Parent element with ID '${parentId}' not found.`);
         return;
     }
+
+
 
     // Attach the single listener to the static parent
     parentElement.addEventListener('click', (event) => {

@@ -258,9 +258,10 @@ footer {
     display: none;
 }
 
+/* 
 .main-node:not(:nth-child(1)) {
     border-left: 2px solid blue;
-}
+} */
 
 
 
@@ -272,17 +273,13 @@ footer {
   
 }
 
+
 #document-structure-container > ul > li {
     border-radius: 5px;
     margin-bottom: 10px;
 }
 
-.list-container {
-  padding: 15px;
-  padding-left: 15px;
-  background-color: #f4f4f4;
-  list-style-type: none;
-}
+
 
 
 #myList {
@@ -292,16 +289,16 @@ footer {
 
 
 .section-link {
-    /* 1. Enable Flexbox layout */
     display: flex; 
     align-items: baseline;
-    /* Optional: Ensure it takes full width for clear separation */
     width: 100%; 
 }
 
+/* 
 .section-link:first-of-type(ul) > li {
     margin-left: 5px;
-}
+} */
+
 
 .left-block {
     /* 2. Push content to the left side */
@@ -319,3 +316,105 @@ footer {
     /* Optional: Set a fixed width if necessary */
     /* min-width: 150px;  */
 }
+
+/* New list formatting for tree hierarchy*/
+
+.list-container {
+  /* padding: 15px; */
+  /* padding-left: 15px; */
+  background-color: #f4f4f4;
+  /* list-style-type: none; */
+}
+/* CRITICAL: Reset all ULs for list/tree structure */
+.index-items ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    /* Crucial for clean margins */
+}
+
+/* Node (LI) - This is the main content box with the GRADIENT BRACKET */
+.index-items li {
+    /* Box styling */
+    background-color: #ffffff;
+
+    /* Bracket style: Border is now handled by the ::before pseudo-element */
+    border: none;
+    /* Ensure no standard border is present */
+
+    /* Retain only the necessary corner radius for the visual effect */
+    border-radius: 8px;
+
+    /* Add extra padding on the left to ensure content isn't under the 4px pseudo-element */
+    padding: 12px 16px 12px 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    /* Spacing between sibling nodes */
+    margin-top: 8px;
+    line-height: 1.4;
+    position: relative;
+    /* Anchor for the pseudo-element */
+}
+
+/* --- GRADIENT FADE EFFECT (The Bracket) - DEFAULT (MAROON for highest level) --- */
+.index-items li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    /* Thickness of the bar */
+    height: 100%;
+
+    /* Rounded corners on the bar itself, matching the parent LI's radius */
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+
+    /* Apply the vertical linear gradient, set to MAROON (#800000) */
+    background: linear-gradient(to bottom,
+            #800000 0%,
+            /* Maroon at the very top */
+            #800000 20%,
+            /* Solid maroon for the first 20% */
+            rgba(128, 0, 0, 0.4) 70%,
+            /* Fade to medium transparency (Maroon RGBA) */
+            transparent 100%
+            /* Fully transparent at the bottom */
+        );
+    z-index: 1;
+}
+
+/* --- GRADIENT FADE EFFECT (The Bracket) - OVERRIDE (BLUE for sub-nodes) --- */
+/* Targets all LI elements inside a nested UL (i.e., any sub-node) */
+.index-items ul ul li::before {
+    /* Apply the vertical linear gradient, set to GREEN (#10b981) */
+    background: linear-gradient(to bottom,
+            #10b981 0%,
+            /* Green at the very top */
+            #10b981 20%,
+            /* Solid green for the first 20% */
+            rgba(16, 185, 129, 0.4) 70%,
+            /* Fade to medium transparency (Green RGBA) */
+            transparent 100%
+            /* Fully transparent at the bottom */
+        );
+}
+
+
+/* Container for children (nested UL) - Handles Indentation and Separator */
+.index-items li>ul {
+    /* Indentation is applied to the nested UL - REDUCED from 24px to 16px */
+    padding-left: 16px;
+    position: relative;
+    margin-top: 10px;
+    /* Added top border to visually separate the parent content from the children container */
+    border-top: 1px solid #d1d5db;
+    padding-top: 10px;
+}
+
+/* Remove the margin on the first node in a children group (LI which is the first child of its parent UL) */
+.index-items li:first-child {
+    margin-top: 0;
+}
+
+/* ---------------------------------- */
