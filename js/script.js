@@ -931,6 +931,16 @@ myTextarea.addEventListener('keydown', (event) => {
 
 // }
 
+/*
+* TODO: 
+*   Need to build out the logic in this section.
+*/
+
+/**
+ * 
+ * @param {*} revisionId 
+ */
+
 function viewRevision(revisionId) {
   console.log(`TODO: Implement viewRevision() logic, clicked: `, revisionId);
 }
@@ -939,6 +949,17 @@ function revertDocument(revisionId) {
   console.log(`TODO: Implement revertDocument() logic, clicked: `, revisionId);
 }
 
+function unlockDocument(docId) {
+  console.log(`TODO: Implement unlockDocument() logic, clicked: `, docId);
+}
+
+function saveDocument(docId) {
+  console.log(`TODO: Implement saveDocument() logic, clicked: `, docId);
+}
+
+function commitDocument(docId) {
+  console.log(`TODO: Implement commitDocument() logic, clicked: `, docId);
+}
 
 /**
  * Sets up a single event listener on a parent container 
@@ -1019,6 +1040,18 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
                 case "toggleRevisionList":
                   toggleRevisionList();
                 break;
+
+                case "unlockDocument":
+                  unlockDocument();
+                  break;
+
+                case "saveDocument":
+                  saveDocument();
+                  break;
+                
+                case "commitDocument":
+                  commitDocument();
+                  break;
 
               }
             };
