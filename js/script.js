@@ -206,10 +206,31 @@ function buildRevisionList(revisionList) {
     revisionContent.className = "content-left";
     revisionContent.textContent = `${revisionItem.id} - ${revisionItem.date} - ${revisionItem.user} - ${revisionItem.commitNotes}`;;
 
+    // TODO - buttons for the version item
+    
+    //  View Button
+    const viewButton = document.createElement("button");
+    viewButton.className="dynamic-item";
+    viewButton.textContent="View";
+    viewButton.setAttribute("id", "view-"+ revisionItem.id);
 
-    newElement.appendChild(revisionContent);
-    // newElement.textContent = revisionItem.id; // PLACEHOLDER 
+    // Revert Button
+    const revertButton = document.createElement("button");
+    revertButton.className="dynamic-item";
+    revertButton.textContent="Revert";
+    revertButton.setAttribute("id", "revert-"+ revisionItem.id);
 
+    // Buttons container (right-side)
+    const revisionButtons = document.createElement("div");
+    revisionButtons.className = "right-buttons";
+    revisionButtons.appendChild(viewButton);
+    revisionButtons.appendChild(revertButton);
+
+    // Element that combines the version details as well as the buttons
+    newElement.appendChild(revisionContent);  //  Add the revision item into the DOM
+    newElement.appendChild(revisionButtons);
+
+    // Append the child iteratively to the list
     revisions.appendChild(newElement);  //add this item to the ul item
   });
 
@@ -217,7 +238,7 @@ function buildRevisionList(revisionList) {
 
 
 //addRevisionItem(revision_doc_1, "revision-1");
-buildRevisionList(revisionList);
+buildRevisionList(revisionList);  // Call to build a revision array into the DOM
 
 /**
  * Reconstructs a nested, hierarchical structure (POJOs) from a flat list 
