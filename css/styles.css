@@ -89,7 +89,7 @@ main {
 }
 
 
-button {
+.text-button {
     background: none;
     background-color: var(--background-color);
     /* border: 1px solid var(--text-color); */
@@ -108,6 +108,34 @@ button {
             cursor: pointer;color: var(--primary-color);
     }
 }
+
+.rotatable-svg {
+    /* Icon size initially */
+    width: 40px;
+    height: 40px;
+    border-radius: 50px;
+    border: none;
+
+    /* Initial position */
+    transform: rotate(180deg);
+    /*Transition*/
+    transition: transform 0.5s ease-in-out;
+    /* Transformation denter origin */
+    transform-origin: center;
+
+    &:hover {
+        background-color: var(--secondary-color);
+        /* Icon scale on hover */
+        scale: 120%;
+    }
+}
+
+.rotatable-svg.rotated {
+    /* Final position after rotation */
+    transform: rotate(0deg);
+}
+
+
 
 
 .revisions {
@@ -257,14 +285,6 @@ footer {
 .hidden {
     display: none;
 }
-
-/* 
-.main-node:not(:nth-child(1)) {
-    border-left: 2px solid blue;
-} */
-
-
-
 
 .sortable-list {
   /* list-style-type: none; */

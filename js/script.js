@@ -156,67 +156,57 @@ const revisionList = [
 ]
 
 
-function addRevisionItem(revisionItem, elementId){
-  // const revisionObject = revisionItem;
-
-  if (revisionItem.id){
-    console.log(`Revision with id of ${revisionItem.id} contains the following object: `, revisionItem);
-  } else {
-    console.log(`The supplied revisionItem: ${revisionItem} does not contained a valid object`);
-    return;
-  }
-
-  //  Populate the supplied document element
-  const element = document.createElement("li");
-  if (element == null) {  // nothing in the element
-    console.log(`Element id of ${elementId} returns null`);    
-  } else {  // valid something in the element
-    console.log(`Element id of ${elementId} is populated with: `, element);    
-  }
-
-  //lement.set
-
-
-  // Build out the html
-  //element.innerHTML = ''; //  Clear the inner html
-
-
-}
-
+/**
+ * 
+ * @param {*} revisionList an array of revision items and populates them into the DOM
+ */
 function buildRevisionList(revisionList) {
   const revisions = document.getElementById("revisions-list");
+  const revisionPlaceholder = {
+    id: 0,
+    date: new Date,
+    user: "No-one",
+    commitNotes: "Save and commit a file to add versions to this section"
+  }
+
   
   revisions.innerHTML = ''; // Clear any innerHTML
-  console.log(`revisionList is populated with the following object: `, revisionList);
+  // console.log(`revisionList is populated with the following object: `, revisionList);
 
 
   // TODO - build out the array in descending order so that it displays most recent iterations at the top
+  
 
+  if (revisionList.length < 1) {
+    console.log(`There are no revisions yet`);
+    revisionList.push(revisionPlaceholder);
+  } else {
+    // 2. Sort the array so that the most recent iterations are listed at the top
+    revisionList.sort((a, b) => b.id - a.id);
+  }
 
   revisionList.forEach(revisionItem =>{
-    console.log(`Revision item is: `, revisionItem);
+    // console.log(`Revision item is: `, revisionItem);
     //addRevisionItem(revisionItem, revisionItem.id);
     const newElement = document.createElement("li");
     newElement.setAttribute("id", `revision-${revisionItem.id}`); // Set the id to whatever the revision id is
     newElement.className = "revision-item content-container"; // Set the classes for styling
 
 
-    // TODO - add in the structure here for the revisions
+    // Div holder for all the revisions sub-elements
     const revisionContent = document.createElement("div");
     revisionContent.className = "content-left";
     revisionContent.textContent = `${revisionItem.id} - ${revisionItem.date} - ${revisionItem.user} - ${revisionItem.commitNotes}`;;
 
-    // TODO - buttons for the version item
-    
     //  View Button
     const viewButton = document.createElement("button");
-    viewButton.className="dynamic-item";
+    viewButton.className="dynamic-item text-button";
     viewButton.textContent="View";
     viewButton.setAttribute("id", "view-"+ revisionItem.id);
 
     // Revert Button
     const revertButton = document.createElement("button");
-    revertButton.className="dynamic-item";
+    revertButton.className="dynamic-item text-button";
     revertButton.textContent="Revert";
     revertButton.setAttribute("id", "revert-"+ revisionItem.id);
 
@@ -248,6 +238,7 @@ buildRevisionList(revisionList);  // Call to build a revision array into the DOM
  * @returns {Object[]} The array of root nodes with nested children.
  */
 function reconstructTreeFromFlatList(flatList) {
+
   // 1. Sort the list to ensure consistent processing order 
   flatList.sort((a, b) => {
     if (a.order !== b.order) {
@@ -548,14 +539,10 @@ const documentStructure = [...rootNodes]; // Used to populate the document struc
 function buildNestedList(nodes, parentElement, isChild) {
 
   //depth monitor
-  let depthOfTree = 0;
+  // let depthOfTree = 0;
 
   // 1. Create the <ol> for the current level
   const orderedList = document.createElement('ul'); //was <ol>
-  // orderedList.classList.add('main-node');
-  // if (isChild) {
-  //   orderedList.classList.add('child-node');
-  // }
 
   // 2. Sort the nodes based on their order property
   nodes.sort((a, b) => a.order - b.order);
@@ -567,10 +554,7 @@ function buildNestedList(nodes, parentElement, isChild) {
     listItem.setAttribute('draggable', 'true');
 
 
-    // Removed
-    // if (isChild) {
-    //   listItem.classList.add('child-node')
-    // }
+    
 
     // Create an anchor tag (<a>) for the clickable heading
     const sectionLink = document.createElement('a');
@@ -648,6 +632,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleDetails() {
   const details = document.querySelector('.revisions');
   details.classList.toggle('hidden');
+
+  // This logic below is likely redundant
+  if(details.classList.contains('hidden')){
+    console.log(`Details are hidden`);
+  }
+
+  // Rotate the up / down icon
+  const toggleDetailsElement = document.getElementById("toggleDetails");
+  toggleDetailsElement.classList.toggle('rotated');
 }
 
 // I need an onclick function for the expand-shrink button that will toggle the hidden class on and off for each revision item except the first one which should always be visible
@@ -659,6 +652,10 @@ function toggleRevisionList() {
       item.classList.toggle('hidden');
     }
   });
+
+  //  Rotate the up / down icon
+  const toggleRevisionElementsVisibility = document.getElementById("toggleRevisionList");
+  toggleRevisionElementsVisibility.classList.toggle('rotated');
 }
 
 

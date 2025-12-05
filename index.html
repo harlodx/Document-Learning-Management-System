@@ -47,14 +47,13 @@
             <div class="content-container">
 
                 <div class="left-content">
-                    <h2 class="document-name">Document Title</h2>
-                    <p class="document-subtitle"><i>Document Sub-title - this should be a short concise description of
+                    <h2 id="document-name" class="document-name">Document Title</h2>
+                    <textarea id="document-subtitle" class="document-subtitle">Document Sub-title - this should be a short concise description of
                             what the document should do. It should also be editable (although maybe behind a
-                            button).</i></p>
+                            button).</textarea>
                 </div>
-                <div class="right-buttons">
-                    <button id="toggleDetails"  class="show-hide dynamic-item"><img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more">ICON: Show / Hide Details of this
-                        Section</button>
+                <div class="">
+                    <button id="toggleDetails"  class="show-hide dynamic-item rotatable-svg"><img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"></button>
                 </div>
 
 
@@ -68,45 +67,22 @@
                         <h3>Revision Tracking</h3>
                     </div>
                     <div class="right-buttons">
-                        <button id="toggleRevisionList" class="dynamic-item"> <img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"> ICON: Expand / Shrink Icon</button>
+                        <button id="toggleRevisionList" class="dynamic-item rotatable-svg"> <img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"></button>
                     </div>
 
                 </div>
 
+                <!-- Container for the Revisions list Elements -->
                 <ul id="revisions-list" class="revisions-list">
-                    <li id="revision-1" class="revision-item content-container">
-                        <div class="content-left">Revision 3 - Date - User - Short Commit Notes</div>
-                        <div class="right-buttons">
-                            <button id="view-revision-3" class="dynamic-item">View</button>
-                            <button id="revert-to-document-3" class="dynamic-item">Revert</button>
-                        </div>
-                    </li>
-
-                    <!-- TODO: Temporary placeholders as these should be loaded in by script based on availability -->
-                    <li id="revision-2" class="revision-item content-container">
-                        <div class="content-left">Revision 2 - Date - User - Short Commit Notes</div>
-                        <div class="right-buttons">
-                            <button id="view-revision-2" class="dynamic-item">View</button>
-                            <button id="revert-to-document-2" class="dynamic-item">Revert</button>
-                        </div>
-                    </li>
-
-                    <li id="revision-3" class="revision-item content-container">
-                        <div class="content-left">Revision 1 - Date - User -Short Commit Notes</div>
-                        <div class="right-buttons">
-                            <button id="view-revision-3" class="dynamic-item">View</button>
-                            <button id="revert-to-document-1" class="dynamic-item">Revert</button>
-                        </div>
-                    </li>
                 </ul>
 
                 
                                     <!-- Nav section -->
             <nav>
 
-                <button id="unlockDocument" class="dynamic-item">Edit</button>
-                <button id="saveDocument" class="dynamic-item">Save Draft</button>
-                <button id="commitDocument" class="dynamic-item">Commit</button>
+                <button id="unlockDocument" class="dynamic-item text-button">Edit</button>
+                <button id="saveDocument" class="dynamic-item text-button">Save Draft</button>
+                <button id="commitDocument" class="dynamic-item text-button">Commit</button>
                 <!-- <li onclick="revertDocument(title, revision)">Revert</li> -->
 
             </nav>
