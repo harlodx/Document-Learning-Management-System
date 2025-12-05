@@ -362,7 +362,7 @@ footer {
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 3px;
     /* Thickness of the bar */
     height: 100%;
 
@@ -372,11 +372,11 @@ footer {
 
     /* Apply the vertical linear gradient, set to MAROON (#800000) */
     background: linear-gradient(to bottom,
-            #800000 0%,
+            #0513d1 10%,
             /* Maroon at the very top */
-            #800000 20%,
+            #1302ffad 20%,
             /* Solid maroon for the first 20% */
-            rgba(128, 0, 0, 0.4) 70%,
+            rgba(0, 9, 128, 0.4) 70%,
             /* Fade to medium transparency (Maroon RGBA) */
             transparent 100%
             /* Fully transparent at the bottom */

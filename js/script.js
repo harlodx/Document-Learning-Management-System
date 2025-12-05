@@ -118,279 +118,106 @@ class TestJsonDocument {
   }
 }
 
-/**
- * Class designed to represent a node in a hierarchical document structure.
- * It supports arbitrary nesting depth, hierarchical ID generation, 
- * recursive traversal (DFS), and complete JSON serialization/deserialization.
- */
 
-// class DocumentNode {
-//   // Tracks all existing IDs globally to prevent duplicates across the document tree.
-//   static _existingIds = new Set();
-
-//   // --- Core Constructor ---
-//   constructor(id, name, content = [], children = [], parentId = null) {
-//     if (typeof id !== 'string' || id.length === 0) {
-//       throw new Error(`[ID Error] ID is required and must be a non-empty string.`);
-//     }
-
-//     // Basic sanitation and validation for IDs (e.g., '1', '1-2', '1-2-1')
-//     let cleanedId = id.replace(/[^\d-]/g, '');
-//     const idRegex = /^[\d]+(-[\d]+)*$/;
-
-//     if (!idRegex.test(cleanedId)) {
-//       // For reconstruction, we will allow non-conforming IDs to be cleaned later.
-//       // console.warn(`[ID Warning] ID format is suspicious: ${id}. Attempting to clean.`);
-//     }
-
-//     // Ensure uniqueness; if duplicate, try to find a sequential unique ID
-//     if (DocumentNode._existingIds.has(cleanedId)) {
-//       cleanedId = DocumentNode.getUniqueSequentialId(cleanedId);
-//     }
-//     DocumentNode._existingIds.add(cleanedId);
-
-//     this.id = cleanedId;
-//     this.name = name;
-//     this.content = content;
-//     this.children = Array.isArray(children) ? children : [];
-//     this.parentId = parentId;
-
-//     // The 'order' is the last segment of the hierarchical ID (e.g., '2' in '1-2').
-//     const parts = cleanedId.split('-');
-//     this.order = parseInt(parts[parts.length - 1], 10);
-//   }
-
-//   // --- Recursive Traversal Method (Depth-First Search) ---
-//   traverseAndCollectIds(idList = []) {
-//     idList.push(this.id);
-//     for (const child of this.children) {
-//       child.traverseAndCollectIds(idList);
-//     }
-//     return idList;
-//   }
-//   // ----------------------------------------------------
-
-//   // --- Hierarchy Management ---
-
-//   _recalculateId(parentId, newIndex) {
-//     DocumentNode._existingIds.delete(this.id);
-
-//     this.parentId = parentId;
-//     this.order = newIndex;
-
-//     if (parentId === null) {
-//       this.id = newIndex.toString();
-//     } else {
-//       this.id = `${parentId}-${newIndex}`;
-//     }
-
-//     DocumentNode._existingIds.add(this.id);
-
-//     this.reIndexChildren();
-//   }
-
-//   reIndexChildren() {
-//     if (this.children.length === 0) {
-//       return;
-//     }
-
-//     // Sort children based on their current 'order' property before re-indexing
-//     this.children.sort((a, b) => a.order - b.order);
-
-//     // Apply new sequential indices (1, 2, 3...)
-//     this.children.forEach((child, index) => {
-//       const newIndex = index + 1;
-//       child._recalculateId(this.id, newIndex);
-//     });
-//   }
-
-//   getAvailableChildId() {
-//     let highestOrder = 0;
-
-//     for (let i = 0; i < this.children.length; i++) {
-//       const child = this.children[i];
-//       if (child.order > highestOrder) {
-//         highestOrder = child.order;
-//       }
-//     }
-
-//     const nextOrder = highestOrder + 1;
-
-//     return `${this.id}-${nextOrder}`;
-//   }
-
-//   addChild(name, content) {
-//     const newChildId = this.getAvailableChildId();
-//     const newChild = new DocumentNode(newChildId, name, content, [], this.id);
-//     this.children.push(newChild);
-//     return newChild;
-//   }
-
-//   deleteChild(childIdToDelete) {
-//     const initialLength = this.children.length;
-
-//     this.children = this.children.filter(child => {
-//       if (child.id === childIdToDelete) {
-//         const descendantIds = child.traverseAndCollectIds();
-//         descendantIds.forEach(id => DocumentNode._existingIds.delete(id));
-//         return false;
-//       }
-//       return true; // Keep other children
-//     });
-
-//     if (this.children.length < initialLength) {
-//       console.log(`\t> Deleted child ${childIdToDelete}. Re-indexing children of ${this.id}...`);
-//       this.reIndexChildren();
-//       return true;
-//     }
-//     return false;
-//   }
-
-//   getDepth() {
-//     return this.id.split('-').length;
-//   }
-
-//     // --- Search Utility (Core Recursive Search on a Single Tree) ---
-    
-//     /**
-//      * Recursively searches a single DocumentNode tree for the given ID.
-//      * This is the core logic and is now used by the new multi-root function.
-//      * @param {DocumentNode} node The current node to check.
-//      * @param {string} targetId The hierarchical ID to find.
-//      * @returns {DocumentNode | null} The found node or null.
-//      */
-//     static findNodeById(node, targetId) {
-//         if (!node || node.id === undefined) {
-//             return null;
-//         }
-
-//         // 1. Check the current node
-//         if (node.id === targetId) {
-//             return node;
-//         }
-
-//         // 2. Recursively search children
-//         for (const child of node.children) {
-//             const found = DocumentNode.findNodeById(child, targetId);
-//             if (found) {
-//                 return found;
-//             }
-//         }
-
-//         return null;
-//     }
-
-//     /**
-//      * Public static method to search across multiple root nodes (multiple trees).
-//      * @param {DocumentNode[]} roots An array of DocumentNode objects (the root nodes of independent trees).
-//      * @param {string} targetId The hierarchical ID to find.
-//      * @returns {DocumentNode | null} The found node or null if not found.
-//      */
-//     static searchMultipleRootsById(roots, targetId) {
-//         if (!Array.isArray(roots) || !targetId) {
-//             console.log("Error: Must supply an array of roots and a targetId.");
-//             return null;
-//         }
-        
-//         // Iterate over each root node and run the single-tree search function
-//         for (const root of roots) {
-//             const found = DocumentNode.findNodeById(root, targetId);
-//             if (found) {
-//                 // Return immediately upon first match
-//                 return found;
-//             }
-//         }
-
-//         // If the loop completes without finding anything
-//         return null;
-//     }
-
-//   // --- Serialization ---
-//   toJSON() {
-//     return {
-//       id: this.id,
-//       name: this.name,
-//       content: this.content,
-//       parentId: this.parentId,
-//       children: this.children.map(child => child.toJSON())
-//     };
-//   }
-
-//   // --- Deserialization ---
-//   static fromJSON(jsonNode, parentId = null) {
-//     if (!jsonNode || typeof jsonNode.id !== 'string') {
-//       throw new Error('[fromJSON Error] Invalid JSON node structure.');
-//     }
-
-//     const node = new DocumentNode(
-//       jsonNode.id,
-//       jsonNode.name,
-//       jsonNode.content,
-//       [],
-//       parentId
-//     );
-
-//     if (Array.isArray(jsonNode.children)) {
-//       // Note: The parentId argument is crucial here for the recursion.
-//       node.children = jsonNode.children.map(childJson => {
-//         return DocumentNode.fromJSON(childJson, node.id);
-//       });
-//     }
-
-//     // After loading a potentially messy structure, ensure the children are indexed correctly.
-//     node.reIndexChildren();
-
-//     return node;
-//   }
-
-//   // --- Utility Methods ---
-//   static getUniqueSequentialId(baseId) {
-//     let newId = baseId;
-//     let iteration = 1;
-//     const match = baseId.match(/(.*-)(\d+)$/);
-
-//     let prefix = '';
-//     let lastSegment = 0;
-
-//     if (match) {
-//       prefix = match[1];
-//       lastSegment = parseInt(match[2], 10);
-//     } else {
-//       lastSegment = parseInt(baseId, 10);
-//     }
-
-//     while (DocumentNode._existingIds.has(newId)) {
-//       const nextSegment = lastSegment + iteration;
-//       newId = `${prefix}${nextSegment}`;
-
-//       if (iteration > 1000) {
-//         throw new Error(`[ID Generation Error] Could not find a unique ID after 1000 attempts starting from ${baseId}.`);
-//       }
-//       iteration++;
-//     }
-//     return newId;
-//   }
-// }
-
-///// NEW CLASS BUILD ENDS HERE /////
-
-// --- Utility function to find a node anywhere in the tree ---
-
-function findNodeById(nodes, targetId) {
-  console.log(`Target id: `, targetId);
-  for (const node of nodes) {
-    console.log(`Node id: `, node.id);
-    if (node.id == targetId) {
-      return node;
-    }
-    const found = findNodeById(node.children, targetId);
-    if (found) {
-      return found;
-    }
+class RevisionDocument {
+  constructor(id, date, user, commitNotes) {
+    this.id = id;
+    this.date = date;
+    this.user = user;
+    this.commitNotes = commitNotes;
   }
-  return null;
 }
 
+let revision_doc_1 = {
+  id: 1,
+  date: new Date,
+  user: "Harlo",
+  commitNotes: "Added recursive check for existing tree objects"
+}
+
+let revision_doc_2 = {
+  id: 2,
+  date: new Date,
+  user: "Harlo",
+  commitNotes: "Added recursive check for existing tree objects"
+}
+
+let revision_doc_3 = {
+  id: 3,
+  date: new Date,
+  user: "Harlo",
+  commitNotes: "Added recursive check for existing tree objects"
+}
+
+const revisionList = [
+  revision_doc_1,
+  revision_doc_2,
+  revision_doc_3
+]
+
+
+function addRevisionItem(revisionItem, elementId){
+  // const revisionObject = revisionItem;
+
+  if (revisionItem.id){
+    console.log(`Revision with id of ${revisionItem.id} contains the following object: `, revisionItem);
+  } else {
+    console.log(`The supplied revisionItem: ${revisionItem} does not contained a valid object`);
+    return;
+  }
+
+  //  Populate the supplied document element
+  const element = document.createElement("li");
+  if (element == null) {  // nothing in the element
+    console.log(`Element id of ${elementId} returns null`);    
+  } else {  // valid something in the element
+    console.log(`Element id of ${elementId} is populated with: `, element);    
+  }
+
+  //lement.set
+
+
+  // Build out the html
+  //element.innerHTML = ''; //  Clear the inner html
+
+
+}
+
+function buildRevisionList(revisionList) {
+  const revisions = document.getElementById("revisions-list");
+  
+  revisions.innerHTML = ''; // Clear any innerHTML
+  console.log(`revisionList is populated with the following object: `, revisionList);
+
+
+  // TODO - build out the array in descending order so that it displays most recent iterations at the top
+
+
+  revisionList.forEach(revisionItem =>{
+    console.log(`Revision item is: `, revisionItem);
+    //addRevisionItem(revisionItem, revisionItem.id);
+    const newElement = document.createElement("li");
+    newElement.setAttribute("id", `revision-${revisionItem.id}`); // Set the id to whatever the revision id is
+    newElement.className = "revision-item content-container"; // Set the classes for styling
+
+
+    // TODO - add in the structure here for the revisions
+    const revisionContent = document.createElement("div");
+    revisionContent.className = "content-left";
+    revisionContent.textContent = `${revisionItem.id} - ${revisionItem.date} - ${revisionItem.user} - ${revisionItem.commitNotes}`;;
+
+
+    newElement.appendChild(revisionContent);
+    // newElement.textContent = revisionItem.id; // PLACEHOLDER 
+
+    revisions.appendChild(newElement);  //add this item to the ul item
+  });
+
+}
+
+
+//addRevisionItem(revision_doc_1, "revision-1");
+buildRevisionList(revisionList);
 
 /**
  * Reconstructs a nested, hierarchical structure (POJOs) from a flat list 
@@ -837,6 +664,7 @@ function registerTreeElementClick(id) {
   sectionId.textContent = foundNode.id; // This updates a <h4> tag so must be a .textContent or .innerHTML
   sectionTitle.value = foundNode.name;  // This updates a <teaxtarea> so must use the .value property
   
+  
   // Populate the TextBox
   //const sectionText = document.getElementById(`contentTitle`);
   // Populate the textarea
@@ -864,7 +692,7 @@ const myTextarea = document.getElementById('myTextarea');
 
 
 // Function to handle adding the item to the list
-function addListItem() {
+function addListItem(existingText) {
   const newText = myTextarea.value.trim();
 
   if (newText !== "") {
@@ -927,11 +755,6 @@ myTextarea.addEventListener('keydown', (event) => {
   }
 });
 
-
-// function populateDocumentElements() {
-//   const container = document.getElementById(document - elements - list);
-
-// }
 
 /*
 * TODO: 
