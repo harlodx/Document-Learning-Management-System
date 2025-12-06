@@ -536,7 +536,7 @@ const documentStructure = [...rootNodes]; // Used to populate the document struc
 * @{DocumentNode[]} nodes - Array of DocumentNode to render.
 * @{HTMLElement} container - The DOM element to append the <ol> to.
 */
-function buildNestedList(nodes, parentElement, isChild) {
+function buildNestedList(nodes, parentElement) {
 
   //depth monitor
   // let depthOfTree = 0;
@@ -674,14 +674,17 @@ function registerTreeElementClick(id) {
   //Search the documentstructure
   const foundNode = DocumentNode.searchMultipleRootsById(documentStructure, id);
 
-  // Assign variable for building the Tile Title
+  // Assign variable for building the Title
   const sectionId = document.getElementById(`contentID`);
   const sectionTitle = document.getElementById(`contentTitle`);
+
+  // TODO - populate the textarea
   
   // Build the Heading
   sectionId.textContent = foundNode.id; // This updates a <h4> tag so must be a .textContent or .innerHTML
   sectionTitle.value = foundNode.name;  // This updates a <teaxtarea> so must use the .value property
-  
+
+  addExistingContent(foundNode.content);
   
   // Populate the TextBox
   //const sectionText = document.getElementById(`contentTitle`);
@@ -694,14 +697,6 @@ function registerTreeElementClick(id) {
   const sectionDetail = '';
 
 }
-
-
-
-
-
-
-
-
 
 
 // Select the HTML elements we need to work with
@@ -723,6 +718,27 @@ function addListItem(existingText) {
     newListItem.addEventListener('click', editListItem);
 
     myTextarea.value = ""; // Clear the textarea
+  }
+}
+
+// Function to handle adding pre-existing text (array content) to the list
+
+function addExistingContent(existingContent){
+  console.log(existingContent);
+
+  console.log(myList.textContent);
+
+  myList.textContent = "";  //  Clear the existing content from the List
+
+  if (existingContent !== ""){
+    const newListItem = document.createElement('li');
+    newListItem.className = 'dynamic-item';
+    newListItem.textContent = existingContent;
+    myList.appendChild(newListItem);
+
+    // Add click listener - TODO - improve the logic on these clicks to bring them into line with the way we handle the other clicks.
+    newListItem.addEventListener('click', editListItem);
+
   }
 }
 
