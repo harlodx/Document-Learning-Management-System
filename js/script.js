@@ -169,14 +169,10 @@ function buildRevisionList(revisionList) {
     commitNotes: "Save and commit a file to add versions to this section"
   }
 
-  
-  revisions.innerHTML = ''; // Clear any innerHTML
-  // console.log(`revisionList is populated with the following object: `, revisionList);
+  // Clear any innerHTML
+  revisions.innerHTML = ''; 
 
-
-  // TODO - build out the array in descending order so that it displays most recent iterations at the top
-  
-
+  // Build out the array in descending order so that it displays most recent iterations at the top
   if (revisionList.length < 1) {
     console.log(`There are no revisions yet`);
     revisionList.push(revisionPlaceholder);
@@ -185,9 +181,9 @@ function buildRevisionList(revisionList) {
     revisionList.sort((a, b) => b.id - a.id);
   }
 
+  // Take each revision item and build the title in the DOM
   revisionList.forEach(revisionItem =>{
-    // console.log(`Revision item is: `, revisionItem);
-    //addRevisionItem(revisionItem, revisionItem.id);
+
     const newElement = document.createElement("li");
     newElement.setAttribute("id", `revision-${revisionItem.id}`); // Set the id to whatever the revision id is
     newElement.className = "revision-item content-container"; // Set the classes for styling
@@ -198,13 +194,13 @@ function buildRevisionList(revisionList) {
     revisionContent.className = "content-left";
     revisionContent.textContent = `${revisionItem.id} - ${revisionItem.date} - ${revisionItem.user} - ${revisionItem.commitNotes}`;;
 
-    //  View Button
+    //  View Button for the Buttoms container
     const viewButton = document.createElement("button");
     viewButton.className="dynamic-item text-button";
     viewButton.textContent="View";
     viewButton.setAttribute("id", "view-"+ revisionItem.id);
 
-    // Revert Button
+    // Revert Button for the Buttons container
     const revertButton = document.createElement("button");
     revertButton.className="dynamic-item text-button";
     revertButton.textContent="Revert";
@@ -217,8 +213,8 @@ function buildRevisionList(revisionList) {
     revisionButtons.appendChild(revertButton);
 
     // Element that combines the version details as well as the buttons
-    newElement.appendChild(revisionContent);  //  Add the revision item into the DOM
-    newElement.appendChild(revisionButtons);
+    newElement.appendChild(revisionContent);  //  Add the revision item into the revisions element
+    newElement.appendChild(revisionButtons);  //  Add the buttons into the revisions element
 
     // Append the child iteratively to the list
     revisions.appendChild(newElement);  //add this item to the ul item
@@ -662,8 +658,6 @@ function toggleRevisionList() {
 /**
  * 
  * @param {string} id - supplies whatever the clicked ID was 
- * 
- * TODO:
  * Use the id to search the list of entries
  * Load the id and title into the contentTitle area
  * Load the content into the textarea (currently has demonstrator code, but will need breaking)
@@ -678,23 +672,13 @@ function registerTreeElementClick(id) {
   const sectionId = document.getElementById(`contentID`);
   const sectionTitle = document.getElementById(`contentTitle`);
 
-  // TODO - populate the textarea
   
   // Build the Heading
   sectionId.textContent = foundNode.id; // This updates a <h4> tag so must be a .textContent or .innerHTML
   sectionTitle.value = foundNode.name;  // This updates a <teaxtarea> so must use the .value property
-
-  addExistingContent(foundNode.content);
   
-  // Populate the TextBox
-  //const sectionText = document.getElementById(`contentTitle`);
   // Populate the textarea
-  //sectionText.textContent = foundNode.content;
-
-  // debugMessage(`Searched for id ${id}, found: `, foundNode.id);
-  // console.log(`Return object of: `,foundNode);
-
-  const sectionDetail = '';
+  addExistingContent(foundNode.content);
 
 }
 
