@@ -514,14 +514,12 @@ const flatNodeList = [
 
 
 /* Build a function to take an imported JSON file */
- function importJsonDocument(){
-  
+ function importJsonDocument(jsonDocument){
+  //take a JSON document and parse it into the system
+  const parsedDocument = JSON.parse(jsonDocument);
+  console.log(`Parsed Document: `, parsedDocument);
+  return parsedDocument;  
  }
-
-
-
-
-
 
 
 // 1. Reconstruct the POJO structure from the flat list
@@ -530,11 +528,11 @@ console.log(`\nReconstruction successful. Found ${nestedJsonStructure.length} Ro
 console.log('Root node IDs (before DocumentNode hydration):', nestedJsonStructure.map(n => n.id).join(', '));
 
 DocumentNode._existingIds.clear();
-const rootNodes = nestedJsonStructure.map(jsonNode => DocumentNode.fromJSON(jsonNode, null));
+const rootNodes = nestedJsonStructure.map(jsonNode => DocumentNode.fromJSON(jsonNode, null));  // Hydrate to DocumentNode instances
 
 
 // The final data structure is an array of the top-level nodes
-const documentStructure = [...rootNodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system) -- currently using test data from a set of static data. TODO: create a test API that provides a few hundred random nodes that we can use to test with [ ].
+let documentStructure = [...rootNodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system) -- currently using test data from a set of static data. TODO: create a test API that provides a few hundred random nodes that we can use to test with [ ].
 
 
 /*
@@ -605,7 +603,54 @@ function buildNestedList(nodes, parentElement) {
 }
 
 
-function renderDocumentStructure() {
+
+const fileInput = document.getElementById('fileInput');
+
+/**
+ * Event listener for file input change
+ * @param {Event} event - The change event triggered by file selection 
+ */
+fileInput.addEventListener('change', (event) => {
+  // Get the selected file
+  const file = event.target.files[0];
+
+  if (!file) {
+    console.error('No file selected');
+    return;
+  }
+
+  // Create a FileReader to read the file content
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    const jsonContent = e.target.result;
+    const importedDocument = importJsonDocument(jsonContent);
+    console.log('Imported Document:', importedDocument);
+    // Further processing of the imported document can be done here
+    DocumentNode._existingIds.clear();
+    const rootNodes = importedDocument.map(jsonNode => DocumentNode.fromJSON(jsonNode, null));  // Hydrate to DocumentNode instances
+
+    documentStructure = [...rootNodes]; // Used to populate the document structure (could be used for final code as it adds all elements within it to the system) -- currently using test data from a set of static data. TODO: create a test API that provides a few hundred random nodes that we can use to test with [ ].
+    //
+
+    //importJsonDocument(jsonContent);  // Call to import the JSON document
+    renderDocumentStructure(documentStructure); // Render the imported document structure
+    initializeDynamicClickHandler('dynamic-container', 'dynamic-item'); // Re-initialize click handlers for dynamic items
+
+
+  }
+
+  // Read the file as text
+  reader.readAsText(file);
+});
+
+
+/**
+ * 
+ * @param {*} documentStructure this should be a valid json document (??)
+ * @returns 
+ */
+function renderDocumentStructure(documentStructure = documentStructure) {
   const container = document.getElementById('document-structure-container');
   if (!container) {
     console.error('Container element not found');
@@ -622,9 +667,9 @@ function renderDocumentStructure() {
 
 
 
-
+// Initial render on page load
 document.addEventListener('DOMContentLoaded', () => {
-  renderDocumentStructure();
+  renderDocumentStructure(documentStructure);
 });
 
 
