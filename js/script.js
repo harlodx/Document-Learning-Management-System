@@ -380,7 +380,7 @@ function debugMessage(message, data = []) {
 const node_1_1_1 = new TestJsonDocument(
   '1-1-1',
   'T 1.1.1',
-  'List all necessary tools and access credentials.',
+  ['List all necessary tools and access credentials.', `Something else to test with.`],
   15,
 );
 
@@ -511,6 +511,16 @@ const flatNodeList = [
   node_1_2_2b // Duplicate to test re-parenting / correction to an alternative order and id while maintaining name
 
 ];
+
+
+/* Build a function to take an imported JSON file */
+ function importJsonDocument(){
+  
+ }
+
+
+
+
 
 
 
@@ -678,7 +688,7 @@ function registerTreeElementClick(id) {
   sectionTitle.value = foundNode.name;  // This updates a <teaxtarea> so must use the .value property
   
   // Populate the textarea
-  addExistingContent(foundNode.content);
+  addExistingContent(foundNode);
 
 }
 
@@ -707,21 +717,34 @@ function addListItem(existingText) {
 
 // Function to handle adding pre-existing text (array content) to the list
 
-function addExistingContent(existingContent){
-  console.log(existingContent);
+function addExistingContent(existingContent) {
 
-  console.log(myList.textContent);
+  console.log(`existingContent variable: `, existingContent.content.length);
+
+  console.log(`myList.textContent variable`, myList.textContent);
 
   myList.textContent = "";  //  Clear the existing content from the List
 
-  if (existingContent !== ""){
-    const newListItem = document.createElement('li');
-    newListItem.className = 'dynamic-item';
-    newListItem.textContent = existingContent;
-    myList.appendChild(newListItem);
 
-    // Add click listener - TODO - improve the logic on these clicks to bring them into line with the way we handle the other clicks.
-    newListItem.addEventListener('click', editListItem);
+  // console.log();
+
+  // If there is existing content being loaded in, do this:
+  if (existingContent.content !== "") {
+
+    let i = 0;  // Used to control the loop as well as assign unique Id's for multiple text content items
+    while (i < existingContent.content.length) {
+      // console.log(`existingContent loop item: ` + existingContent.content[i]);
+
+      const newListItem = document.createElement('li');
+      newListItem.className = 'dynamic-item content-list-item';
+      newListItem.setAttribute(`id`, `c${existingContent.id}_${i}`); // TEST / TODO - verify that this is accessing the correct id (presumably we only have one id that is relevant to this content).
+      newListItem.textContent = existingContent.content[i];
+      myList.appendChild(newListItem);
+
+      // Add click listener - TODO - improve the logic on these clicks to bring them into line with the way we handle the other clicks.
+      newListItem.addEventListener('click', editListItem);
+      i++;
+    }
 
   }
 }
@@ -803,6 +826,14 @@ function saveDocument(docId) {
 function commitDocument(docId) {
   console.log(`TODO: Implement commitDocument() logic, clicked: `, docId);
 }
+
+
+/** Import / Export Logic */
+
+function importDocument() {
+  console.log(`Importing Document / Select upload document here: TODO`);
+}
+
 
 /**
  * Sets up a single event listener on a parent container 
@@ -896,6 +927,10 @@ export function initializeDynamicClickHandler(parentId, targetClass) {
                 
                 case "commitDocument":
                   commitDocument();
+                  break;
+
+                case "importDocument":
+                  importDocument();
                   break;
 
               }

@@ -50,6 +50,7 @@ header {
 main {
     display: grid;
     grid-template-areas:
+        "import-block import-block"
         "title title"
         "revisions revisions"
         "nav nav"
@@ -61,7 +62,23 @@ main {
 }
 
 
+/* For the Import Button etc within the import-block class / grid area */
 
+.import-block {
+    grid-area: import-block;
+
+    button {
+        border-radius: 10px;
+        padding: 5px;
+        font-size: large;
+        color: var(--text-color);
+
+        &:hover {
+            background-color: var(--secondary-color);
+        }
+    }
+
+}
 
 
 .title {
@@ -246,6 +263,23 @@ aside {
 
 }
 
+.content-list-item{
+    /*  */
+    width: 100%;
+    /* resize: none; */
+    border: none;
+}
+
+.editTextArea {
+    width: 100%;
+    /* height: 20px; */
+    /* outline: none; */
+    border: none;
+    font-size: large;
+    align-content: end;
+}
+
+
 
 
 footer {
@@ -302,12 +336,11 @@ footer {
 
 
 
-
+/* Used for the COntent List */
 #myList {
     /* list-style-type: decimal; */
     padding-left: 1rem;
 }
-
 
 .section-link {
     display: flex; 
