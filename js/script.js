@@ -50,6 +50,7 @@ import { exportToPDF } from './print-formatter.js';
 import { initializeSearch } from './search-manager.js';
 import { initializeContextMenu } from './context-menu.js';
 import { initializeUndoManager } from './undo-manager.js';
+import { initializeTheme } from './theme-manager.js';
 
 // =========================================================================
 // CONFIGURATION & CONSTANTS
@@ -231,6 +232,10 @@ const testRevisions = [
 function initializeApplication() {
     try {
         debugMessage('Initializing DLMS application...');
+        
+        // Initialize theme system first (affects visual rendering)
+        debugMessage('Initializing theme...');
+        initializeTheme();
 
         // Initialize storage system
         const storageAvailable = initializeStorage();

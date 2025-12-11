@@ -7,6 +7,25 @@ import DocumentNode from './documentnode.js';
 import { stateManager } from './state-manager.js';
 import { scheduleAutoSave } from './storage-manager.js';
 
+// Store collapse states: Set of node IDs that are currently collapsed
+const collapsedNodes = new Set();
+
+/**
+ * Add a node ID to the collapsed set
+ * @param {string} nodeId - The node ID to mark as collapsed
+ */
+export function markNodeCollapsed(nodeId) {
+    collapsedNodes.add(nodeId);
+}
+
+/**
+ * Remove a node ID from the collapsed set
+ * @param {string} nodeId - The node ID to mark as expanded
+ */
+export function markNodeExpanded(nodeId) {
+    collapsedNodes.delete(nodeId);
+}
+
 /**
  * Renders the complete document structure into the DOM
  * @param {DocumentNode[]} documentStructure - Array of root document nodes
@@ -27,6 +46,9 @@ export function renderDocumentStructure(documentStructure, containerId = 'docume
     }
 
     try {
+        // Capture current collapse states before clearing
+        captureCollapseStates(container);
+        
         // Clear existing content
         container.innerHTML = '';
 
@@ -38,11 +60,77 @@ export function renderDocumentStructure(documentStructure, containerId = 'docume
         // Build the nested list
         buildNestedList(documentStructure, container);
         
+        // Restore collapse states after rendering
+        restoreCollapseStates(container);
+        
     } catch (error) {
         console.error('Error rendering document structure:', error);
         container.innerHTML = `<div class="error-message">Failed to render document: ${error.message}</div>`;
         throw error;
     }
+}
+
+/**
+ * Capture the current collapse states of all nodes
+ * @param {HTMLElement} container - The container element
+ */
+function captureCollapseStates(container) {
+    // Find all collapse buttons with collapsed state
+    const collapseButtons = container.querySelectorAll('.node-collapse-btn[data-collapsed="true"]');
+    
+    collapseButtons.forEach(btn => {
+        const nodeId = btn.getAttribute('data-node-id');
+        if (nodeId) {
+            collapsedNodes.add(nodeId);
+        }
+    });
+}
+
+/**
+ * Restore collapse states after rendering
+ * @param {HTMLElement} container - The container element
+ */
+function restoreCollapseStates(container) {
+    collapsedNodes.forEach(nodeId => {
+        const collapseBtn = container.querySelector(`.node-collapse-btn[data-node-id="${nodeId}"]`);
+        
+        if (collapseBtn) {
+            // Find the parent list item
+            const liElement = collapseBtn.closest('li.list-container');
+            
+            if (liElement) {
+                // Find the nested ul (children)
+                const nestedUl = liElement.querySelector(':scope > ul');
+                
+                if (nestedUl) {
+                    // Apply collapsed state
+                    nestedUl.classList.add('hidden');
+                    collapseBtn.textContent = '▶';
+                    collapseBtn.setAttribute('data-collapsed', 'true');
+                    liElement.classList.add('collapsed-with-children');
+                    
+                    // Add collapsed indicator
+                    const existingIndicator = liElement.querySelector('.collapsed-indicator');
+                    if (!existingIndicator) {
+                        const directChildren = nestedUl.querySelectorAll(':scope > li').length;
+                        const totalDescendants = nestedUl.querySelectorAll('li').length;
+                        
+                        const indicator = document.createElement('div');
+                        indicator.className = 'collapsed-indicator';
+                        indicator.textContent = `${directChildren} subnode${directChildren !== 1 ? 's' : ''} collapsed (${totalDescendants} total)`;
+                        
+                        const sectionLink = liElement.querySelector('.section-link');
+                        if (sectionLink) {
+                            sectionLink.insertAdjacentElement('afterend', indicator);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Node no longer exists, remove from set
+            collapsedNodes.delete(nodeId);
+        }
+    });
 }
 
 /**

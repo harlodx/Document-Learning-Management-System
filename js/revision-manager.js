@@ -522,12 +522,16 @@ export function revertDocument(revisionId) {
 export function toggleDetails() {
     try {
         const details = document.querySelector('.revisions');
+        const subtitle = document.querySelector('.document-subtitle');
         
         if (!details) {
             throw new Error('Revisions container not found');
         }
 
         details.classList.toggle('hidden');
+        if (subtitle) {
+            subtitle.classList.toggle('hidden');
+        }
 
         const toggleElement = document.getElementById('toggleDetails');
         if (toggleElement) {

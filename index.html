@@ -39,13 +39,18 @@
 <body>
     <header>
         <h1>Company Logo</h1>
+        <div class="theme-toggle-container">
+            <span class="theme-label">Light</span>
+            <label class="theme-toggle">
+                <input type="checkbox" id="theme-toggle-checkbox">
+                <span class="slider"></span>
+            </label>
+            <span class="theme-label">Dark</span>
+        </div>
     </header>
     <main id="dynamic-container">
-        <section class="import-block">
+        <section class="import-block" style="display: none;">
             <div class="dynamic-container">
-                <button id="export-btn" class="dynamic-item">Export Document</button>
-                <button id="import-btn" class="dynamic-item">Import Document</button>
-                <button id="export-pdf-btn" class="dynamic-item">Export to PDF</button>
                 <input type="file" id="import-file-input" accept=".json" style="display: none;">
                 <!-- Legacy file input for old import -->
                 <input type="file" id="fileInput" accept=".txt, .json" style="display: none;">
@@ -61,7 +66,7 @@
                     <textarea id="document-subtitle" class="document-subtitle" placeholder="Document description...">Document Sub-title - this should be a short concise description of what the document should do. It should also be editable (although maybe behind a button).</textarea>
                 </div>
                 <div class="right-block">
-                    <button id="toggleDetails"  class="show-hide dynamic-item rotatable-svg"><img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"></button>
+                    <button id="toggleDetails" class="title-collapse-btn dynamic-item">▼</button>
                 </div>
 
 
@@ -75,7 +80,7 @@
                         <h3>Revision Tracking</h3>
                     </div>
                     <div class="right-buttons">
-                        <button id="toggleRevisionList" class="dynamic-item rotatable-svg"> <img src="./imgs/icons/expand_circle_down_24dp_000000_FILL0_wght0_GRAD0_opsz24.svg" alt="Show more"></button>
+                        <button id="toggleRevisionList" class="title-collapse-btn dynamic-item">▼</button>
                     </div>
 
                 </div>
@@ -84,23 +89,26 @@
                 <ul id="revisions-list" class="revisions-list">
                 </ul>
 
-                
-                                    <!-- Nav section -->
-            <nav>
-
-                <button id="unlockDocument" class="dynamic-item text-button">Edit</button>
-                <button id="saveDocument" class="dynamic-item text-button">Save Draft</button>
-                <button id="commitDocument" class="dynamic-item text-button">Commit</button>
-                <!-- <li onclick="revertDocument(title, revision)">Revert</li> -->
-
-            </nav>
-
             </div>
 
 
         </section>
 
-        
+        <!-- Sticky Button Toolbar -->
+        <section class="button-toolbar">
+            <div class="toolbar-container">
+                <div class="button-group">
+                    <button id="unlockDocument" class="toolbar-btn toolbar-btn-edit dynamic-item text-button">Edit</button>
+                    <button id="saveDocument" class="toolbar-btn toolbar-btn-save dynamic-item text-button">Save Draft</button>
+                    <button id="commitDocument" class="toolbar-btn toolbar-btn-commit dynamic-item text-button">Commit</button>
+                </div>
+                <div class="button-group">
+                    <button id="import-btn" class="toolbar-btn toolbar-btn-import dynamic-item">Import Document</button>
+                    <button id="export-btn" class="toolbar-btn toolbar-btn-export dynamic-item">Export Document</button>
+                    <button id="export-pdf-btn" class="toolbar-btn toolbar-btn-export dynamic-item">Export to PDF</button>
+                </div>
+            </div>
+        </section>
 
         <aside>
 

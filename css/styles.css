@@ -1,23 +1,105 @@
-/* Color variables */
-:root {
-    --primary-color: #4CAF50;
-    /* Green */
-    --secondary-color: #FF9800;
-    /* Orange */
-    --background-color: #f4f4f4;
-    /* Light Grey */
-    --text-color: #333;
-    /* Dark Grey */
-    --header-bg-color: #ffffff;
-    /* White */
-    --footer-bg-color: #222;
-    /* Darker Grey */
-    --link-color: #1E90FF;
-    /* Dodger Blue */
-    --line-color: #3b82f6; /* Blue line color */
-    --line-thickness: 2px;
-    --indent-width: 2rem; /* The horizontal space for the lines */
+/* =========================================================================
+   THEME SYSTEM - Light and Dark Mode Variables
+   ========================================================================= */
 
+:root {
+    /* Light Theme (Default) */
+    --primary-color: #4CAF50;
+    --primary-hover: #45a049;
+    --secondary-color: #FF9800;
+    --secondary-hover: #e68900;
+    --accent-color: #2196F3;
+    --accent-hover: #1976D2;
+    --danger-color: #f44336;
+    --danger-hover: #da190b;
+    
+    /* Backgrounds */
+    --background-color: #f4f4f4;
+    --surface-color: #ffffff;
+    --surface-alt-color: #f9f9f9;
+    --header-bg-color: #ffffff;
+    
+    /* Text Colors */
+    --text-color: #333;
+    --text-secondary: #666;
+    --text-tertiary: #999;
+    --text-on-primary: #ffffff;
+    
+    /* Borders and Dividers */
+    --border-color: #ddd;
+    --border-light: #e0e0e0;
+    --border-focus: #4CAF50;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* UI Elements */
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    --active-bg: rgba(0, 0, 0, 0.1);
+    --selected-bg: #e3f2fd;
+    
+    /* Tree/Index specific */
+    --line-color: #3b82f6;
+    --line-gradient-start: #10b981;
+    --line-gradient-mid: rgba(16, 185, 129, 0.4);
+    --bracket-color: #3b82f6;
+    
+    /* Sizing */
+    --line-thickness: 2px;
+    --indent-width: 2rem;
+    --border-radius: 4px;
+    --border-radius-lg: 8px;
+    
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+}
+
+/* Dark Theme */
+body.dark-theme {
+    --primary-color: #66BB6A;
+    --primary-hover: #81C784;
+    --secondary-color: #FFA726;
+    --secondary-hover: #FFB74D;
+    --accent-color: #42A5F5;
+    --accent-hover: #64B5F6;
+    --danger-color: #EF5350;
+    --danger-hover: #E57373;
+    
+    /* Backgrounds */
+    --background-color: #1a1a1a;
+    --surface-color: #2d2d2d;
+    --surface-alt-color: #252525;
+    --header-bg-color: #2d2d2d;
+    
+    /* Text Colors */
+    --text-color: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-tertiary: #808080;
+    --text-on-primary: #ffffff;
+    
+    /* Borders and Dividers */
+    --border-color: #404040;
+    --border-light: #353535;
+    --border-focus: #66BB6A;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+    
+    /* UI Elements */
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    --active-bg: rgba(255, 255, 255, 0.15);
+    --selected-bg: rgba(33, 150, 243, 0.2);
+    
+    /* Tree/Index specific */
+    --line-color: #42A5F5;
+    --line-gradient-start: #66BB6A;
+    --line-gradient-mid: rgba(102, 187, 106, 0.4);
+    --bracket-color: #42A5F5;
 }
 
 /* clear default margin and padding */
@@ -38,12 +120,89 @@ body {
 
 
 header {
-    /* display: flex; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
     min-height: 60px;
     width: 100%;
-    align-content: center;
-    align-items: center;
+    padding: 0 2rem;
+    background-color: var(--header-bg-color);
+}
+
+header h1 {
+    margin: 0;
     text-align: center;
+    color: var(--text-color);
+}
+
+header .theme-toggle-container {
+    position: absolute;
+    right: 2rem;
+}
+
+/* Theme Toggle Styles */
+.theme-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.theme-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    user-select: none;
+}
+
+.theme-toggle {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 28px;
+}
+
+.theme-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: var(--transition-normal);
+    border-radius: 28px;
+}
+
+.theme-toggle .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: var(--surface-color);
+    transition: var(--transition-normal);
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle input:checked + .slider {
+    background-color: var(--primary-color);
+}
+
+.theme-toggle input:checked + .slider:before {
+    transform: translateX(28px);
+}
+
+.theme-toggle .slider:hover {
+    opacity: 0.8;
 }
 
 
@@ -52,8 +211,7 @@ main {
     grid-template-areas:
         "import-block import-block"
         "title title"
-        "revisions revisions"
-        "nav nav"
+        "button-toolbar button-toolbar"
         "aside content"
         "aside content";
 
@@ -66,29 +224,149 @@ main {
 
 .import-block {
     grid-area: import-block;
+    margin-bottom: 1rem;
+}
 
-    button {
-        border-radius: 10px;
-        padding: 5px;
-        font-size: large;
-        color: var(--text-color);
+.import-block button {
+    border-radius: var(--border-radius-lg);
+    padding: 10px 20px;
+    font-size: 14px;
+    color: var(--text-on-primary);
+    background-color: var(--primary-color);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    margin-right: 8px;
+}
 
-        &:hover {
-            background-color: var(--secondary-color);
-        }
+.import-block button:hover {
+    background-color: var(--primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.import-block button:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Sticky Button Toolbar */
+.button-toolbar {
+    grid-area: button-toolbar;
+    position: sticky;
+    top: 5px;
+    z-index: 100;
+    background-color: var(--surface-color);
+    border-bottom: 2px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 12px 0;
+    margin-bottom: 0.25rem;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.toolbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 0 20px;
+    max-width: none;
+    flex-wrap: nowrap;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.toolbar-btn {
+    border-radius: var(--border-radius);
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-on-primary);
+    background-color: var(--primary-color);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+
+/* Edit action buttons - blue accent */
+.toolbar-btn-edit,
+.toolbar-btn-save,
+.toolbar-btn-commit {
+    background-color: var(--accent-color);
+}
+
+.toolbar-btn-edit:hover,
+.toolbar-btn-save:hover,
+.toolbar-btn-commit:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Import/Export buttons - green primary */
+.toolbar-btn-import,
+.toolbar-btn-export {
+    background-color: var(--primary-color);
+}
+
+.toolbar-btn-import:hover,
+.toolbar-btn-export:hover {
+    background-color: var(--primary-hover);
+}
+
+.toolbar-btn:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.toolbar-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.toolbar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive toolbar for smaller screens */
+@media (max-width: 768px) {
+    .toolbar-container {
+        flex-direction: column;
+        gap: 10px;
     }
-
+    
+    .button-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toolbar-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
 }
 
 
 .title {
     grid-area: title;
-    border: 1px solid var(--footer-bg-color);
-    box-shadow: 0 5px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    border-radius: var(--border-radius-lg);
+    padding: 1rem;
     margin-top: 1rem;
-
+    background-color: var(--surface-color);
+    transition: all var(--transition-normal);
 }
 
 .document-name {
@@ -106,14 +384,14 @@ main {
 }
 
 .document-name:hover {
-    background-color: #f5f5f5;
-    border-radius: 4px;
+    background-color: var(--hover-bg);
+    border-radius: var(--border-radius);
 }
 
 .document-name:focus {
-    background-color: #fff;
-    box-shadow: 0 0 0 2px #2196F3;
-    border-radius: 4px;
+    background-color: var(--surface-color);
+    box-shadow: 0 0 0 2px var(--border-focus);
+    border-radius: var(--border-radius);
 }
 
 .document-subtitle {
@@ -131,15 +409,15 @@ main {
 }
 
 .document-subtitle:hover {
-    border-color: #ddd;
-    background-color: #f9f9f9;
-    border-radius: 4px;
+    border-color: var(--border-color);
+    background-color: var(--surface-alt-color);
+    border-radius: var(--border-radius);
 }
 
 .document-subtitle:focus {
-    border-color: #2196F3;
-    background-color: #fff;
-    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+    border-color: var(--border-focus);
+    background-color: var(--surface-color);
+    box-shadow: 0 0 0 2px var(--hover-bg);
     border-radius: 4px;
 }
 
@@ -195,6 +473,40 @@ main {
 .rotatable-svg.rotated {
     /* Final position after rotation */
     transform: rotate(0deg);
+}
+
+/* Title Section Collapse Buttons - Larger and Always Visible */
+.title-collapse-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    opacity: 1;
+    transition: all var(--transition-fast);
+    line-height: 1;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.title-collapse-btn:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.title-collapse-btn.rotated {
+    transform: rotate(180deg);
+}
+
+.title-collapse-btn.rotated:hover {
+    transform: rotate(180deg) scale(1.1);
 }
 
 
@@ -367,7 +679,10 @@ aside {
 
 .document-content {
     grid-area: content;
-
+    position: sticky;
+    top: 80px;
+    height: calc(100vh - 100px);
+    overflow-y: auto;
     margin-top: 10px;
     margin-left: 10px;
     padding: 1rem;
@@ -558,14 +873,16 @@ footer {
     align-items: center;
     width: 100%; 
     padding: 0.5rem;
-    border-radius: 5px;
-    transition: background-color 0.2s ease;
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
     cursor: pointer;
     position: relative;
+    background-color: var(--surface-color);
 }
 
 .section-link:hover {
-    background-color: #e8f4ff;
+    background-color: var(--hover-bg);
+    box-shadow: var(--shadow-sm);
 }
 
 .section-link:hover .node-actions {
@@ -623,12 +940,12 @@ footer {
 
 .search-input:focus {
     outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 4px rgba(76, 175, 80, 0.3);
+    border-color: var(--border-focus);
+    box-shadow: 0 0 4px var(--hover-bg);
 }
 
 .search-input::placeholder {
-    color: #999;
+    color: var(--text-tertiary);
     font-style: italic;
 }
 
@@ -643,24 +960,23 @@ footer {
 /* Node (LI) - This is the main content box with the GRADIENT BRACKET */
 .index-items li {
     /* Box styling */
-    background-color: #ffffff;
+    background-color: var(--surface-color);
 
     /* Bracket style: Border is now handled by the ::before pseudo-element */
     border: none;
-    /* Ensure no standard border is present */
 
     /* Retain only the necessary corner radius for the visual effect */
-    border-radius: 8px;
+    border-radius: var(--border-radius-lg);
 
     /* Add extra padding on the left to ensure content isn't under the 4px pseudo-element */
     padding: 12px 16px 12px 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 
     /* Spacing between sibling nodes */
     margin-top: 8px;
     line-height: 1.4;
     position: relative;
-    /* Anchor for the pseudo-element */
+    transition: all var(--transition-fast);
 }
 
 /* --- GRADIENT FADE EFFECT (The Bracket) - DEFAULT (MAROON for highest level) --- */
@@ -715,7 +1031,7 @@ footer {
     position: relative;
     margin-top: 10px;
     /* Added top border to visually separate the parent content from the children container */
-    border-top: 1px solid #d1d5db;
+    border-top: 1px solid var(--border-light);
     padding-top: 10px;
 }
 
@@ -724,41 +1040,15 @@ footer {
     margin-top: 0;
 }
 
-/* Collapsed node with children - stacked papers visual effect */
-.index-items li.collapsed-with-children {
-    position: relative;
-}
-
-.index-items li.collapsed-with-children .section-link {
-    position: relative;
-    z-index: 3;
-}
-
-/* Create layered paper effect using pseudo-elements */
-.index-items li.collapsed-with-children .section-link::after {
-    content: '';
-    position: absolute;
-    left: 2px;
-    right: -2px;
-    bottom: -3px;
-    height: 3px;
-    background: linear-gradient(to right, #d1d5db 0%, #e5e7eb 50%, #d1d5db 100%);
-    border-radius: 0 0 4px 4px;
-    z-index: 1;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.index-items li.collapsed-with-children .section-link::before {
-    content: '';
-    position: absolute;
-    left: 4px;
-    right: -4px;
-    bottom: -6px;
-    height: 3px;
-    background: linear-gradient(to right, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
-    border-radius: 0 0 4px 4px;
-    z-index: 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+/* Collapsed subnodes indicator */
+.collapsed-indicator {
+    font-size: 0.8em;
+    color: #999;
+    font-style: italic;
+    padding: 4px 12px;
+    margin-top: 4px;
+    display: block;
+    text-align: center;
 }
 
 /* ---------------------------------- */
@@ -961,32 +1251,39 @@ footer {
 }
 
 .export-btn {
-    background-color: #FF9800;
-    color: white;
+    background-color: var(--secondary-color);
+    color: var(--text-on-primary);
+}
+
+.export-btn:hover {
+    background-color: var(--secondary-hover);
 }
 
 #export-pdf-btn {
-    background-color: #E91E63;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
+    background-color: var(--accent-color);
+    color: var(--text-on-primary);
 }
 
 #export-pdf-btn:hover {
-    background-color: #C2185B;
+    background-color: var(--accent-hover);
 }
 
 .info-btn {
-    background-color: #607D8B;
-    color: white;
+    background-color: var(--text-secondary);
+    color: var(--text-on-primary);
+}
+
+.info-btn:hover {
+    opacity: 0.9;
 }
 
 .clear-btn {
-    background-color: #f44336;
-    color: white;
+    background-color: var(--danger-color);
+    color: var(--text-on-primary);
+}
+
+.clear-btn:hover {
+    background-color: var(--danger-hover);
 }
 
 /* Junk/Trash Section Styles */
@@ -1207,6 +1504,40 @@ footer {
     height: 1px;
     background-color: #e0e0e0;
     margin: 4px 0;
+}
+
+/* Submenu Styles */
+.context-menu-item.has-submenu {
+    position: relative;
+    justify-content: space-between;
+}
+
+.submenu-arrow {
+    margin-left: auto;
+    font-size: 10px;
+    color: #999;
+}
+
+.context-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 4px 0;
+    min-width: 180px;
+    display: none;
+    z-index: 10001;
+}
+
+.context-menu-item.has-submenu:hover .context-submenu {
+    display: block;
+}
+
+.context-submenu .context-menu-item {
+    padding: 8px 12px;
 }
 
 /* Node References Styles */

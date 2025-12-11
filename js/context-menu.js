@@ -9,6 +9,7 @@ import { stateManager } from './state-manager.js';
 import { findNodeById, renderDocumentStructure } from './tree-renderer.js';
 import { deleteNode } from './data-operations.js';
 import { undo, canUndo, getUndoCount, saveStateBeforeChange } from './undo-manager.js';
+import DocumentNode from './documentnode.js';
 
 let contextMenu = null;
 let currentNodeId = null;
@@ -46,6 +47,22 @@ function createContextMenuElement() {
         <div class="context-menu-item" data-action="undo" id="context-menu-undo">
             <span class="context-menu-icon">↶</span>
             <span>Undo</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item has-submenu">
+            <span class="context-menu-icon">➕</span>
+            <span>Add</span>
+            <span class="submenu-arrow">▶</span>
+            <div class="context-submenu">
+                <div class="context-menu-item" data-action="add-subnode">
+                    <span class="context-menu-icon">📄</span>
+                    <span>Add Subnode</span>
+                </div>
+                <div class="context-menu-item" data-action="add-rootnode">
+                    <span class="context-menu-icon">📁</span>
+                    <span>Add Root Node</span>
+                </div>
+            </div>
         </div>
         <div class="context-menu-divider"></div>
         <div class="context-menu-item" data-action="junk">
@@ -202,6 +219,12 @@ function handleMenuItemClick(event) {
     
     // Execute the action
     switch (action) {
+        case 'add-subnode':
+            handleAddSubnode();
+            break;
+        case 'add-rootnode':
+            handleAddRootNode();
+            break;
         case 'junk':
             handleJunkNode();
             break;
@@ -236,6 +259,213 @@ function handleUndo() {
     } else {
         console.error('Undo failed');
     }
+}
+
+/**
+ * Add a subnode (child) to the current node
+ */
+function handleAddSubnode() {
+    if (!currentNodeId) return;
+    
+    const nodeName = prompt('Enter name for new subnode:', 'New Subnode');
+    if (!nodeName) return; // User cancelled
+    
+    // Save state before change
+    saveStateBeforeChange();
+    
+    const documentStructure = stateManager.getDocumentStructure();
+    const parentNode = findNodeById(documentStructure, currentNodeId);
+    
+    if (!parentNode) {
+        console.error('Parent node not found:', currentNodeId);
+        alert('Error: Could not find node');
+        return;
+    }
+    
+    console.log('Add Subnode - Adding child to node:', parentNode.id);
+    
+    // Initialize children array if it doesn't exist
+    if (!parentNode.children) {
+        parentNode.children = [];
+    }
+    
+    // Calculate new child ID
+    const nextOrder = parentNode.children.length + 1;
+    const newChildId = `${parentNode.id}-${nextOrder}`;
+    
+    // Create new child node as DocumentNode instance
+    const newChild = new DocumentNode(
+        newChildId,
+        nodeName,
+        ['Enter content here...'],
+        [],
+        parentNode.id
+    );
+    
+    // Add to parent's children
+    parentNode.children.push(newChild);
+    
+    console.log('Added child node:', newChild.id, 'to parent:', parentNode.id);
+    
+    // Update state and re-render
+    stateManager.setDocumentStructure(documentStructure);
+    renderDocumentStructure(documentStructure);
+}
+
+/**
+ * Add a new root node near the current node's position
+ */
+function handleAddRootNode() {
+    const nodeName = prompt('Enter name for new root node:', 'New Section');
+    if (!nodeName) return; // User cancelled
+    
+    // Save state before change
+    saveStateBeforeChange();
+    
+    const documentStructure = stateManager.getDocumentStructure();
+    
+    // Find the root ancestor of the current node
+    let insertIndex = documentStructure.length; // Default to end
+    
+    if (currentNodeId) {
+        const rootAncestor = findRootAncestor(documentStructure, currentNodeId);
+        if (rootAncestor) {
+            // Find index of root ancestor
+            insertIndex = documentStructure.findIndex(node => node.id === rootAncestor.id);
+            if (insertIndex !== -1) {
+                insertIndex++; // Insert after the root ancestor
+            }
+        }
+    }
+    
+    // Calculate temporary ID (will be recalculated by reIndex)
+    const tempOrder = insertIndex + 1;
+    
+    // Create new root node as DocumentNode instance
+    const newNode = new DocumentNode(
+        tempOrder.toString(),
+        nodeName,
+        ['Enter content here...'],
+        [],
+        null
+    );
+    
+    // Insert at calculated position
+    documentStructure.splice(insertIndex, 0, newNode);
+    
+    // Re-index all root nodes to ensure sequential IDs
+    reIndexRootNodes(documentStructure);
+    
+    // Update state and re-render
+    stateManager.setDocumentStructure(documentStructure);
+    renderDocumentStructure(documentStructure);
+    
+    console.log('Added root node at position:', insertIndex);
+}
+
+/**
+ * Find a node and return it with parent and array information
+ */
+function findNodeWithParent(nodes, targetId, parent = null, parentArray = null) {
+    const searchArray = parentArray || nodes;
+    
+    for (let i = 0; i < searchArray.length; i++) {
+        const node = searchArray[i];
+        
+        if (node.id === targetId) {
+            return {
+                node: node,
+                parent: parent,
+                parentArray: searchArray,
+                index: i
+            };
+        }
+        
+        if (node.children && node.children.length > 0) {
+            const found = findNodeWithParent(nodes, targetId, node, node.children);
+            if (found) return found;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Find the root ancestor of a node
+ */
+function findRootAncestor(documentStructure, nodeId) {
+    for (const rootNode of documentStructure) {
+        if (rootNode.id === nodeId) {
+            return rootNode;
+        }
+        
+        if (isDescendantOf(rootNode, nodeId)) {
+            return rootNode;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Check if a node is a descendant of another node
+ */
+function isDescendantOf(node, ancestorId) {
+    if (node.id === ancestorId) return true;
+    
+    if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+            if (isDescendantOf(child, ancestorId)) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Re-index all root level nodes to ensure sequential IDs
+ */
+function reIndexRootNodes(documentStructure) {
+    documentStructure.forEach((node, index) => {
+        const newIndex = index + 1;
+        if (node.id !== newIndex.toString()) {
+            // Check if node has _recalculateId method (DocumentNode instance)
+            if (typeof node._recalculateId === 'function') {
+                node._recalculateId(null, newIndex);
+            } else {
+                // Plain object - update manually
+                node.id = newIndex.toString();
+                node.order = newIndex;
+                node.parentId = null;
+                reIndexChildrenPlain(node, node.id);
+            }
+        }
+    });
+}
+
+/**
+ * Recursively re-index children nodes (for plain objects)
+ */
+function reIndexChildrenPlain(parentNode, parentId) {
+    if (!parentNode.children || parentNode.children.length === 0) {
+        return;
+    }
+    
+    parentNode.children.forEach((child, index) => {
+        const newOrder = index + 1;
+        const newId = `${parentId}-${newOrder}`;
+        
+        child.id = newId;
+        child.order = newOrder;
+        child.parentId = parentId;
+        
+        // Recursively update this child's children
+        if (child.children && child.children.length > 0) {
+            reIndexChildrenPlain(child, newId);
+        }
+    });
 }
 
 /**
@@ -371,20 +601,7 @@ function buildTargetList(nodes, excludeId, parentPath = '', level = 0) {
 }
 
 /**
- * Check if a node is a descendant of another node
- */
-function isDescendantOf(node, ancestorId) {
-    if (!node.children) return false;
-    
-    for (const child of node.children) {
-        if (child.id === ancestorId) return true;
-        if (isDescendantOf(child, ancestorId)) return true;
-    }
-    
-    return false;
-}
 
-/**
  * Show dialog for selecting move target
  */
 function showMoveDialog(targetList, sourceNode) {

@@ -5,7 +5,7 @@
 
 import { stateManager } from './state-manager.js';
 import { loadContentForEditing } from './content-editor.js';
-import { findNodeById } from './tree-renderer.js';
+import { findNodeById, markNodeCollapsed, markNodeExpanded } from './tree-renderer.js';
 import { 
     viewRevision, 
     revertDocument, 
@@ -90,6 +90,12 @@ export function toggleNodeCollapse(nodeId) {
         // Toggle collapsed state
         const isCurrentlyCollapsed = collapseBtn.getAttribute('data-collapsed') === 'true';
         
+        // Remove any existing collapsed indicator
+        const existingIndicator = liElement.querySelector('.collapsed-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+        
         if (isCurrentlyCollapsed) {
             // Expand
             childUl.style.display = '';
@@ -97,6 +103,7 @@ export function toggleNodeCollapse(nodeId) {
             collapseBtn.setAttribute('data-collapsed', 'false');
             collapseBtn.title = 'Collapse subnodes';
             liElement.classList.remove('collapsed-with-children');
+            markNodeExpanded(nodeId);
         } else {
             // Collapse
             childUl.style.display = 'none';
@@ -104,6 +111,24 @@ export function toggleNodeCollapse(nodeId) {
             collapseBtn.setAttribute('data-collapsed', 'true');
             collapseBtn.title = 'Expand subnodes';
             liElement.classList.add('collapsed-with-children');
+            markNodeCollapsed(nodeId);
+            
+            // Count direct children
+            const directChildren = childUl.querySelectorAll(':scope > li').length;
+            
+            // Count total descendants recursively
+            const totalDescendants = childUl.querySelectorAll('li').length;
+            
+            // Create and add collapsed indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'collapsed-indicator';
+            indicator.textContent = `${directChildren} subnode${directChildren !== 1 ? 's' : ''} collapsed (${totalDescendants} total)`;
+            
+            // Insert after the section link but before the child UL
+            const sectionLink = liElement.querySelector('.section-link');
+            if (sectionLink) {
+                sectionLink.insertAdjacentElement('afterend', indicator);
+            }
         }
 
         console.log(`Toggled collapse for node ${nodeId}: ${!isCurrentlyCollapsed ? 'collapsed' : 'expanded'}`);
