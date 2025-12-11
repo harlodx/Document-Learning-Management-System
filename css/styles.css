@@ -472,3 +472,90 @@ footer {
 }
 
 /* ---------------------------------- */
+
+/* Version Control UI Styles */
+#commitDocument.has-changes {
+    background-color: #FF9800 !important;
+    animation: pulse 2s infinite;
+    position: relative;
+}
+
+#commitDocument.has-changes::after {
+    content: ' *';
+    font-weight: bold;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+#save-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 10000;
+    font-weight: bold;
+    transition: opacity 0.3s;
+}
+
+/* Storage control styles */
+.storage-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.storage-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.storage-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.save-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.autosave-btn {
+    background-color: #2196F3;
+    color: white;
+}
+
+.backup-btn {
+    background-color: #9C27B0;
+    color: white;
+}
+
+.export-btn {
+    background-color: #FF9800;
+    color: white;
+}
+
+.info-btn {
+    background-color: #607D8B;
+    color: white;
+}
+
+.clear-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+/* ---------------------------------- */
