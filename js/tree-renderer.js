@@ -4,6 +4,8 @@
  */
 
 import DocumentNode from './documentnode.js';
+import { stateManager } from './state-manager.js';
+import { scheduleAutoSave } from './storage-manager.js';
 
 /**
  * Renders the complete document structure into the DOM
@@ -102,10 +104,19 @@ function createListItem(node) {
     const listItem = document.createElement('li');
     listItem.classList.add('list-container');
     listItem.setAttribute('draggable', 'true');
+    listItem.setAttribute('data-node-id', node.id);
 
     // Create the section link
     const sectionLink = createSectionLink(node);
     listItem.appendChild(sectionLink);
+    
+    // Add drag and drop event handlers
+    listItem.addEventListener('dragstart', handleTreeDragStart);
+    listItem.addEventListener('dragover', handleTreeDragOver);
+    listItem.addEventListener('drop', handleTreeDrop);
+    listItem.addEventListener('dragend', handleTreeDragEnd);
+    listItem.addEventListener('dragenter', handleTreeDragEnter);
+    listItem.addEventListener('dragleave', handleTreeDragLeave);
 
     // Recursively add children if they exist
     if (node.children?.length > 0) {
@@ -140,8 +151,23 @@ function createSectionLink(node) {
     rightText.textContent = node.name || 'Untitled';
     rightText.classList.add('right-block');
 
+    // Create action buttons container
+    const actionButtons = document.createElement('div');
+    actionButtons.classList.add('node-actions');
+
+    // Add delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.setAttribute('id', `delete-node-${node.id}`);
+    deleteBtn.classList.add('delete-btn', 'node-delete-btn');
+    deleteBtn.innerHTML = '&times;';
+    deleteBtn.title = 'Delete this node';
+    deleteBtn.setAttribute('clickable', 'true');
+    
+    actionButtons.appendChild(deleteBtn);
+
     sectionLink.appendChild(leftText);
     sectionLink.appendChild(rightText);
+    sectionLink.appendChild(actionButtons);
 
     return sectionLink;
 }
@@ -163,6 +189,450 @@ export function findNodeById(documentStructure, targetId) {
         console.error(`Error finding node ${targetId}:`, error);
         return null;
     }
+}
+
+// Drag and drop state for tree nodes - DATA ONLY, NO ELEMENT REFERENCES
+let treeDraggedNodeId = null;
+let treeDragState = {
+    isDragging: false,
+    sourceId: null,
+    targetId: null
+};
+
+/**
+ * Handles drag start for tree nodes
+ * @param {DragEvent} e - The drag event
+ */
+function handleTreeDragStart(e) {
+    // Stop propagation to prevent parent list items from also firing dragstart
+    e.stopPropagation();
+    
+    // Prevent dragging from buttons or action elements
+    if (e.target.closest('.delete-btn, .node-actions, button')) {
+        e.preventDefault();
+        return;
+    }
+    
+    const listItem = e.currentTarget;
+    if (!listItem) {
+        console.warn('handleTreeDragStart: No currentTarget');
+        return;
+    }
+    
+    treeDraggedNodeId = listItem.getAttribute('data-node-id');
+    if (!treeDraggedNodeId) {
+        console.warn('handleTreeDragStart: No data-node-id found');
+        return;
+    }
+    
+    // Only set state if not already dragging (prevents overwrites from bubbling)
+    if (!treeDragState.isDragging) {
+        treeDragState.isDragging = true;
+        treeDragState.sourceId = treeDraggedNodeId;
+        
+        console.log('Drag started:', { nodeId: treeDraggedNodeId, state: treeDragState });
+        
+        // Add dragging class using data attribute selector
+        listItem.classList.add('dragging');
+        
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', treeDraggedNodeId);
+    }
+}
+
+/**
+ * Handles drag over for tree nodes
+ * @param {DragEvent} e - The drag event
+ */
+function handleTreeDragOver(e) {
+    if (!treeDragState.isDragging) return;
+    
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+/**
+ * Handles drag enter for tree nodes
+ * @param {DragEvent} e - The drag event
+ */
+function handleTreeDragEnter(e) {
+    if (!treeDragState.isDragging) return;
+    
+    // Use closest to find the actual list item, not nested elements
+    const targetElement = e.target.closest('[data-node-id]');
+    if (!targetElement) return;
+    
+    const targetNodeId = targetElement.getAttribute('data-node-id');
+    if (!targetNodeId) return;
+    
+    // Don't allow dropping on itself or its children
+    if (targetNodeId === treeDraggedNodeId || isDescendant(treeDraggedNodeId, targetNodeId)) {
+        return;
+    }
+    
+    // Calculate drop zone based on mouse position
+    const rect = targetElement.getBoundingClientRect();
+    const mouseY = e.clientY;
+    const relativeY = mouseY - rect.top;
+    const height = rect.height;
+    
+    // Divide into three zones: top 30%, middle 40%, bottom 30%
+    let dropZone;
+    if (relativeY < height * 0.3) {
+        dropZone = 'before';
+    } else if (relativeY > height * 0.7) {
+        dropZone = 'after';
+    } else {
+        dropZone = 'child';
+    }
+    
+    console.log('Drag enter:', { targetNodeId, dropZone, relativeY, height });
+    
+    // Remove all drag classes from all elements first
+    document.querySelectorAll('.drag-over-before, .drag-over-after, .drag-over-child').forEach(el => {
+        el.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
+    });
+    
+    // Apply appropriate class
+    targetElement.classList.add(`drag-over-${dropZone}`);
+    
+    treeDragState.targetId = targetNodeId;
+    treeDragState.dropZone = dropZone;
+}
+
+/**
+ * Handles drag leave for tree nodes
+ * @param {DragEvent} e - The drag event
+ */
+function handleTreeDragLeave(e) {
+    const targetElement = e.currentTarget;
+    if (targetElement) {
+        targetElement.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
+    }
+}
+
+/**
+ * Handles drop for tree nodes
+ * @param {DragEvent} e - The drag event
+ */
+function handleTreeDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    console.log('Drop event fired', { 
+        isDragging: treeDragState.isDragging, 
+        state: treeDragState 
+    });
+    
+    if (!treeDragState.isDragging) {
+        console.warn('Drop ignored: not in dragging state');
+        return false;
+    }
+    
+    // Use closest to find the actual list item
+    const targetElement = e.target.closest('[data-node-id]');
+    if (!targetElement) {
+        console.warn('Drop ignored: no target element with data-node-id');
+        return false;
+    }
+    
+    targetElement.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
+    
+    const targetNodeId = targetElement.getAttribute('data-node-id');
+    const sourceNodeId = treeDragState.sourceId;
+    const dropZone = treeDragState.dropZone || 'before';
+    
+    console.log('Drop details:', { sourceNodeId, targetNodeId, dropZone });
+    
+    if (!targetNodeId) {
+        console.warn('Drop ignored: no target node ID');
+        return false;
+    }
+    
+    if (sourceNodeId && targetNodeId && sourceNodeId !== targetNodeId) {
+        // Don't allow dropping on descendants
+        if (!isDescendant(sourceNodeId, targetNodeId)) {
+            console.log('Valid drop - executing reorder');
+            // Store the operation, clean up visuals, then execute
+            const operation = { source: sourceNodeId, target: targetNodeId, zone: dropZone };
+            cleanupDragVisuals();
+            
+            // Defer the reorder operation to allow all events to complete
+            setTimeout(() => {
+                performTreeReorder(operation.source, operation.target, operation.zone);
+            }, 0);
+        } else {
+            console.log('Drop ignored: target is descendant of source');
+            cleanupDragVisuals();
+        }
+    } else {
+        console.log('Drop ignored: same source and target or missing IDs');
+    }
+    
+    return false;
+}
+
+/**
+ * Handles drag end for tree nodes
+ * @param {DragEvent} e - The drag event
+ */
+function handleTreeDragEnd(e) {
+    // Use setTimeout to ensure this runs after drop event
+    setTimeout(() => {
+        cleanupDragVisuals();
+    }, 10);
+}
+
+/**
+ * Cleans up all drag-related visual classes
+ */
+function cleanupDragVisuals() {
+    // Remove dragging class from all items
+    const items = document.querySelectorAll('.list-container');
+    items.forEach(item => {
+        if (item.classList) {
+            item.classList.remove('dragging');
+            item.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
+        }
+    });
+    
+    // Reset state
+    treeDraggedNodeId = null;
+    treeDragState = {
+        isDragging: false,
+        sourceId: null,
+        targetId: null,
+        dropZone: null
+    };
+}
+
+/**
+ * Check if targetId is a descendant of sourceId
+ * @param {string} sourceId - The source node ID
+ * @param {string} targetId - The target node ID
+ * @returns {boolean} True if target is a descendant of source
+ */
+function isDescendant(sourceId, targetId) {
+    // If target starts with source followed by a hyphen, it's a descendant
+    return targetId.startsWith(sourceId + '-');
+}
+
+/**
+ * Performs the actual tree reorder operation (called after drag completes)
+ * @param {string} sourceNodeId - The node to move
+ * @param {string} targetNodeId - The position to move to
+ */
+function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
+    console.log('performTreeReorder called:', { sourceNodeId, targetNodeId, dropZone });
+    
+    try {
+        const documentStructure = stateManager.getDocumentStructure();
+        
+        console.log('Document structure:', documentStructure);
+        
+        if (!documentStructure || documentStructure.length === 0) {
+            console.error('No document structure loaded');
+            throw new Error('No document structure loaded');
+        }
+        
+        // Find both nodes and their parents
+        const sourceInfo = findNodeAndParent(documentStructure, sourceNodeId);
+        const targetInfo = findNodeAndParent(documentStructure, targetNodeId);
+        
+        console.log('Source info:', sourceInfo);
+        console.log('Target info:', targetInfo);
+        
+        if (!sourceInfo) {
+            console.error('Could not find source node:', sourceNodeId);
+            alert(`Could not find source node: ${sourceNodeId}`);
+            return;
+        }
+        
+        if (!targetInfo) {
+            console.error('Could not find target node:', targetNodeId);
+            alert(`Could not find target node: ${targetNodeId}`);
+            return;
+        }
+        
+        const { node: sourceNode, parent: sourceParent, array: sourceArray, index: sourceIndex } = sourceInfo;
+        const { node: targetNode, parent: targetParent, array: targetArray, index: targetIndex } = targetInfo;
+        
+        // Prevent moving to invalid locations
+        if (!sourceNode || !sourceArray) {
+            console.error('Invalid source node structure');
+            return;
+        }
+        
+        console.log('Before splice - array:', sourceArray.map(n => n.id));
+        
+        // Remove from source location
+        sourceArray.splice(sourceIndex, 1);
+        console.log('After source removal - array:', sourceArray.map(n => n.id));
+        
+        // Handle different drop zones
+        if (dropZone === 'child') {
+            // Make source a child of target
+            console.log('Drop mode: child - adding to target\'s children');
+            
+            // Remove from source array (already done above)
+            // Add as last child of target
+            targetNode.children.push(sourceNode);
+            sourceNode.parentId = targetNode.id;
+            
+            console.log('After adding as child - target children:', targetNode.children.map(n => n.id));
+            
+            // Re-index source parent's remaining children
+            if (sourceParent) {
+                console.log('Re-indexing source parent\'s children:', sourceParent.id);
+                sourceParent.children.forEach((child, index) => {
+                    child._recalculateId(sourceParent.id, index + 1);
+                });
+            } else {
+                // Re-index root level
+                sourceArray.forEach((node, idx) => {
+                    node._recalculateId(null, idx + 1);
+                });
+            }
+            
+            // Re-index target's children (including new one)
+            console.log('Re-indexing target\'s children:', targetNode.id);
+            targetNode.children.forEach((child, index) => {
+                child._recalculateId(targetNode.id, index + 1);
+            });
+            
+        } else {
+            // Drop before or after target (sibling mode)
+            console.log('Drop mode:', dropZone);
+            
+            // Determine new index in target location
+            let newIndex = targetIndex;
+            
+            // If moving within the same parent and removing from before target
+            if (sourceParent === targetParent && sourceIndex < targetIndex) {
+                newIndex--;
+                console.log('Same parent, adjusted newIndex:', newIndex);
+            }
+            
+            // Insert at appropriate position
+            if (dropZone === 'after') {
+                newIndex++; // Insert after instead of before
+            }
+            
+            console.log('Inserting at index:', newIndex);
+            targetArray.splice(newIndex, 0, sourceNode);
+            console.log('After insertion - array:', targetArray.map(n => n.id));
+            
+            // Update parent reference
+            sourceNode.parentId = targetParent ? targetParent.id : null;
+            
+            // Re-index the affected array WITHOUT SORTING (preserve new order)
+            if (targetParent) {
+                console.log('Re-indexing children of parent:', targetParent.id);
+                console.log('Children before reIndex:', targetParent.children.map(n => n.id));
+                targetParent.children.forEach((child, index) => {
+                    child._recalculateId(targetParent.id, index + 1);
+                });
+                console.log('Children after reIndex:', targetParent.children.map(n => n.id));
+            } else {
+                // Re-index root level
+                console.log('Re-indexing root level nodes');
+                console.log('Root before reIndex:', targetArray.map(n => n.id));
+                targetArray.forEach((node, idx) => {
+                    node._recalculateId(null, idx + 1);
+                });
+                console.log('Root after reIndex:', targetArray.map(n => n.id));
+            }
+        }
+        
+        // Re-index the affected array WITHOUT SORTING (preserve new order)
+        if (sourceParent) {
+            console.log('Re-indexing children of parent:', sourceParent.id);
+            console.log('Children before reIndex:', sourceParent.children.map(n => n.id));
+            // Manually recalculate IDs without sorting
+            sourceParent.children.forEach((child, index) => {
+                const newIndex = index + 1;
+                child._recalculateId(sourceParent.id, newIndex);
+            });
+            console.log('Children after reIndex:', sourceParent.children.map(n => n.id));
+        } else {
+            // Re-index root level
+            console.log('Re-indexing root level nodes');
+            console.log('Root before reIndex:', sourceArray.map(n => n.id));
+            sourceArray.forEach((node, idx) => {
+                if (node && node._recalculateId) {
+                    node._recalculateId(null, idx + 1);
+                }
+            });
+            console.log('Root after reIndex:', sourceArray.map(n => n.id));
+        }
+        
+        // Only re-index target if different parent
+        if (targetParent && targetParent !== sourceParent) {
+            console.log('Re-indexing target parent:', targetParent.id);
+            // Manually recalculate IDs without sorting
+            targetParent.children.forEach((child, index) => {
+                const newIndex = index + 1;
+                child._recalculateId(targetParent.id, newIndex);
+            });
+        }
+        
+        // Log final structure before updating
+        console.log('Final array after reorder:', sourceArray.map(n => n.id));
+        console.log('Final document structure:', documentStructure.map(n => ({ id: n.id, children: n.children?.map(c => c.id) })));
+        
+        // Update state
+        console.log('Updating state with modified structure');
+        stateManager.setDocumentStructure(documentStructure);
+        
+        // Get fresh reference from state to ensure we're rendering updated data
+        const freshStructure = stateManager.getDocumentStructure();
+        console.log('Fresh structure from state:', freshStructure.map(n => ({ id: n.id, children: n.children?.map(c => c.id) })));
+        
+        // Re-render the tree (safe now that all drag events are complete)
+        console.log('Re-rendering tree');
+        renderDocumentStructure(freshStructure);
+        
+        // Trigger auto-save
+        console.log('Triggering auto-save');
+        scheduleAutoSave();
+        
+        console.log(`✓ Successfully moved node ${sourceNodeId} to position after ${targetNodeId}`);
+        
+    } catch (error) {
+        console.error('Error reordering tree nodes:', error);
+        console.error('Stack trace:', error.stack);
+        alert(`Failed to reorder: ${error.message}`);
+    }
+}
+
+/**
+ * Finds a node and its parent in the tree
+ * @param {DocumentNode[]} nodes - Array of nodes to search
+ * @param {string} targetId - The node ID to find
+ * @param {DocumentNode|null} parent - The parent node
+ * @param {DocumentNode[]} array - The array containing the node
+ * @returns {Object|null} Object with node, parent, array, and index
+ */
+function findNodeAndParent(nodes, targetId, parent = null, array = null) {
+    if (!array) array = nodes;
+    
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        
+        if (node.id === targetId) {
+            return { node, parent, array, index: i };
+        }
+        
+        if (node.children && node.children.length > 0) {
+            const result = findNodeAndParent(node.children, targetId, node, node.children);
+            if (result) return result;
+        }
+    }
+    
+    return null;
 }
 
 /**

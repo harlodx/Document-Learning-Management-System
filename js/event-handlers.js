@@ -17,7 +17,8 @@ import {
     commitDocument,
     unlockDocument,
     importDocument,
-    downloadVersionedDocument
+    downloadVersionedDocument,
+    deleteNode
 } from './data-operations.js';
 
 /**
@@ -113,6 +114,19 @@ function handleDynamicClick(event, targetClass) {
  * @param {string} elementId - The ID of the clicked element
  */
 function routeClickEvent(elementId) {
+    // Delete node buttons
+    if (elementId.startsWith('delete-node-')) {
+        const nodeId = elementId.substring(12); // Remove 'delete-node-' prefix
+        deleteNode(nodeId);
+        return;
+    }
+
+    // Delete content buttons (handled inline in content-editor.js)
+    if (elementId.startsWith('delete-content-')) {
+        // Content deletion is handled by inline onclick in content-editor.js
+        return;
+    }
+
     // Document tree elements
     if (elementId.startsWith('T-')) {
         const nodeId = elementId.substring(2); // Remove 'T-' prefix

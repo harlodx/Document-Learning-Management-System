@@ -420,6 +420,106 @@ function updateSaveCommitUI(hasUncommitted) {
 }
 
 /**
+ * Deletes a node from the document structure
+ * @param {string} nodeId - The ID of the node to delete
+ */
+export function deleteNode(nodeId) {
+    try {
+        if (!nodeId) {
+            throw new Error('Node ID is required');
+        }
+
+        // Confirm deletion
+        if (!confirm(`Delete node ${nodeId} and all its children?\n\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        // Get current document structure
+        const documentStructure = stateManager.getDocumentStructure();
+        
+        if (!documentStructure || documentStructure.length === 0) {
+            throw new Error('No document structure loaded');
+        }
+
+        // Find and remove the node
+        const result = findAndDeleteNode(documentStructure, nodeId);
+        
+        if (!result) {
+            throw new Error(`Node ${nodeId} not found`);
+        }
+
+        // Update state with modified structure
+        stateManager.setDocumentStructure(documentStructure);
+
+        // Re-render the tree
+        renderDocumentStructure(documentStructure);
+
+        // Clear content editor if deleted node was being edited
+        const currentNode = stateManager.getCurrentEditingItem();
+        if (currentNode && currentNode.id === nodeId) {
+            stateManager.setCurrentEditingItem(null);
+            const myList = document.getElementById('myList');
+            if (myList) myList.innerHTML = '';
+            const contentTitle = document.getElementById('contentTitle');
+            if (contentTitle) contentTitle.value = '';
+            const contentID = document.getElementById('contentID');
+            if (contentID) contentID.textContent = '';
+        }
+
+        // Auto-save after deletion
+        scheduleAutoSave();
+
+        console.log(`Deleted node ${nodeId} successfully`);
+
+    } catch (error) {
+        console.error(`Error deleting node ${nodeId}:`, error);
+        alert(`Failed to delete node: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
+ * Helper function to find and delete a node from the tree
+ * @private
+ * @param {DocumentNode[]} nodes - Array of nodes to search
+ * @param {string} targetId - ID of node to delete
+ * @param {DocumentNode} parent - Parent node (null for root level)
+ * @returns {boolean} True if node was found and deleted
+ */
+function findAndDeleteNode(nodes, targetId, parent = null) {
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        
+        // Found the target node
+        if (node.id === targetId) {
+            if (parent) {
+                // Delete from parent's children
+                parent.deleteChild(targetId);
+            } else {
+                // Delete from root level
+                DocumentNode.deleteIdsRecursively(node);
+                nodes.splice(i, 1);
+                
+                // Re-index remaining siblings
+                for (let j = i; j < nodes.length; j++) {
+                    nodes[j]._recalculateId(null, j + 1);
+                }
+            }
+            return true;
+        }
+        
+        // Search in children
+        if (node.children && node.children.length > 0) {
+            if (findAndDeleteNode(node.children, targetId, node)) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
  * Unlocks a document for editing
  * TODO: Implement document locking mechanism
  * @param {string} docId - The document ID to unlock

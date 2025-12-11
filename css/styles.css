@@ -174,6 +174,117 @@ main {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Changes section within revision item */
+.revision-changes-section {
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 0.5rem;
+    border-radius: 0 0 10px 10px;
+}
+
+.changes-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.changes-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    display: block;
+}
+
+.change-item {
+    padding: 0.5rem 0.75rem;
+    margin: 0.5rem 0;
+    background-color: #fff;
+    border-left: 4px solid #ccc;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    list-style: none;
+}
+
+.change-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.change-add {
+    border-left-color: #4CAF50;
+}
+
+.change-add strong {
+    color: #4CAF50;
+}
+
+.change-remove {
+    border-left-color: #f44336;
+}
+
+.change-remove strong {
+    color: #f44336;
+}
+
+.change-replace {
+    border-left-color: #FF9800;
+}
+
+.change-replace strong {
+    color: #FF9800;
+}
+
+.change-move {
+    border-left-color: #2196F3;
+}
+
+.change-move strong {
+    color: #2196F3;
+}
+
+.change-copy {
+    border-left-color: #9C27B0;
+}
+
+.change-copy strong {
+    color: #9C27B0;
+}
+
+.change-other {
+    border-left-color: #607D8B;
+}
+
+.change-other strong {
+    color: #607D8B;
+}
+
+.change-item.no-changes {
+    border-left-color: #9E9E9E;
+    color: #666;
+    font-style: italic;
+}
+
+.change-item.error {
+    border-left-color: #f44336;
+    color: #f44336;
+    font-weight: 600;
+}
+
+.change-item code {
+    background-color: #f5f5f5;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #c7254e;
+}
+
 /* Nav bar styling - full width, centered, no decoration  */
 nav {
     margin-top: 5px;
@@ -264,10 +375,64 @@ aside {
 }
 
 .content-list-item{
-    /*  */
     width: 100%;
-    /* resize: none; */
     border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+    margin-bottom: 0.25rem;
+}
+
+.content-list-item:hover {
+    background-color: #f9f9f9;
+}
+
+.content-list-item:hover .content-delete-btn,
+.content-list-item:hover .drag-handle {
+    opacity: 1;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #999;
+    font-size: 1rem;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.content-text {
+    flex-grow: 1;
+    padding: 0.25rem 0.5rem;
+    cursor: text;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+    outline: none;
+}
+
+.content-text.editing {
+    background-color: #fff;
+    border: 1px solid #4CAF50;
+    padding: 0.25rem 0.5rem;
+}
+
+.content-text:hover {
+    background-color: #f0f0f0;
+}
+
+.content-text:focus {
+    background-color: #fff;
+    outline: 2px solid #4CAF50;
+    outline-offset: 1px;
 }
 
 .editTextArea {
@@ -336,16 +501,31 @@ footer {
 
 
 
-/* Used for the COntent List */
+/* Used for the Content List */
 #myList {
-    /* list-style-type: decimal; */
-    padding-left: 1rem;
+    list-style-type: decimal;
+    list-style-position: outside;
+    padding-left: 2rem;
+    counter-reset: item;
 }
 
 .section-link {
     display: flex; 
-    align-items: baseline;
+    align-items: center;
     width: 100%; 
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.section-link:hover {
+    background-color: #e8f4ff;
+}
+
+.section-link:hover .node-actions {
+    opacity: 1;
 }
 
 /* 
@@ -526,6 +706,107 @@ footer {
 .storage-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Delete button styles */
+.delete-btn {
+    background-color: transparent;
+    border: none;
+    color: #999;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    line-height: 1;
+    opacity: 0;
+    flex-shrink: 0;
+}
+
+.delete-btn:hover {
+    background-color: #ff4444;
+    color: white;
+    transform: scale(1.1);
+}
+
+.delete-btn:active {
+    transform: scale(0.95);
+}
+
+/* Node actions container */
+.node-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* Show delete buttons on parent hover */
+.section-link:hover .node-delete-btn,
+.content-list-item:hover .content-delete-btn {
+    opacity: 1;
+}
+
+/* Make delete buttons always visible on touch devices */
+@media (hover: none) {
+    .delete-btn {
+        opacity: 0.5;
+    }
+    
+    .delete-btn:hover {
+        opacity: 1;
+    }
+}
+
+/* Drag and drop styles */
+.dragging {
+    opacity: 0.5;
+    cursor: grabbing !important;
+}
+
+/* Drop zone: insert before target (top edge) */
+.drag-over-before {
+    border-top: 5px solid #2196F3 !important;
+    padding-top: 4px !important;
+    background: linear-gradient(to bottom, rgba(33, 150, 243, 0.1) 0%, transparent 100%);
+}
+
+/* Drop zone: insert after target (bottom edge) */
+.drag-over-after {
+    border-bottom: 5px solid #2196F3 !important;
+    padding-bottom: 4px !important;
+    background: linear-gradient(to top, rgba(33, 150, 243, 0.1) 0%, transparent 100%);
+}
+
+/* Drop zone: make child of target (middle area) */
+.drag-over-child {
+    background-color: #e8f5e9 !important;
+    border: 3px dashed #4CAF50 !important;
+    box-shadow: inset 0 0 12px rgba(76, 175, 80, 0.4);
+    border-radius: 5px;
+    transform: scale(1.02);
+    transition: transform 0.1s ease;
+}
+
+.content-list-item.dragging {
+    opacity: 0.4;
+    background-color: #f0f0f0;
+}
+
+.list-container.dragging {
+    opacity: 0.4;
+}
+
+.list-container.dragging .section-link {
+    background-color: #f0f0f0;
+}
+
+.drag-handle:hover {
+    color: #2196F3;
+    transform: scale(1.2);
 }
 
 .save-btn {
