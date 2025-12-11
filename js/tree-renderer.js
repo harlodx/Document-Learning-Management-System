@@ -158,7 +158,7 @@ function createSectionLink(node) {
     // Add delete button
     const deleteBtn = document.createElement('button');
     deleteBtn.setAttribute('id', `delete-node-${node.id}`);
-    deleteBtn.classList.add('delete-btn', 'node-delete-btn');
+    deleteBtn.classList.add('delete-btn', 'node-delete-btn', 'dynamic-item');
     deleteBtn.innerHTML = '&times;';
     deleteBtn.title = 'Delete this node';
     deleteBtn.setAttribute('clickable', 'true');
@@ -488,12 +488,16 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
             if (sourceParent) {
                 console.log('Re-indexing source parent\'s children:', sourceParent.id);
                 sourceParent.children.forEach((child, index) => {
-                    child._recalculateId(sourceParent.id, index + 1);
+                    if (child && child._recalculateId) {
+                        child._recalculateId(sourceParent.id, index + 1);
+                    }
                 });
             } else {
                 // Re-index root level
                 sourceArray.forEach((node, idx) => {
-                    node._recalculateId(null, idx + 1);
+                    if (node && node._recalculateId) {
+                        node._recalculateId(null, idx + 1);
+                    }
                 });
             }
             
@@ -533,7 +537,9 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
                 console.log('Re-indexing children of parent:', targetParent.id);
                 console.log('Children before reIndex:', targetParent.children.map(n => n.id));
                 targetParent.children.forEach((child, index) => {
-                    child._recalculateId(targetParent.id, index + 1);
+                    if (child && child._recalculateId) {
+                        child._recalculateId(targetParent.id, index + 1);
+                    }
                 });
                 console.log('Children after reIndex:', targetParent.children.map(n => n.id));
             } else {
@@ -541,7 +547,9 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
                 console.log('Re-indexing root level nodes');
                 console.log('Root before reIndex:', targetArray.map(n => n.id));
                 targetArray.forEach((node, idx) => {
-                    node._recalculateId(null, idx + 1);
+                    if (node && node._recalculateId) {
+                        node._recalculateId(null, idx + 1);
+                    }
                 });
                 console.log('Root after reIndex:', targetArray.map(n => n.id));
             }
@@ -554,7 +562,9 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
             // Manually recalculate IDs without sorting
             sourceParent.children.forEach((child, index) => {
                 const newIndex = index + 1;
-                child._recalculateId(sourceParent.id, newIndex);
+                if (child && child._recalculateId) {
+                    child._recalculateId(sourceParent.id, newIndex);
+                }
             });
             console.log('Children after reIndex:', sourceParent.children.map(n => n.id));
         } else {
@@ -575,7 +585,9 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
             // Manually recalculate IDs without sorting
             targetParent.children.forEach((child, index) => {
                 const newIndex = index + 1;
-                child._recalculateId(targetParent.id, newIndex);
+                if (child && child._recalculateId) {
+                    child._recalculateId(targetParent.id, newIndex);
+                }
             });
         }
         

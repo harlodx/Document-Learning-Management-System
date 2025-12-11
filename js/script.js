@@ -25,7 +25,7 @@ import { buildRevisionList, buildRevisionListFromHistory, RevisionDocument } fro
 import { reconstructTreeFromFlatList } from './tree-reconstruction.js';
 import { renderDocumentStructure } from './tree-renderer.js';
 import { initializeContentEditor } from './content-editor.js';
-import { initializeFileInput, loadInitialData, saveDocument, commitDocument, downloadVersionedDocument } from './data-operations.js';
+import { initializeFileInput, loadInitialData, saveDocument, commitDocument, downloadVersionedDocument, exportCompleteDocument, importCompleteDocument } from './data-operations.js';
 import { initializeAllEventHandlers } from './event-handlers.js';
 import { 
     initializeStorage, 
@@ -34,7 +34,9 @@ import {
     setAutoSave,
     isAutoSaveEnabled,
     createBackup,
-    listBackups
+    listBackups,
+    scheduleAutoSave,
+    loadJunkFromStorage
 } from './storage-manager.js';
 import {
     initializeVersionedDocument,
@@ -43,6 +45,7 @@ import {
     hasUncommittedChanges,
     revertToVersion
 } from './version-control.js';
+import { renderJunkItems, clearAllJunk } from './junk-manager.js';
 
 // =========================================================================
 // CONFIGURATION & CONSTANTS
@@ -242,6 +245,20 @@ function initializeApplication() {
 
         // Initialize file input
         initializeFileInput();
+        
+        // Initialize export/import buttons
+        setupExportImportHandlers();
+        
+        // Load title and subtitle from localStorage
+        loadTitleAndSubtitle();
+        
+        // Load junk items from localStorage
+        const junkItems = loadJunkFromStorage();
+        if (junkItems && junkItems.length > 0) {
+            stateManager.setJunkItems(junkItems);
+            debugMessage(`Loaded ${junkItems.length} junked items`);
+        }
+        renderJunkItems();
 
         // Load data from storage or use test data as fallback
         debugMessage('Loading document data...');
@@ -300,6 +317,77 @@ function initializeApplication() {
     } catch (error) {
         console.error('Failed to initialize application:', error);
         alert('Application failed to initialize. Please refresh the page.');
+    }
+}
+
+/**
+ * Loads document title and subtitle from localStorage
+ */
+function loadTitleAndSubtitle() {
+    try {
+        const titleElement = document.getElementById('document-name');
+        const subtitleElement = document.getElementById('document-subtitle');
+        
+        const savedTitle = localStorage.getItem('dlms_document_title');
+        const savedSubtitle = localStorage.getItem('dlms_document_subtitle');
+        
+        if (titleElement && savedTitle) {
+            titleElement.value = savedTitle;
+        }
+        
+        if (subtitleElement && savedSubtitle) {
+            subtitleElement.value = savedSubtitle;
+        }
+        
+        debugMessage('Loaded title and subtitle from storage');
+    } catch (error) {
+        console.error('Error loading title/subtitle:', error);
+    }
+}
+
+/**
+ * Sets up export and import button handlers
+ */
+function setupExportImportHandlers() {
+    const exportBtn = document.getElementById('export-btn');
+    const importBtn = document.getElementById('import-btn');
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', async () => {
+            console.log('Export button clicked');
+            await exportCompleteDocument();
+        });
+    }
+    
+    if (importBtn) {
+        importBtn.addEventListener('click', async () => {
+            console.log('Import button clicked');
+            await importCompleteDocument();
+        });
+    }
+    
+    // Set up auto-save for title and subtitle changes
+    const titleElement = document.getElementById('document-name');
+    const subtitleElement = document.getElementById('document-subtitle');
+    
+    if (titleElement) {
+        titleElement.addEventListener('input', () => {
+            scheduleAutoSave();
+        });
+    }
+    
+    if (subtitleElement) {
+        subtitleElement.addEventListener('input', () => {
+            scheduleAutoSave();
+        });
+    }
+    
+    // Set up clear all junk button
+    const clearAllJunkBtn = document.getElementById('clear-all-junk-btn');
+    if (clearAllJunkBtn) {
+        clearAllJunkBtn.addEventListener('click', () => {
+            clearAllJunk();
+        });
     }
 }
 

@@ -10,7 +10,10 @@ const STORAGE_KEYS = {
     DOCUMENT: 'dlms_document_structure',
     REVISIONS: 'dlms_revisions',
     METADATA: 'dlms_metadata',
-    AUTO_SAVE_ENABLED: 'dlms_auto_save_enabled'
+    AUTO_SAVE_ENABLED: 'dlms_auto_save_enabled',
+    DOCUMENT_TITLE: 'dlms_document_title',
+    DOCUMENT_SUBTITLE: 'dlms_document_subtitle',
+    JUNK_ITEMS: 'dlms_junk_items'
 };
 
 // Auto-save configuration
@@ -192,6 +195,53 @@ export function loadRevisionsFromStorage() {
 }
 
 /**
+ * Saves junk items to localStorage
+ * @param {Object[]} junkItems - Array of junked items
+ * @returns {boolean} True if save was successful
+ */
+export function saveJunkToStorage(junkItems) {
+    if (!isLocalStorageAvailable()) {
+        return false;
+    }
+
+    try {
+        const jsonString = JSON.stringify(junkItems || []);
+        localStorage.setItem(STORAGE_KEYS.JUNK_ITEMS, jsonString);
+        console.log('Junk items saved to local storage');
+        return true;
+
+    } catch (error) {
+        console.error('Error saving junk items to storage:', error);
+        return false;
+    }
+}
+
+/**
+ * Loads junk items from localStorage
+ * @returns {Object[]|null} The loaded junk items or null
+ */
+export function loadJunkFromStorage() {
+    if (!isLocalStorageAvailable()) {
+        return null;
+    }
+
+    try {
+        const jsonString = localStorage.getItem(STORAGE_KEYS.JUNK_ITEMS);
+        
+        if (!jsonString) {
+            return [];
+        }
+
+        const junkItems = JSON.parse(jsonString);
+        return Array.isArray(junkItems) ? junkItems : [];
+
+    } catch (error) {
+        console.error('Error loading junk items from storage:', error);
+        return [];
+    }
+}
+
+/**
  * Updates metadata in localStorage
  * @private
  * @param {Object} updates - Metadata updates
@@ -268,37 +318,165 @@ export function clearStorage() {
 }
 
 /**
- * Exports all data as a downloadable object
- * @returns {Object} All stored data
+ * Saves version history to localStorage
+ * @param {Object} versionHistory - Complete version history object
+ * @returns {boolean} True if save was successful
  */
-export function exportAllData() {
+export function saveVersionHistoryToStorage(versionHistory) {
+    if (!isLocalStorageAvailable()) {
+        return false;
+    }
+
+    try {
+        const jsonString = JSON.stringify(versionHistory);
+        localStorage.setItem('dlms_version_history', jsonString);
+        console.log('Version history saved to local storage');
+        return true;
+
+    } catch (error) {
+        console.error('Error saving version history to storage:', error);
+        return false;
+    }
+}
+
+/**
+ * Loads version history from localStorage
+ * @returns {Object|null} The loaded version history or null
+ */
+export function loadVersionHistoryFromStorage() {
+    if (!isLocalStorageAvailable()) {
+        return null;
+    }
+
+    try {
+        const jsonString = localStorage.getItem('dlms_version_history');
+        
+        if (!jsonString) {
+            return null;
+        }
+
+        const versionHistory = JSON.parse(jsonString);
+        return versionHistory;
+
+    } catch (error) {
+        console.error('Error loading version history from storage:', error);
+        return null;
+    }
+}
+
+/**
+ * Exports complete document with version history as downloadable file
+ * @param {Object} documentStructure - Current document structure
+ * @param {Object} versionHistory - Complete version history
+ * @param {string} documentTitle - The document title
+ * @param {string} documentSubtitle - The document subtitle
+ * @returns {Object} Complete export package
+ */
+export function createExportPackage(documentStructure, versionHistory, documentTitle = '', documentSubtitle = '') {
+    const junkItems = stateManager.getJunkItems() || [];
+    
     return {
-        document: loadDocumentFromStorage(),
-        revisions: loadRevisionsFromStorage(),
-        metadata: getMetadata(),
-        exportDate: new Date().toISOString()
+        metadata: {
+            exportDate: new Date().toISOString(),
+            appVersion: '1.0',
+            documentName: versionHistory?.metadata?.documentName || documentTitle || 'Untitled Document',
+            documentTitle: documentTitle,
+            documentSubtitle: documentSubtitle
+        },
+        documentStructure: documentStructure,
+        versionHistory: versionHistory,
+        junkItems: junkItems
     };
 }
 
 /**
- * Imports data and saves to storage
- * @param {Object} data - Data object with document, revisions, metadata
- * @returns {boolean} True if successful
+ * Downloads export package as JSON file with user-controlled filename
+ * @param {Object} exportPackage - The complete export package
+ * @param {string} suggestedFilename - Suggested filename
+ * @returns {Promise<boolean>} True if download was successful
  */
-export function importAllData(data) {
+export async function downloadExportFile(exportPackage, suggestedFilename = null) {
     try {
-        if (data.document) {
-            saveDocumentToStorage(data.document);
+        const jsonString = JSON.stringify(exportPackage, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        const defaultFilename = suggestedFilename || `dlms_export_${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Check if File System Access API is available
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: defaultFilename,
+                    types: [{
+                        description: 'JSON Files',
+                        accept: { 'application/json': ['.json'] }
+                    }]
+                });
+                
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                
+                console.log('Export file saved via File System Access API');
+                return true;
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    console.log('User cancelled save dialog');
+                    return false;
+                }
+                throw err;
+            }
+        } else {
+            // Fallback to traditional download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = defaultFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('Export file downloaded (fallback method)');
+            return true;
         }
-        if (data.revisions) {
-            saveRevisionsToStorage(data.revisions);
-        }
-        console.log('Data imported successfully');
-        return true;
 
     } catch (error) {
-        console.error('Error importing data:', error);
+        console.error('Error downloading export file:', error);
         return false;
+    }
+}
+
+/**
+ * Imports complete document from file
+ * @param {Object} importData - The imported data package
+ * @returns {Object|null} The imported data or null if invalid
+ */
+export function validateAndExtractImport(importData) {
+    try {
+        // Validate structure
+        if (!importData || typeof importData !== 'object') {
+            throw new Error('Invalid import data format');
+        }
+        
+        if (!importData.documentStructure || !Array.isArray(importData.documentStructure)) {
+            throw new Error('Invalid document structure in import');
+        }
+        
+        if (!importData.versionHistory || !importData.versionHistory.metadata) {
+            throw new Error('Invalid version history in import');
+        }
+        
+        console.log('Import data validated successfully');
+        return {
+            documentStructure: importData.documentStructure,
+            versionHistory: importData.versionHistory
+        };
+
+    } catch (error) {
+        console.error('Error validating import:', error);
+        alert(`Import failed: ${error.message}`);
+        return null;
     }
 }
 
@@ -343,6 +521,24 @@ export function scheduleAutoSave(documentStructure) {
     autoSaveTimeout = setTimeout(() => {
         saveDocumentToStorage(documentStructure);
         
+        // Also save title and subtitle
+        const titleElement = document.getElementById('document-name');
+        const subtitleElement = document.getElementById('document-subtitle');
+        
+        if (titleElement) {
+            localStorage.setItem(STORAGE_KEYS.DOCUMENT_TITLE, titleElement.value || '');
+        }
+        
+        if (subtitleElement) {
+            localStorage.setItem(STORAGE_KEYS.DOCUMENT_SUBTITLE, subtitleElement.value || '');
+        }
+        
+        // Save junk items
+        const junkItems = stateManager.getJunkItems();
+        if (junkItems) {
+            localStorage.setItem(STORAGE_KEYS.JUNK_ITEMS, JSON.stringify(junkItems));
+        }
+        
         // Dispatch custom event for UI updates
         window.dispatchEvent(new CustomEvent('dlms:autosaved', {
             detail: { timestamp: new Date().toISOString() }
@@ -366,6 +562,13 @@ export function initializeStorage() {
     stateManager.subscribe('documentStructureChanged', (structure) => {
         if (autoSaveEnabled) {
             scheduleAutoSave(structure);
+        }
+    });
+    
+    // Subscribe to junk items changes for auto-save
+    stateManager.subscribe('junkItemsChanged', (junkItems) => {
+        if (autoSaveEnabled) {
+            saveJunkToStorage(junkItems);
         }
     });
 

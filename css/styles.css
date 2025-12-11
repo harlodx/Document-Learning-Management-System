@@ -91,12 +91,56 @@ main {
 
 }
 
+.document-name {
+    font-size: 1.8rem;
+    font-weight: bold;
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    margin: 0;
+    font-family: inherit;
+    transition: background-color 0.2s ease;
+    color: var(--text-color);
+}
+
+.document-name:hover {
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.document-name:focus {
+    background-color: #fff;
+    box-shadow: 0 0 0 2px #2196F3;
+    border-radius: 4px;
+}
+
 .document-subtitle {
     color: var(--text-color);
     font-size: 1rem;
-    margin-top: 0.25rem;
-    text-indent: 5px;
-    width: 200px;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    width: 100%;
+    border: 1px solid transparent;
+    outline: none;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.document-subtitle:hover {
+    border-color: #ddd;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+.document-subtitle:focus {
+    border-color: #2196F3;
+    background-color: #fff;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+    border-radius: 4px;
 }
 
 .content-container {
@@ -722,6 +766,10 @@ footer {
     line-height: 1;
     opacity: 0;
     flex-shrink: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .delete-btn:hover {
@@ -837,6 +885,181 @@ footer {
 .clear-btn {
     background-color: #f44336;
     color: white;
+}
+
+/* Junk/Trash Section Styles */
+.junk-items {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.junk-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.junk-item:hover {
+    background: #f0f0f0;
+}
+
+.junk-item-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.junk-expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+    color: #666;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.junk-expand-btn:hover {
+    color: #333;
+}
+
+.junk-no-children {
+    display: inline-block;
+    width: 28px;
+    flex-shrink: 0;
+}
+
+.junk-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.junk-item-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.junk-item-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 1em;
+}
+
+.junk-child-count {
+    font-size: 0.85em;
+    color: #888;
+    font-weight: normal;
+}
+
+.junk-item-preview {
+    font-size: 0.9em;
+    color: #555;
+    line-height: 1.4;
+    margin: 2px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.junk-item-date {
+    font-size: 0.8em;
+    color: #999;
+}
+
+.junk-children-container {
+    margin-top: 8px;
+    margin-left: 36px;
+    padding-left: 12px;
+    border-left: 2px solid #ddd;
+}
+
+.junk-child-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.junk-child-item {
+    padding: 4px 0;
+    color: #555;
+    font-size: 0.9em;
+}
+
+.junk-child-item::before {
+    content: "└─ ";
+    color: #999;
+    margin-right: 4px;
+}
+
+.junk-child-title {
+    color: #666;
+}
+
+.junk-child-list .junk-child-list {
+    margin-left: 16px;
+}
+
+.junk-child-list .junk-child-list .junk-child-item::before {
+    content: "├─ ";
+}
+
+.junk-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.restore-btn {
+    padding: 6px 12px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.2s;
+}
+
+.restore-btn:hover {
+    background: #45a049;
+}
+
+.delete-junk-btn {
+    padding: 6px 12px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.2s;
+}
+
+.delete-junk-btn:hover {
+    background: #da190b;
+}
+
+#clear-all-junk-btn {
+    padding: 8px 16px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+#clear-all-junk-btn:hover {
+    background: #da190b;
 }
 
 /* ---------------------------------- */

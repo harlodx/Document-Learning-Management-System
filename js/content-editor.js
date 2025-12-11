@@ -218,11 +218,22 @@ function editContentInPlace(contentSpan, nodeId, index) {
             contentSpan.contentEditable = false;
             contentSpan.classList.remove('editing');
             
-            const newText = contentSpan.textContent.trim();
+            // Get only the text content from the span, stripping any accidental special characters
+            let newText = contentSpan.textContent || '';
+            
+            // Remove drag handle and delete button characters that might have been copied
+            newText = newText
+                .replace(/↕/g, '')  // Remove up-down arrow
+                .replace(/⇕/g, '')  // Remove alternative up-down arrow
+                .replace(/×/g, '')  // Remove multiplication sign (delete button)
+                .trim();
             
             if (newText !== originalText) {
                 // Update the source data
                 updateContentInNode(nodeId, index, newText);
+            } else {
+                // Restore original text if it was modified but equals after cleaning
+                contentSpan.textContent = originalText;
             }
             
             contentSpan.removeEventListener('blur', blurHandler);

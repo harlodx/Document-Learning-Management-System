@@ -7,6 +7,7 @@ class StateManager {
     constructor() {
         this._documentStructure = [];
         this._currentEditingItem = null;
+        this._junkItems = [];
         this._listeners = new Map();
     }
 
@@ -91,11 +92,32 @@ class StateManager {
     }
 
     /**
+     * Get junked items
+     * @returns {Array} The array of junked items
+     */
+    getJunkItems() {
+        return this._junkItems;
+    }
+
+    /**
+     * Set junked items
+     * @param {Array} items - The junked items array
+     */
+    setJunkItems(items) {
+        if (!Array.isArray(items)) {
+            throw new Error('Junk items must be an array');
+        }
+        this._junkItems = items;
+        this._notifyListeners('junkItemsChanged', items);
+    }
+
+    /**
      * Reset all state to initial values
      */
     reset() {
         this._documentStructure = [];
         this._currentEditingItem = null;
+        this._junkItems = [];
         this._notifyListeners('stateReset', null);
     }
 }

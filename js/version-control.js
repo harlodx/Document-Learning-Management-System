@@ -26,6 +26,7 @@ class VersionedDocument {
 let currentDocument = null;
 let workingCopy = null; // In-memory working copy (saved but not committed)
 let lastCommittedState = null; // Last committed state for comparison
+let hasUnsavedExport = false; // Tracks if there are changes since last export
 
 /**
  * Initializes a new versioned document
@@ -411,4 +412,76 @@ export function getDefaultFilename() {
     const timestamp = new Date().toISOString().split('T')[0];
 
     return `${docName}_v${version}_${timestamp}.json`;
+}
+
+/**
+ * Exports complete version history for external storage
+ * @returns {Object|null} Complete version history data
+ */
+export function exportVersionHistory() {
+    if (!currentDocument) {
+        return null;
+    }
+    
+    return {
+        metadata: currentDocument.metadata,
+        document: currentDocument.document,
+        history: currentDocument.history,
+        workingCopy: workingCopy,
+        lastCommittedState: lastCommittedState,
+        uncommittedChanges: currentDocument.uncommittedChanges
+    };
+}
+
+/**
+ * Imports and restores complete version history
+ * @param {Object} historyData - The version history data to restore
+ * @returns {boolean} True if import was successful
+ */
+export function importVersionHistory(historyData) {
+    try {
+        if (!historyData || !historyData.metadata) {
+            throw new Error('Invalid history data');
+        }
+        
+        // Restore the current document
+        currentDocument = new VersionedDocument(historyData.metadata.documentName);
+        currentDocument.metadata = historyData.metadata;
+        currentDocument.document = historyData.document || [];
+        currentDocument.history = historyData.history || [];
+        currentDocument.uncommittedChanges = historyData.uncommittedChanges || false;
+        
+        // Restore working copy and last committed state
+        workingCopy = historyData.workingCopy ? JSON.parse(JSON.stringify(historyData.workingCopy)) : [];
+        lastCommittedState = historyData.lastCommittedState ? JSON.parse(JSON.stringify(historyData.lastCommittedState)) : [];
+        
+        console.log(`Imported version history: ${historyData.history.length} commits`);
+        return true;
+        
+    } catch (error) {
+        console.error('Error importing version history:', error);
+        return false;
+    }
+}
+
+/**
+ * Marks that changes have been made since last export
+ */
+export function markUnsavedExport() {
+    hasUnsavedExport = true;
+}
+
+/**
+ * Clears the unsaved export flag
+ */
+export function clearUnsavedExport() {
+    hasUnsavedExport = false;
+}
+
+/**
+ * Checks if there are unsaved changes since last export
+ * @returns {boolean} True if there are unsaved exports
+ */
+export function hasUnsavedChanges() {
+    return hasUnsavedExport || (currentDocument && currentDocument.uncommittedChanges);
 }

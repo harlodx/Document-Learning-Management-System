@@ -114,9 +114,12 @@ function handleDynamicClick(event, targetClass) {
  * @param {string} elementId - The ID of the clicked element
  */
 function routeClickEvent(elementId) {
-    // Delete node buttons
+    console.log('routeClickEvent called with:', elementId);
+    
+    // Delete node buttons (check first before tree elements)
     if (elementId.startsWith('delete-node-')) {
         const nodeId = elementId.substring(12); // Remove 'delete-node-' prefix
+        console.log('Calling deleteNode for:', nodeId);
         deleteNode(nodeId);
         return;
     }
@@ -130,6 +133,7 @@ function routeClickEvent(elementId) {
     // Document tree elements
     if (elementId.startsWith('T-')) {
         const nodeId = elementId.substring(2); // Remove 'T-' prefix
+        console.log('Calling handleTreeElementClick for:', nodeId);
         handleTreeElementClick(nodeId);
         return;
     }

@@ -24,6 +24,7 @@ import {
     getDocumentStats,
     getCurrentDocument
 } from './version-control.js';
+import { renderJunkItems } from './junk-manager.js';
 
 /**
  * Imports a JSON document and updates the document structure
@@ -298,6 +299,11 @@ export function saveDocument(docId) {
         // Also save to localStorage for persistence
         const storageSuccess = saveDocumentToStorage(documentStructure);
         
+        // Mark as having unsaved export changes (dynamic import to avoid circular dependency)
+        import('./version-control.js').then(({ markUnsavedExport }) => {
+            markUnsavedExport();
+        });
+        
         if (result.success && storageSuccess) {
             console.log('Document saved successfully. Uncommitted changes:', result.uncommittedChanges);
             
@@ -375,6 +381,11 @@ export function commitDocument(docId, commitMessage = '', author = 'User') {
                 saveDocumentToStorage(currentDoc.document);
             }
             
+            // Mark as having unsaved export changes
+            import('./version-control.js').then(({ markUnsavedExport }) => {
+                markUnsavedExport();
+            });
+            
             // Dispatch commit event
             window.dispatchEvent(new CustomEvent('dlms:committed', {
                 detail: { 
@@ -403,6 +414,35 @@ export function commitDocument(docId, commitMessage = '', author = 'User') {
 }
 
 /**
+ * Finds a node and returns it with parent information
+ * @param {Object[]} nodes - Array of nodes to search
+ * @param {string} nodeId - ID of node to find
+ * @param {Object} parent - Parent node (for recursion)
+ * @returns {Object|null} Object with node, parent, and index, or null if not found
+ */
+function findNodeAndParent(nodes, nodeId, parent = null) {
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === nodeId) {
+            return {
+                node: nodes[i],
+                parent: parent,
+                array: nodes,
+                index: i
+            };
+        }
+        
+        // Check children
+        if (nodes[i].children && nodes[i].children.length > 0) {
+            const found = findNodeAndParent(nodes[i].children, nodeId, nodes[i]);
+            if (found) {
+                return found;
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * Updates the save/commit UI indicators
  * @private
  */
@@ -420,8 +460,8 @@ function updateSaveCommitUI(hasUncommitted) {
 }
 
 /**
- * Deletes a node from the document structure
- * @param {string} nodeId - The ID of the node to delete
+ * Moves a node to junk (soft delete)
+ * @param {string} nodeId - The ID of the node to junk
  */
 export function deleteNode(nodeId) {
     try {
@@ -429,8 +469,8 @@ export function deleteNode(nodeId) {
             throw new Error('Node ID is required');
         }
 
-        // Confirm deletion
-        if (!confirm(`Delete node ${nodeId} and all its children?\n\nThis action cannot be undone.`)) {
+        // Confirm moving to junk
+        if (!confirm(`Move node ${nodeId} to junk?\n\nYou can restore it later from the Junk section.`)) {
             return;
         }
 
@@ -441,20 +481,40 @@ export function deleteNode(nodeId) {
             throw new Error('No document structure loaded');
         }
 
-        // Find and remove the node
+        // Find the node to junk
+        const nodeInfo = findNodeAndParent(documentStructure, nodeId);
+        
+        if (!nodeInfo || !nodeInfo.node) {
+            throw new Error(`Node ${nodeId} not found`);
+            return;
+        }
+
+        // Clone the node before removing it
+        const nodeToJunk = JSON.parse(JSON.stringify(nodeInfo.node));
+        nodeToJunk._junkedAt = new Date().toISOString();
+        nodeToJunk._originalParentId = nodeInfo.parent?.id || 'root';
+        nodeToJunk._originalIndex = nodeInfo.index;
+        
+        // Get or initialize junk array
+        let junkItems = stateManager.getJunkItems() || [];
+        junkItems.push(nodeToJunk);
+        stateManager.setJunkItems(junkItems);
+
+        // Remove from document structure
         const result = findAndDeleteNode(documentStructure, nodeId);
         
         if (!result) {
-            throw new Error(`Node ${nodeId} not found`);
+            throw new Error(`Failed to remove node ${nodeId}`);
         }
 
         // Update state with modified structure
         stateManager.setDocumentStructure(documentStructure);
 
-        // Re-render the tree
+        // Re-render the tree and junk section
         renderDocumentStructure(documentStructure);
+        renderJunkItems();
 
-        // Clear content editor if deleted node was being edited
+        // Clear content editor if junked node was being edited
         const currentNode = stateManager.getCurrentEditingItem();
         if (currentNode && currentNode.id === nodeId) {
             stateManager.setCurrentEditingItem(null);
@@ -466,7 +526,7 @@ export function deleteNode(nodeId) {
             if (contentID) contentID.textContent = '';
         }
 
-        // Auto-save after deletion
+        // Auto-save after junking
         scheduleAutoSave();
 
         console.log(`Deleted node ${nodeId} successfully`);
@@ -481,36 +541,26 @@ export function deleteNode(nodeId) {
 /**
  * Helper function to find and delete a node from the tree
  * @private
- * @param {DocumentNode[]} nodes - Array of nodes to search
+ * @param {Array} nodes - Array of nodes to search
  * @param {string} targetId - ID of node to delete
- * @param {DocumentNode} parent - Parent node (null for root level)
  * @returns {boolean} True if node was found and deleted
  */
-function findAndDeleteNode(nodes, targetId, parent = null) {
+function findAndDeleteNode(nodes, targetId) {
     for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         
-        // Found the target node
+        // Found the target node at this level
         if (node.id === targetId) {
-            if (parent) {
-                // Delete from parent's children
-                parent.deleteChild(targetId);
-            } else {
-                // Delete from root level
-                DocumentNode.deleteIdsRecursively(node);
-                nodes.splice(i, 1);
-                
-                // Re-index remaining siblings
-                for (let j = i; j < nodes.length; j++) {
-                    nodes[j]._recalculateId(null, j + 1);
-                }
-            }
+            // Recursively delete all child IDs
+            DocumentNode.deleteIdsRecursively(node);
+            // Remove from array
+            nodes.splice(i, 1);
             return true;
         }
         
         // Search in children
         if (node.children && node.children.length > 0) {
-            if (findAndDeleteNode(node.children, targetId, node)) {
+            if (findAndDeleteNode(node.children, targetId)) {
                 return true;
             }
         }
@@ -639,5 +689,171 @@ export function loadTestData(testData) {
     } catch (error) {
         console.error('Error loading test data:', error);
         throw error;
+    }
+}
+
+/**
+ * Export complete document with version history
+ */
+export async function exportCompleteDocument() {
+    try {
+        const { exportVersionHistory, clearUnsavedExport, getDefaultFilename } = await import('./version-control.js');
+        const { createExportPackage, downloadExportFile, saveVersionHistoryToStorage } = await import('./storage-manager.js');
+        
+        // Get current state
+        const documentStructure = stateManager.getDocumentStructure();
+        const versionHistory = exportVersionHistory();
+        
+        if (!versionHistory) {
+            alert('No version history available to export');
+            return false;
+        }
+        
+        // Get document title and subtitle
+        const titleElement = document.getElementById('document-name');
+        const subtitleElement = document.getElementById('document-subtitle');
+        const documentTitle = titleElement?.value || titleElement?.textContent || 'Untitled Document';
+        const documentSubtitle = subtitleElement?.value || '';
+        
+        // Create export package
+        const exportPackage = createExportPackage(documentStructure, versionHistory, documentTitle, documentSubtitle);
+        
+        // Save to localStorage
+        saveVersionHistoryToStorage(versionHistory);
+        
+        // Generate filename from document title
+        const sanitizedTitle = documentTitle
+            .replace(/[^a-z0-9\s-]/gi, '')  // Remove special characters
+            .replace(/\s+/g, '_')            // Replace spaces with underscores
+            .toLowerCase()
+            .substring(0, 50);               // Limit length
+        
+        const version = versionHistory.metadata.currentVersion || 0;
+        const timestamp = new Date().toISOString().split('T')[0];
+        const filename = `${sanitizedTitle}_v${version}_${timestamp}.json`;
+        
+        // Download file with user-controlled name
+        const success = await downloadExportFile(exportPackage, filename);
+        
+        if (success) {
+            clearUnsavedExport();
+            alert('Document exported successfully!');
+        }
+        
+        return success;
+        
+    } catch (error) {
+        console.error('Error exporting document:', error);
+        alert(`Export failed: ${error.message}`);
+        return false;
+    }
+}
+
+/**
+ * Import complete document from file with unsaved changes check
+ */
+export async function importCompleteDocument() {
+    try {
+        const { hasUnsavedChanges, importVersionHistory, clearUnsavedExport } = await import('./version-control.js');
+        const { validateAndExtractImport, saveVersionHistoryToStorage } = await import('./storage-manager.js');
+        
+        // Check for unsaved changes
+        if (hasUnsavedChanges()) {
+            const confirmImport = confirm(
+                'You have unsaved changes. Importing will overwrite your current document.\\n\\n' +
+                'Would you like to export the current document before importing?'
+            );
+            
+            if (confirmImport) {
+                // Give user chance to export first
+                const shouldExport = confirm('Export current document now?');
+                if (shouldExport) {
+                    await exportCompleteDocument();
+                }
+            } else {
+                return false; // User cancelled
+            }
+        }
+        
+        // Trigger file input
+        const fileInput = document.getElementById('import-file-input');
+        
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const importData = JSON.parse(text);
+                
+                // Validate and extract
+                const validated = validateAndExtractImport(importData);
+                if (!validated) return;
+                
+                // Import version history
+                const success = importVersionHistory(validated.versionHistory);
+                if (!success) {
+                    alert('Failed to import version history');
+                    return;
+                }
+                
+                // Update state
+                stateManager.setDocumentStructure(validated.documentStructure);
+                
+                // Restore document title and subtitle if available
+                if (importData.metadata) {
+                    const titleElement = document.getElementById('document-name');
+                    const subtitleElement = document.getElementById('document-subtitle');
+                    
+                    if (titleElement && importData.metadata.documentTitle) {
+                        titleElement.value = importData.metadata.documentTitle;
+                    }
+                    
+                    if (subtitleElement && importData.metadata.documentSubtitle) {
+                        subtitleElement.value = importData.metadata.documentSubtitle;
+                    }
+                }
+                
+                // Restore junk items if available
+                if (importData.junkItems && Array.isArray(importData.junkItems)) {
+                    stateManager.setJunkItems(importData.junkItems);
+                    console.log(`Restored ${importData.junkItems.length} junked items`);
+                } else {
+                    stateManager.setJunkItems([]);
+                }
+                
+                // Save to localStorage
+                saveDocumentToStorage(validated.documentStructure);
+                saveVersionHistoryToStorage(validated.versionHistory);
+                
+                // Re-render everything
+                renderDocumentStructure(validated.documentStructure);
+                renderJunkItems();
+                
+                // Rebuild revision list from imported history
+                const { buildRevisionListFromHistory } = await import('./revision-manager.js');
+                buildRevisionListFromHistory();
+                
+                // Clear unsaved flag
+                clearUnsavedExport();
+                
+                alert('Document imported successfully!');
+                
+            } catch (error) {
+                console.error('Error importing file:', error);
+                alert(`Import failed: ${error.message}`);
+            }
+            
+            // Reset file input
+            fileInput.value = '';
+        };
+        
+        fileInput.click();
+        return true;
+        
+    } catch (error) {
+        console.error('Error in import process:', error);
+        alert(`Import failed: ${error.message}`);
+        return false;
     }
 }
