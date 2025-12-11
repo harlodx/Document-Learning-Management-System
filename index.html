@@ -45,6 +45,7 @@
             <div class="dynamic-container">
                 <button id="export-btn" class="dynamic-item">Export Document</button>
                 <button id="import-btn" class="dynamic-item">Import Document</button>
+                <button id="export-pdf-btn" class="dynamic-item">Export to PDF</button>
                 <input type="file" id="import-file-input" accept=".json" style="display: none;">
                 <!-- Legacy file input for old import -->
                 <input type="file" id="fileInput" accept=".txt, .json" style="display: none;">
@@ -107,6 +108,9 @@
                 <div class="section-heading">
                     <h3>Document Index / Sections</h3>
                 </div>
+                <div class="search-container">
+                    <input type="text" id="index-search" class="search-input" placeholder="Search sections...">
+                </div>
                 <div id="document-structure-container" class="index-items">
                     <!-- Main content from code goes in here -->
                 </div>
@@ -120,6 +124,9 @@
                 <div class="section-heading">
                     <h3>Junk / Trash</h3>
                     <p class="junk-description">Items moved here can be restored or permanently deleted</p>
+                </div>
+                <div class="search-container">
+                    <input type="text" id="junk-search" class="search-input" placeholder="Search junk...">
                 </div>
                 <div id="junk-items-container" class="junk-items">
                     <!-- Junked items will be rendered here -->

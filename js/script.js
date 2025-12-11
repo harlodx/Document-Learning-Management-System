@@ -46,6 +46,10 @@ import {
     revertToVersion
 } from './version-control.js';
 import { renderJunkItems, clearAllJunk } from './junk-manager.js';
+import { exportToPDF } from './print-formatter.js';
+import { initializeSearch } from './search-manager.js';
+import { initializeContextMenu } from './context-menu.js';
+import { initializeUndoManager } from './undo-manager.js';
 
 // =========================================================================
 // CONFIGURATION & CONSTANTS
@@ -259,6 +263,18 @@ function initializeApplication() {
             debugMessage(`Loaded ${junkItems.length} junked items`);
         }
         renderJunkItems();
+        
+        // Initialize search functionality
+        debugMessage('Initializing search...');
+        initializeSearch();
+        
+        // Initialize context menu
+        debugMessage('Initializing context menu...');
+        initializeContextMenu();
+        
+        // Initialize undo manager
+        debugMessage('Initializing undo manager...');
+        initializeUndoManager();
 
         // Load data from storage or use test data as fallback
         debugMessage('Loading document data...');
@@ -351,6 +367,7 @@ function loadTitleAndSubtitle() {
 function setupExportImportHandlers() {
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
+    const pdfBtn = document.getElementById('export-pdf-btn');
     
     if (exportBtn) {
         exportBtn.addEventListener('click', async () => {
@@ -363,6 +380,16 @@ function setupExportImportHandlers() {
         importBtn.addEventListener('click', async () => {
             console.log('Import button clicked');
             await importCompleteDocument();
+        });
+    }
+    
+    if (pdfBtn) {
+        pdfBtn.addEventListener('click', () => {
+            console.log('PDF export button clicked');
+            const documentStructure = stateManager.getDocumentStructure();
+            const title = document.getElementById('document-name')?.value || 'Untitled Document';
+            const subtitle = document.getElementById('document-subtitle')?.value || '';
+            exportToPDF(documentStructure, title, subtitle);
         });
     }
     

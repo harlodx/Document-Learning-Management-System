@@ -110,6 +110,12 @@ function createListItem(node) {
     const sectionLink = createSectionLink(node);
     listItem.appendChild(sectionLink);
     
+    // Add references if they exist
+    if (node.references && node.references.length > 0) {
+        const referencesDiv = createReferencesDisplay(node.references);
+        listItem.appendChild(referencesDiv);
+    }
+    
     // Add drag and drop event handlers
     listItem.addEventListener('dragstart', handleTreeDragStart);
     listItem.addEventListener('dragover', handleTreeDragOver);
@@ -155,21 +161,69 @@ function createSectionLink(node) {
     const actionButtons = document.createElement('div');
     actionButtons.classList.add('node-actions');
 
-    // Add delete button
-    const deleteBtn = document.createElement('button');
-    deleteBtn.setAttribute('id', `delete-node-${node.id}`);
-    deleteBtn.classList.add('delete-btn', 'node-delete-btn', 'dynamic-item');
-    deleteBtn.innerHTML = '&times;';
-    deleteBtn.title = 'Delete this node';
-    deleteBtn.setAttribute('clickable', 'true');
-    
-    actionButtons.appendChild(deleteBtn);
+    // Add collapse/expand button (only if node has children)
+    if (node.children && node.children.length > 0) {
+        const collapseBtn = document.createElement('button');
+        collapseBtn.setAttribute('id', `collapse-node-${node.id}`);
+        collapseBtn.classList.add('collapse-btn', 'node-collapse-btn', 'dynamic-item');
+        collapseBtn.innerHTML = '&#9660;'; // Down arrow (expanded state)
+        collapseBtn.title = 'Collapse/Expand subnodes';
+        collapseBtn.setAttribute('clickable', 'true');
+        collapseBtn.setAttribute('data-node-id', node.id);
+        collapseBtn.setAttribute('data-collapsed', 'false');
+        
+        actionButtons.appendChild(collapseBtn);
+    }
 
     sectionLink.appendChild(leftText);
     sectionLink.appendChild(rightText);
     sectionLink.appendChild(actionButtons);
 
     return sectionLink;
+}
+
+/**
+ * Creates a display element for node references
+ * @param {Array} references - Array of reference objects {id, name}
+ * @returns {HTMLElement} The references container element
+ */
+function createReferencesDisplay(references) {
+    const container = document.createElement('div');
+    container.classList.add('node-references');
+    
+    const label = document.createElement('span');
+    label.classList.add('references-label');
+    label.textContent = 'References: ';
+    container.appendChild(label);
+    
+    references.forEach((ref, index) => {
+        const refLink = document.createElement('a');
+        refLink.classList.add('reference-link');
+        refLink.href = '#';
+        refLink.textContent = ref.name || ref.id;
+        refLink.setAttribute('data-ref-id', ref.id);
+        refLink.title = `Jump to ${ref.name || ref.id}`;
+        
+        refLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Import navigateToReference dynamically to avoid circular dependency
+            import('./context-menu.js').then(module => {
+                module.navigateToReference(ref.id);
+            });
+        });
+        
+        container.appendChild(refLink);
+        
+        if (index < references.length - 1) {
+            const separator = document.createElement('span');
+            separator.textContent = ', ';
+            separator.classList.add('reference-separator');
+            container.appendChild(separator);
+        }
+    });
+    
+    return container;
 }
 
 /**

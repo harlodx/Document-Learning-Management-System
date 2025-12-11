@@ -294,14 +294,15 @@ function updateContentInNode(nodeId, index, newText) {
 function saveContentChanges(event) {
     try {
         const editArea = event.target;
-        const listItem = editArea.parentElement;
+        const contentSpan = editArea.previousElementSibling; // Get the content span that was replaced
 
-        if (!listItem) {
+        if (!contentSpan || !contentSpan.classList.contains('content-text')) {
+            console.error('Could not find content span to restore');
             return;
         }
 
         const newValue = editArea.value.trim();
-        listItem.textContent = newValue;
+        contentSpan.textContent = newValue;
 
         // TODO: Update source data
         updateSourceContent();
@@ -509,8 +510,11 @@ function updateSourceContent() {
     }
 
     try {
-        // Collect all content items
-        const contentArray = Array.from(myList.children).map(li => li.textContent.trim());
+        // Collect all content items - only get text from .content-text span
+        const contentArray = Array.from(myList.children).map(li => {
+            const contentSpan = li.querySelector('.content-text');
+            return contentSpan ? contentSpan.textContent.trim() : '';
+        }).filter(text => text.length > 0); // Remove empty entries
 
         // Update the node's content
         if (currentItem.content !== undefined) {

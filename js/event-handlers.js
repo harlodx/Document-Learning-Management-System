@@ -49,6 +49,71 @@ export function handleTreeElementClick(nodeId) {
 }
 
 /**
+ * Toggles collapse/expand state for a node's children
+ * @param {string} nodeId - The ID of the node to toggle
+ */
+export function toggleNodeCollapse(nodeId) {
+    if (!nodeId) {
+        console.warn('No node ID provided for collapse toggle');
+        return;
+    }
+
+    try {
+        // Find the node's child UL element
+        const nodeElement = document.getElementById(`T-${nodeId}`);
+        if (!nodeElement) {
+            console.error(`Node element not found for ID: ${nodeId}`);
+            return;
+        }
+
+        // Find the parent LI element
+        const liElement = nodeElement.closest('li');
+        if (!liElement) {
+            console.error(`Parent LI element not found for node: ${nodeId}`);
+            return;
+        }
+
+        // Find the child UL (nested list)
+        const childUl = liElement.querySelector(':scope > ul');
+        if (!childUl) {
+            console.warn(`No child nodes found for node: ${nodeId}`);
+            return;
+        }
+
+        // Find the collapse button
+        const collapseBtn = document.getElementById(`collapse-node-${nodeId}`);
+        if (!collapseBtn) {
+            console.error(`Collapse button not found for node: ${nodeId}`);
+            return;
+        }
+
+        // Toggle collapsed state
+        const isCurrentlyCollapsed = collapseBtn.getAttribute('data-collapsed') === 'true';
+        
+        if (isCurrentlyCollapsed) {
+            // Expand
+            childUl.style.display = '';
+            collapseBtn.innerHTML = '&#9660;'; // Down arrow
+            collapseBtn.setAttribute('data-collapsed', 'false');
+            collapseBtn.title = 'Collapse subnodes';
+            liElement.classList.remove('collapsed-with-children');
+        } else {
+            // Collapse
+            childUl.style.display = 'none';
+            collapseBtn.innerHTML = '&#9658;'; // Right arrow
+            collapseBtn.setAttribute('data-collapsed', 'true');
+            collapseBtn.title = 'Expand subnodes';
+            liElement.classList.add('collapsed-with-children');
+        }
+
+        console.log(`Toggled collapse for node ${nodeId}: ${!isCurrentlyCollapsed ? 'collapsed' : 'expanded'}`);
+
+    } catch (error) {
+        console.error(`Error toggling collapse for node ${nodeId}:`, error);
+    }
+}
+
+/**
  * Initializes dynamic click handler with event delegation
  * @param {string} parentId - The ID of the static parent container
  * @param {string} targetClass - The class shared by dynamic children
@@ -115,6 +180,14 @@ function handleDynamicClick(event, targetClass) {
  */
 function routeClickEvent(elementId) {
     console.log('routeClickEvent called with:', elementId);
+    
+    // Collapse/expand node buttons
+    if (elementId.startsWith('collapse-node-')) {
+        const nodeId = elementId.substring(14); // Remove 'collapse-node-' prefix
+        console.log('Calling toggleNodeCollapse for:', nodeId);
+        toggleNodeCollapse(nodeId);
+        return;
+    }
     
     // Delete node buttons (check first before tree elements)
     if (elementId.startsWith('delete-node-')) {

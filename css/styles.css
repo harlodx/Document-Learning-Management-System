@@ -603,6 +603,35 @@ footer {
   background-color: #f4f4f4;
   /* list-style-type: none; */
 }
+
+/* Search container and input */
+.search-container {
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #ddd;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 4px rgba(76, 175, 80, 0.3);
+}
+
+.search-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
 /* CRITICAL: Reset all ULs for list/tree structure */
 .index-items ul {
     list-style: none;
@@ -693,6 +722,43 @@ footer {
 /* Remove the margin on the first node in a children group (LI which is the first child of its parent UL) */
 .index-items li:first-child {
     margin-top: 0;
+}
+
+/* Collapsed node with children - stacked papers visual effect */
+.index-items li.collapsed-with-children {
+    position: relative;
+}
+
+.index-items li.collapsed-with-children .section-link {
+    position: relative;
+    z-index: 3;
+}
+
+/* Create layered paper effect using pseudo-elements */
+.index-items li.collapsed-with-children .section-link::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    right: -2px;
+    bottom: -3px;
+    height: 3px;
+    background: linear-gradient(to right, #d1d5db 0%, #e5e7eb 50%, #d1d5db 100%);
+    border-radius: 0 0 4px 4px;
+    z-index: 1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.index-items li.collapsed-with-children .section-link::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    right: -4px;
+    bottom: -6px;
+    height: 3px;
+    background: linear-gradient(to right, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+    border-radius: 0 0 4px 4px;
+    z-index: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 /* ---------------------------------- */
@@ -792,19 +858,41 @@ footer {
     transition: opacity 0.2s ease;
 }
 
-/* Show delete buttons on parent hover */
+/* Collapse button styling */
+.node-collapse-btn {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-right: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.node-collapse-btn:hover {
+    color: #333;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+}
+
+/* Show collapse and delete buttons on parent hover */
+.section-link:hover .node-collapse-btn,
 .section-link:hover .node-delete-btn,
 .content-list-item:hover .content-delete-btn {
     opacity: 1;
 }
 
-/* Make delete buttons always visible on touch devices */
+/* Make delete and collapse buttons always visible on touch devices */
 @media (hover: none) {
-    .delete-btn {
+    .delete-btn,
+    .node-collapse-btn {
         opacity: 0.5;
     }
     
-    .delete-btn:hover {
+    .delete-btn:hover,
+    .node-collapse-btn:hover {
         opacity: 1;
     }
 }
@@ -875,6 +963,20 @@ footer {
 .export-btn {
     background-color: #FF9800;
     color: white;
+}
+
+#export-pdf-btn {
+    background-color: #E91E63;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#export-pdf-btn:hover {
+    background-color: #C2185B;
 }
 
 .info-btn {
@@ -1060,6 +1162,88 @@ footer {
 
 #clear-all-junk-btn:hover {
     background: #da190b;
+}
+
+/* Context Menu Styles */
+.context-menu {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 4px 0;
+    min-width: 200px;
+    z-index: 10000;
+    display: none;
+    font-size: 14px;
+}
+
+.context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.context-menu-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.context-menu-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 4px 0;
+}
+
+/* Node References Styles */
+.node-references {
+    padding: 6px 12px;
+    background-color: #f9f9f9;
+    border-left: 3px solid #2196F3;
+    margin-top: 6px;
+    font-size: 0.85em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.references-label {
+    color: #666;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.reference-link {
+    color: #2196F3;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.reference-link:hover {
+    background-color: #2196F3;
+    color: white;
+    text-decoration: none;
+}
+
+.reference-separator {
+    color: #999;
 }
 
 /* ---------------------------------- */
