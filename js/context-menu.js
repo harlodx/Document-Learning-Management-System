@@ -127,8 +127,8 @@ function handleContextMenu(event) {
         return;
     }
     
-    // Position and show the menu
-    showContextMenu(event.pageX, event.pageY);
+    // Position and show the menu (use clientX/clientY for fixed positioning)
+    showContextMenu(event.clientX, event.clientY);
 }
 
 /**
@@ -158,22 +158,46 @@ function showContextMenu(x, y) {
         }
     }
     
+    // First set display to block and position off-screen to measure dimensions
     contextMenu.style.display = 'block';
-    contextMenu.style.left = x + 'px';
-    contextMenu.style.top = y + 'px';
+    contextMenu.style.left = '-9999px';
+    contextMenu.style.top = '-9999px';
     
-    // Adjust if menu goes off screen
+    // Get menu dimensions
     const menuRect = contextMenu.getBoundingClientRect();
+    const menuWidth = menuRect.width;
+    const menuHeight = menuRect.height;
+    
+    // Calculate position, accounting for viewport boundaries
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     
-    if (menuRect.right > windowWidth) {
-        contextMenu.style.left = (windowWidth - menuRect.width - 10) + 'px';
+    let finalX = x;
+    let finalY = y;
+    
+    // Adjust horizontal position if menu would go off right edge
+    if (x + menuWidth > windowWidth) {
+        finalX = windowWidth - menuWidth - 10;
     }
     
-    if (menuRect.bottom > windowHeight) {
-        contextMenu.style.top = (windowHeight - menuRect.height - 10) + 'px';
+    // Adjust vertical position if menu would go off bottom edge
+    if (y + menuHeight > windowHeight) {
+        finalY = windowHeight - menuHeight - 10;
     }
+    
+    // Ensure menu doesn't go off left edge
+    if (finalX < 0) {
+        finalX = 10;
+    }
+    
+    // Ensure menu doesn't go off top edge
+    if (finalY < 0) {
+        finalY = 10;
+    }
+    
+    // Apply final position
+    contextMenu.style.left = finalX + 'px';
+    contextMenu.style.top = finalY + 'px';
 }
 
 /**
