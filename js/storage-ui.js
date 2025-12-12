@@ -14,6 +14,7 @@ import {
     importAllData
 } from './storage-manager.js';
 import { saveDocument } from './data-operations.js';
+import { showSuccess, showNotification, showError, showConfirm, showPrompt } from './message-center.js';
 
 /**
  * Creates a storage info panel
@@ -80,7 +81,7 @@ export function createStorageControls() {
     saveBtn.onclick = () => {
         const success = saveDocument();
         if (success) {
-            alert('Document saved successfully!');
+            showSuccess('Document saved successfully!');
         }
     };
     
@@ -92,18 +93,18 @@ export function createStorageControls() {
         const newState = !isAutoSaveEnabled();
         setAutoSave(newState);
         updateAutoSaveButton(autoSaveBtn);
-        alert(`Auto-save ${newState ? 'enabled' : 'disabled'}`);
+        showNotification(`Auto-save ${newState ? 'enabled' : 'disabled'}`);
     };
     
     // Create Backup Button
     const backupBtn = document.createElement('button');
     backupBtn.textContent = '📦 Create Backup';
     backupBtn.className = 'storage-btn backup-btn';
-    backupBtn.onclick = () => {
-        const name = prompt('Enter backup name (optional):');
+    backupBtn.onclick = async () => {
+        const name = await showPrompt('Enter backup name (optional):', '', 'Backup name');
         const success = createBackup(name || undefined);
         if (success) {
-            alert('Backup created successfully!');
+            showSuccess('Backup created successfully!');
         }
     };
     
@@ -128,12 +129,14 @@ export function createStorageControls() {
     const clearBtn = document.createElement('button');
     clearBtn.textContent = '🗑️ Clear Storage';
     clearBtn.className = 'storage-btn clear-btn';
-    clearBtn.onclick = () => {
-        if (confirm('Are you sure you want to clear all stored data? This cannot be undone!')) {
-            if (confirm('Really sure? Consider creating a backup first.')) {
+    clearBtn.onclick = async () => {
+        const firstConfirm = await showConfirm('Are you sure you want to clear all stored data? This cannot be undone!', 'Clear', 'Cancel');
+        if (firstConfirm) {
+            const secondConfirm = await showConfirm('Really sure? Consider creating a backup first.', 'Yes, Clear All', 'Cancel');
+            if (secondConfirm) {
                 const success = clearStorage();
                 if (success) {
-                    alert('Storage cleared. Refresh the page to start fresh.');
+                    showSuccess('Storage cleared. Refresh the page to start fresh.');
                 }
             }
         }
@@ -146,7 +149,7 @@ export function createStorageControls() {
     infoBtn.onclick = () => {
         const info = getStorageInfo();
         console.log('Storage Info:', info);
-        alert(`Storage: ${info.totalSizeKB} KB used\nAuto-save: ${isAutoSaveEnabled() ? 'ON' : 'OFF'}\nSee console for details.`);
+        showNotification(`Storage: ${info.totalSizeKB} KB used | Auto-save: ${isAutoSaveEnabled() ? 'ON' : 'OFF'} | See console for details`, 4000);
     };
     
     container.appendChild(saveBtn);

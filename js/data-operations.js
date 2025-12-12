@@ -25,7 +25,7 @@ import {
     getCurrentDocument
 } from './version-control.js';
 import { renderJunkItems } from './junk-manager.js';
-import { showError, showSuccess, showNotification } from './message-center.js';
+import { showError, showSuccess, showNotification, showConfirm, showPrompt } from './message-center.js';
 
 /**
  * Imports a JSON document and updates the document structure
@@ -163,7 +163,7 @@ export function exportVersionedDocumentAsJson() {
  * Downloads the versioned document as a JSON file with user-specified name
  * @param {string} customFilename - Optional custom filename
  */
-export function downloadVersionedDocument(customFilename = null) {
+export async function downloadVersionedDocument(customFilename = null) {
     try {
         // Get default filename
         const defaultFilename = getDefaultFilename();
@@ -171,9 +171,10 @@ export function downloadVersionedDocument(customFilename = null) {
         // Prompt user for filename if not provided
         let filename = customFilename;
         if (!filename) {
-            filename = prompt(
+            filename = await showPrompt(
                 'Enter filename for download:\n(Include full version history)',
-                defaultFilename
+                defaultFilename,
+                'Filename'
             );
             
             if (!filename) {
@@ -336,7 +337,7 @@ export function saveDocument(docId) {
  * @param {string} author - The author name
  * @returns {Object} Commit result
  */
-export function commitDocument(docId, commitMessage = '', author = 'User') {
+export async function commitDocument(docId, commitMessage = '', author = 'User') {
     try {
         // Check if there are uncommitted changes
         if (!hasUncommittedChanges()) {
@@ -347,7 +348,7 @@ export function commitDocument(docId, commitMessage = '', author = 'User') {
         // Prompt for commit message if not provided
         let message = commitMessage;
         if (!message) {
-            message = prompt('Enter commit message:', 'Updated document');
+            message = await showPrompt('Enter commit message:', 'Updated document', 'Commit message');
             if (!message) {
                 return { success: false, message: 'Commit cancelled' };
             }
@@ -360,7 +361,7 @@ export function commitDocument(docId, commitMessage = '', author = 'User') {
             if (storedAuthor) {
                 authorName = storedAuthor;
             } else {
-                const promptedName = prompt('Enter your name:', 'User');
+                const promptedName = await showPrompt('Enter your name:', 'User', 'Your name');
                 if (promptedName) {
                     authorName = promptedName;
                     localStorage.setItem('dlms_author_name', promptedName);
@@ -464,14 +465,15 @@ function updateSaveCommitUI(hasUncommitted) {
  * Moves a node to junk (soft delete)
  * @param {string} nodeId - The ID of the node to junk
  */
-export function deleteNode(nodeId) {
+export async function deleteNode(nodeId) {
     try {
         if (!nodeId) {
             throw new Error('Node ID is required');
         }
 
         // Confirm moving to junk
-        if (!confirm(`Move node ${nodeId} to junk?\n\nYou can restore it later from the Junk section.`)) {
+        const confirmed = await showConfirm(`Move node ${nodeId} to junk?\n\nYou can restore it later from the Junk section.`, 'Move to Junk', 'Cancel');
+        if (!confirmed) {
             return;
         }
 
@@ -612,6 +614,68 @@ export function importDocument() {
 }
 
 /**
+ * Initialize tree state based on last edit time
+ * Collapses all nodes to root level, then expands path to last edited node if edited within 24 hours
+ * @param {DocumentNode[]} rootNodes - The root nodes of the document
+ */
+async function initializeTreeState(rootNodes) {
+    try {
+        const { findLastEditedNode, collapseAllExcept } = await import('./tree-renderer.js');
+        
+        // Find last edited node within 24 hours
+        const lastEdited = findLastEditedNode(rootNodes, 24);
+        
+        if (lastEdited) {
+            console.log(`Found recently edited node: ${lastEdited.node.id} at ${lastEdited.node.lastEditTime}`);
+            
+            // Collapse all nodes except the path to last edited (excluding the final node itself)
+            const pathToParent = lastEdited.path.slice(0, -1);
+            collapseAllExcept(pathToParent, rootNodes);
+            
+            // Render with collapse states applied
+            renderDocumentStructure(rootNodes);
+            
+            // Load the last edited node into editor
+            setTimeout(() => {
+                const nodeElement = document.querySelector(`[data-node-id="${lastEdited.node.id}"]`);
+                if (nodeElement) {
+                    nodeElement.click();
+                }
+            }, 100);
+        } else {
+            console.log('No recent edits found, collapsing all subnodes and loading first root node');
+            
+            // Collapse all subnodes (all nodes with children should be collapsed)
+            collapseAllExcept([], rootNodes);
+            
+            // Render with collapse states applied
+            renderDocumentStructure(rootNodes);
+            
+            // Load first root node
+            if (rootNodes.length > 0) {
+                setTimeout(() => {
+                    const firstNodeElement = document.querySelector(`[data-node-id="${rootNodes[0].id}"]`);
+                    if (firstNodeElement) {
+                        firstNodeElement.click();
+                    }
+                }, 100);
+            }
+        }
+    } catch (error) {
+        console.error('Error initializing tree state:', error);
+        // Fallback: just load first root node
+        if (rootNodes.length > 0) {
+            setTimeout(() => {
+                const firstNodeElement = document.querySelector(`[data-node-id="${rootNodes[0].id}"]`);
+                if (firstNodeElement) {
+                    firstNodeElement.click();
+                }
+            }, 100);
+        }
+    }
+}
+
+/**
  * Loads document from storage or falls back to test data
  * @param {Object[]} testData - Optional test data to use if no saved document
  * @returns {Object[]} The loaded document structure
@@ -630,9 +694,11 @@ export function loadInitialData(testData = null) {
                 DocumentNode.fromJSON(jsonNode, null)
             );
 
-            // Update state and render
+            // Update state first
             stateManager.setDocumentStructure(rootNodes);
-            renderDocumentStructure(rootNodes);
+            
+            // Smart tree initialization (sets collapse states, then renders)
+            initializeTreeState(rootNodes);
 
             return rootNodes;
         }
@@ -760,20 +826,18 @@ export async function importCompleteDocument() {
         
         // Check for unsaved changes
         if (hasUnsavedChanges()) {
-            const confirmImport = confirm(
+            const confirmImport = await showConfirm(
                 'You have unsaved changes. Importing will overwrite your current document.\\n\\n' +
-                'Would you like to export the current document before importing?'
+                'Would you like to export the current document before importing?',
+                'Yes, Export First',
+                'No, Import Anyway'
             );
             
             if (confirmImport) {
-                // Give user chance to export first
-                const shouldExport = confirm('Export current document now?');
-                if (shouldExport) {
-                    await exportCompleteDocument();
-                }
-            } else {
-                return false; // User cancelled
+                // User wants to export first
+                await exportCompleteDocument();
             }
+            // If user chose "No, Import Anyway", we continue with import
         }
         
         // Trigger file input
@@ -794,7 +858,7 @@ export async function importCompleteDocument() {
                 // Import version history
                 const success = importVersionHistory(validated.versionHistory);
                 if (!success) {
-                    alert('Failed to import version history');
+                    showError('Failed to import version history');
                     return;
                 }
                 
@@ -838,11 +902,11 @@ export async function importCompleteDocument() {
                 // Clear unsaved flag
                 clearUnsavedExport();
                 
-                alert('Document imported successfully!');
+                showSuccess('Document imported successfully!');
                 
             } catch (error) {
                 console.error('Error importing file:', error);
-                alert(`Import failed: ${error.message}`);
+                showError(`Import failed: ${error.message}`);
             }
             
             // Reset file input
@@ -854,7 +918,7 @@ export async function importCompleteDocument() {
         
     } catch (error) {
         console.error('Error in import process:', error);
-        alert(`Import failed: ${error.message}`);
+        showError(`Import failed: ${error.message}`);
         return false;
     }
 }

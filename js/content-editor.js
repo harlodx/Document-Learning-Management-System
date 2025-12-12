@@ -4,7 +4,7 @@
  */
 
 import { stateManager } from './state-manager.js';
-import { showError } from './message-center.js';
+import { showError, showConfirm } from './message-center.js';
 
 // Store active event listeners for cleanup
 const activeListeners = new Map();
@@ -278,6 +278,11 @@ function updateContentInNode(nodeId, index, newText) {
         if (currentNode.content && Array.isArray(currentNode.content)) {
             currentNode.content[index] = newText;
             
+            // Mark node as edited
+            if (typeof currentNode.markEdited === 'function') {
+                currentNode.markEdited();
+            }
+            
             // Dispatch save event
             document.dispatchEvent(new CustomEvent('dlms:contentChanged'));
             
@@ -318,9 +323,10 @@ function saveContentChanges(event) {
  * @param {string} nodeId - The node ID
  * @param {number} index - The index of content to delete
  */
-function deleteContentItem(nodeId, index) {
+async function deleteContentItem(nodeId, index) {
     try {
-        if (!confirm('Delete this content item?')) {
+        const confirmed = await showConfirm('Delete this content item?', 'Delete', 'Cancel');
+        if (!confirmed) {
             return;
         }
 
@@ -520,6 +526,11 @@ function updateSourceContent() {
         // Update the node's content
         if (currentItem.content !== undefined) {
             currentItem.content = contentArray;
+            
+            // Mark node as edited
+            if (typeof currentItem.markEdited === 'function') {
+                currentItem.markEdited();
+            }
         }
 
         console.log(`Updated content for node ${currentItem.id}:`, contentArray);

@@ -112,6 +112,12 @@ export function commitChanges(commitMessage, author = 'User') {
     try {
         // Generate patch from last committed state to current working copy
         const patch = jsonpatch.compare(lastCommittedState, workingCopy);
+        
+        // Add timestamp to each patch operation
+        const timestampedPatch = patch.map(operation => ({
+            ...operation,
+            timestamp: new Date().toISOString()
+        }));
 
         // Create commit entry
         const commit = {
@@ -119,7 +125,7 @@ export function commitChanges(commitMessage, author = 'User') {
             timestamp: new Date().toISOString(),
             author: author,
             message: commitMessage,
-            patch: patch,
+            patch: timestampedPatch,
             nodeCount: countNodes(workingCopy)
         };
 

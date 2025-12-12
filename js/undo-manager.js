@@ -37,8 +37,14 @@ function saveStateToHistory(structure) {
     // Deep clone the structure
     const stateCopy = JSON.parse(JSON.stringify(structure));
     
+    // Create history entry with timestamp
+    const historyEntry = {
+        state: stateCopy,
+        timestamp: new Date().toISOString()
+    };
+    
     // Add to undo stack
-    undoStack.push(stateCopy);
+    undoStack.push(historyEntry);
     
     // Limit history size
     if (undoStack.length > MAX_HISTORY_SIZE) {
@@ -48,7 +54,7 @@ function saveStateToHistory(structure) {
     // Clear redo stack when new action is performed
     redoStack = [];
     
-    console.log('State saved to history. Undo stack size:', undoStack.length);
+    console.log('State saved to history with timestamp. Undo stack size:', undoStack.length);
 }
 
 /**
@@ -60,8 +66,14 @@ export function saveStateBeforeChange() {
     const stateCopy = JSON.parse(JSON.stringify(currentStructure));
     
     // Only save if this is a new state (not same as last saved)
-    if (undoStack.length === 0 || JSON.stringify(undoStack[undoStack.length - 1]) !== JSON.stringify(stateCopy)) {
-        undoStack.push(stateCopy);
+    const lastState = undoStack.length > 0 ? undoStack[undoStack.length - 1].state : null;
+    if (undoStack.length === 0 || JSON.stringify(lastState) !== JSON.stringify(stateCopy)) {
+        const historyEntry = {
+            state: stateCopy,
+            timestamp: new Date().toISOString()
+        };
+        
+        undoStack.push(historyEntry);
         
         if (undoStack.length > MAX_HISTORY_SIZE) {
             undoStack.shift();
@@ -70,7 +82,7 @@ export function saveStateBeforeChange() {
         // Clear redo stack
         redoStack = [];
         
-        console.log('State saved before change. Undo stack size:', undoStack.length);
+        console.log('State saved before change with timestamp. Undo stack size:', undoStack.length);
     }
 }
 
@@ -86,15 +98,19 @@ export function undo() {
     // Get current state and save to redo stack
     const currentStructure = stateManager.getDocumentStructure();
     const currentStateCopy = JSON.parse(JSON.stringify(currentStructure));
-    redoStack.push(currentStateCopy);
+    const redoEntry = {
+        state: currentStateCopy,
+        timestamp: new Date().toISOString()
+    };
+    redoStack.push(redoEntry);
     
     // Pop from undo stack
-    const previousState = undoStack.pop();
+    const previousEntry = undoStack.pop();
     
     // Restore previous state
     isUndoRedoOperation = true;
-    stateManager.setDocumentStructure(previousState);
-    renderDocumentStructure(previousState);
+    stateManager.setDocumentStructure(previousEntry.state);
+    renderDocumentStructure(previousEntry.state);
     isUndoRedoOperation = false;
     
     console.log('Undo performed. Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);
@@ -113,15 +129,19 @@ export function redo() {
     // Get current state and save to undo stack
     const currentStructure = stateManager.getDocumentStructure();
     const currentStateCopy = JSON.parse(JSON.stringify(currentStructure));
-    undoStack.push(currentStateCopy);
+    const undoEntry = {
+        state: currentStateCopy,
+        timestamp: new Date().toISOString()
+    };
+    undoStack.push(undoEntry);
     
     // Pop from redo stack
-    const nextState = redoStack.pop();
+    const nextEntry = redoStack.pop();
     
     // Restore next state
     isUndoRedoOperation = true;
-    stateManager.setDocumentStructure(nextState);
-    renderDocumentStructure(nextState);
+    stateManager.setDocumentStructure(nextEntry.state);
+    renderDocumentStructure(nextEntry.state);
     isUndoRedoOperation = false;
     
     console.log('Redo performed. Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);

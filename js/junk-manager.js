@@ -8,6 +8,7 @@ import { stateManager } from './state-manager.js';
 import DocumentNode from './documentnode.js';
 import { renderDocumentStructure } from './tree-renderer.js';
 import { scheduleAutoSave } from './storage-manager.js';
+import { showConfirm } from './message-center.js';
 import { showError, showSuccess } from './message-center.js';
 
 /**
@@ -249,7 +250,7 @@ export function restoreFromJunk(junkId) {
  * Permanently deletes a junked item
  * @param {string} junkId - ID of the junked item to delete
  */
-export function permanentlyDeleteFromJunk(junkId) {
+export async function permanentlyDeleteFromJunk(junkId) {
     try {
         const junkItems = stateManager.getJunkItems() || [];
         const item = junkItems.find(item => item.id === junkId);
@@ -260,7 +261,8 @@ export function permanentlyDeleteFromJunk(junkId) {
         }
 
         const title = item.title || 'Untitled';
-        if (!confirm(`Permanently delete "${title}"?\n\nThis cannot be undone!`)) {
+        const confirmed = await showConfirm(`Permanently delete "${title}"?\n\nThis cannot be undone!`, 'Delete', 'Cancel');
+        if (!confirmed) {
             return;
         }
 
@@ -288,7 +290,7 @@ export function permanentlyDeleteFromJunk(junkId) {
 /**
  * Clears all junked items after confirmation
  */
-export function clearAllJunk() {
+export async function clearAllJunk() {
     const junkItems = stateManager.getJunkItems() || [];
 
     if (junkItems.length === 0) {
@@ -296,7 +298,8 @@ export function clearAllJunk() {
         return;
     }
 
-    if (!confirm(`Permanently delete all ${junkItems.length} junked item(s)?\n\nThis cannot be undone!`)) {
+    const confirmed = await showConfirm(`Permanently delete all ${junkItems.length} junked item(s)?\n\nThis cannot be undone!`, 'Delete All', 'Cancel');
+    if (!confirmed) {
         return;
     }
 

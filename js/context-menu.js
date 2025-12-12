@@ -10,7 +10,7 @@ import { findNodeById, renderDocumentStructure } from './tree-renderer.js';
 import { deleteNode } from './data-operations.js';
 import { undo, canUndo, getUndoCount, saveStateBeforeChange } from './undo-manager.js';
 import DocumentNode from './documentnode.js';
-import { showError, showSuccess, showNotification } from './message-center.js';
+import { showError, showSuccess, showNotification, showConfirm, showPrompt } from './message-center.js';
 
 let contextMenu = null;
 let currentNodeId = null;
@@ -289,10 +289,10 @@ function handleUndo() {
 /**
  * Add a subnode (child) to the current node
  */
-function handleAddSubnode() {
+async function handleAddSubnode() {
     if (!currentNodeId) return;
     
-    const nodeName = prompt('Enter name for new subnode:', 'New Subnode');
+    const nodeName = await showPrompt('Enter name for new subnode:', 'New Subnode', 'Subnode name');
     if (!nodeName) return; // User cancelled
     
     // Save state before change
@@ -340,8 +340,8 @@ function handleAddSubnode() {
 /**
  * Add a new root node near the current node's position
  */
-function handleAddRootNode() {
-    const nodeName = prompt('Enter name for new root node:', 'New Section');
+async function handleAddRootNode() {
+    const nodeName = await showPrompt('Enter name for new root node:', 'New Section', 'Section name');
     if (!nodeName) return; // User cancelled
     
     // Save state before change
@@ -509,7 +509,7 @@ function handleJunkNode() {
 /**
  * Delete node permanently
  */
-function handleDeleteNode() {
+async function handleDeleteNode() {
     if (!currentNodeId) return;
     
     const documentStructure = stateManager.getDocumentStructure();
@@ -521,7 +521,7 @@ function handleDeleteNode() {
     }
     
     const nodeName = node.name || node.title || 'this node';
-    const confirmation = confirm(`Are you sure you want to PERMANENTLY delete "${nodeName}" and all its subnodes? This cannot be undone.`);
+    const confirmation = await showConfirm(`Are you sure you want to PERMANENTLY delete "${nodeName}" and all its subnodes? This cannot be undone.`, 'Delete Permanently', 'Cancel');
     
     if (!confirmation) return;
     
@@ -563,7 +563,7 @@ function removeNodePermanently(nodes, targetId) {
 /**
  * Move node to a different position
  */
-function handleMoveNode() {
+async function handleMoveNode() {
     if (!currentNodeId) return;
     
     const documentStructure = stateManager.getDocumentStructure();
@@ -629,7 +629,7 @@ function buildTargetList(nodes, excludeId, parentPath = '', level = 0) {
 
  * Show dialog for selecting move target
  */
-function showMoveDialog(targetList, sourceNode) {
+async function showMoveDialog(targetList, sourceNode) {
     const sourceName = sourceNode.name || sourceNode.title || 'Untitled';
     
     let message = `Move "${sourceName}" to:\n\n`;
@@ -638,7 +638,7 @@ function showMoveDialog(targetList, sourceNode) {
     });
     message += `\nEnter number (1-${targetList.length}) or 0 to cancel:`;
     
-    const selection = prompt(message);
+    const selection = await showPrompt(message, '', 'Enter number');
     
     if (!selection || selection === '0') {
         return; // Cancelled
@@ -722,7 +722,7 @@ function removeAndReturnNode(nodes, targetId) {
 /**
  * Add reference to another section
  */
-function handleAddReference() {
+async function handleAddReference() {
     if (!currentNodeId) return;
     
     const documentStructure = stateManager.getDocumentStructure();
@@ -776,14 +776,14 @@ function buildNodeList(nodes, excludeId, level = 0) {
 /**
  * Show dialog for adding reference
  */
-function showAddReferenceDialog(nodeList, sourceNode) {
+async function showAddReferenceDialog(nodeList, sourceNode) {
     let message = `Add reference to:\n\n`;
     nodeList.forEach((node, index) => {
         message += `${index + 1}. ${node.display}\n`;
     });
     message += `\nEnter number(s) separated by commas (e.g., "1,3,5") or 0 to cancel:`;
     
-    const selection = prompt(message);
+    const selection = await showPrompt(message, '', 'Enter numbers');
     
     if (!selection || selection === '0') {
         return; // Cancelled

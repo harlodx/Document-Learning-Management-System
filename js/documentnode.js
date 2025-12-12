@@ -21,9 +21,17 @@
                 this.content = Array.isArray(content) ? content : [content]; 
                 this.children = Array.isArray(children) ? children : [];
                 this.parentId = parentId;
+                this.lastEditTime = null; // Track last edit timestamp
 
                 const parts = cleanedId.split('-');
                 this.order = parseInt(parts[parts.length - 1], 10);
+            }
+
+            /**
+             * Update the last edit time for this node
+             */
+            markEdited() {
+                this.lastEditTime = new Date().toISOString();
             }
 
             /**
@@ -85,6 +93,7 @@
              */
             rename(newName) {
                 this.name = newName;
+                this.markEdited();
             }
             /*****************************************************************************/
 
@@ -224,7 +233,8 @@
                     name: this.name,
                     content: this.content,
                     parentId: this.parentId,
-                    children: this.children.map(child => child.toJSON())
+                    children: this.children.map(child => child.toJSON()),
+                    lastEditTime: this.lastEditTime
                 };
             }
             static fromJSON(jsonNode, parentId = null) {
@@ -235,6 +245,10 @@
                     [],
                     parentId
                 );
+                // Restore last edit time if available
+                if (jsonNode.lastEditTime) {
+                    node.lastEditTime = jsonNode.lastEditTime;
+                }
                 if (Array.isArray(jsonNode.children)) {
                     node.children = jsonNode.children.map(childJson => {
                         return DocumentNode.fromJSON(childJson, node.id);

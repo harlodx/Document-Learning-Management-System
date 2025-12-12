@@ -5,15 +5,17 @@
 // =========================================================================
 */
 
+import { showPrompt } from './message-center.js';
+
 /**
  * Exports the current document to PDF format
  * @param {Object} documentStructure - The document structure from state manager
  * @param {string} documentTitle - Title of the document
  * @param {string} documentSubtitle - Subtitle/description of the document
  */
-export function exportToPDF(documentStructure, documentTitle, documentSubtitle) {
+export async function exportToPDF(documentStructure, documentTitle, documentSubtitle) {
     // Prompt for orientation
-    const orientation = prompt('Choose orientation:\n1 = Portrait\n2 = Landscape', '1');
+    const orientation = await showPrompt('Choose orientation:\n1 = Portrait\n2 = Landscape', '1', 'Enter 1 or 2');
     const isLandscape = orientation === '2';
     
     // Generate the print HTML

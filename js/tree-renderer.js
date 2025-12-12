@@ -72,6 +72,76 @@ export function renderDocumentStructure(documentStructure, containerId = 'docume
 }
 
 /**
+ * Collect all node IDs from the document tree recursively
+ * @param {DocumentNode[]} nodes - Array of nodes to collect from
+ * @param {Set} collected - Set to collect node IDs into
+ */
+function collectAllNodeIds(nodes, collected = new Set()) {
+    for (const node of nodes) {
+        collected.add(node.id);
+        if (node.children && node.children.length > 0) {
+            collectAllNodeIds(node.children, collected);
+        }
+    }
+    return collected;
+}
+
+/**
+ * Collapse all nodes except those in the specified path
+ * @param {string[]} nodeIdsToKeepExpanded - Array of node IDs to keep expanded
+ * @param {DocumentNode[]} documentStructure - The document structure to work with
+ */
+export function collapseAllExcept(nodeIdsToKeepExpanded = [], documentStructure = []) {
+    collapsedNodes.clear();
+    
+    // Collect all node IDs from the document
+    const allNodeIds = collectAllNodeIds(documentStructure);
+    
+    // Mark all nodes as collapsed except those in the path
+    allNodeIds.forEach(nodeId => {
+        if (!nodeIdsToKeepExpanded.includes(nodeId)) {
+            collapsedNodes.add(nodeId);
+        }
+    });
+}
+
+/**
+ * Find the node that was last edited within the specified time window
+ * @param {DocumentNode[]} documentStructure - The document structure
+ * @param {number} hoursAgo - Time window in hours (default 24)
+ * @returns {Object|null} Object with {node, path} or null if no recent edits
+ */
+export function findLastEditedNode(documentStructure, hoursAgo = 24) {
+    const cutoffTime = new Date(Date.now() - (hoursAgo * 60 * 60 * 1000));
+    let lastEditedNode = null;
+    let lastEditTime = null;
+    let nodePath = [];
+    
+    function searchTree(nodes, currentPath) {
+        for (const node of nodes) {
+            const path = [...currentPath, node.id];
+            
+            if (node.lastEditTime) {
+                const editTime = new Date(node.lastEditTime);
+                if (editTime > cutoffTime && (!lastEditTime || editTime > lastEditTime)) {
+                    lastEditedNode = node;
+                    lastEditTime = editTime;
+                    nodePath = path;
+                }
+            }
+            
+            if (node.children && node.children.length > 0) {
+                searchTree(node.children, path);
+            }
+        }
+    }
+    
+    searchTree(documentStructure, []);
+    
+    return lastEditedNode ? { node: lastEditedNode, path: nodePath } : null;
+}
+
+/**
  * Capture the current collapse states of all nodes
  * @param {HTMLElement} container - The container element
  */
@@ -105,7 +175,7 @@ function restoreCollapseStates(container) {
                 
                 if (nestedUl) {
                     // Apply collapsed state
-                    nestedUl.classList.add('hidden');
+                    nestedUl.style.display = 'none';
                     collapseBtn.textContent = '▶';
                     collapseBtn.setAttribute('data-collapsed', 'true');
                     liElement.classList.add('collapsed-with-children');

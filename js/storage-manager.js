@@ -4,6 +4,7 @@
  */
 
 import { stateManager } from './state-manager.js';
+import { showError } from './message-center.js';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -106,7 +107,7 @@ export function saveDocumentToStorage(documentStructure) {
     } catch (error) {
         if (error.name === 'QuotaExceededError') {
             console.error('Storage quota exceeded. Document is too large.');
-            alert('Storage quota exceeded. Please export your document to a file.');
+            showError('Storage quota exceeded. Please export your document to a file.');
         } else {
             console.error('Error saving document to storage:', error);
         }
@@ -475,7 +476,7 @@ export function validateAndExtractImport(importData) {
 
     } catch (error) {
         console.error('Error validating import:', error);
-        alert(`Import failed: ${error.message}`);
+        showError(`Import failed: ${error.message}`);
         return null;
     }
 }

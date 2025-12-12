@@ -11,7 +11,7 @@ import {
 import { renderDocumentStructure } from './tree-renderer.js';
 import { stateManager } from './state-manager.js';
 import DocumentNode from './documentnode.js';
-import { showError, showSuccess } from './message-center.js';
+import { showError, showSuccess, showConfirm } from './message-center.js';
 
 /**
  * Revision document structure
@@ -84,11 +84,24 @@ export function buildRevisionList(revisionList) {
         displayList.forEach(revisionItem => {
             try {
                 const listItem = createRevisionListItem(revisionItem);
+                
+                // Add searchable text data attribute
+                const searchableText = [
+                    `v${revisionItem.id}`,
+                    revisionItem.date instanceof Date ? revisionItem.date.toLocaleString() : revisionItem.date,
+                    revisionItem.user,
+                    revisionItem.commitNotes
+                ].join(' ').toLowerCase();
+                listItem.dataset.searchText = searchableText;
+                
                 revisions.appendChild(listItem);
             } catch (error) {
                 console.error(`Failed to create revision item ${revisionItem.id}:`, error);
             }
         });
+        
+        // Initialize search functionality
+        initializeRevisionListSearch();
 
     } catch (error) {
         console.error('Error building revision list:', error);
@@ -109,31 +122,55 @@ function createRevisionListItem(revisionItem) {
 
     // Main container for revision header
     const revisionHeader = document.createElement('div');
-    revisionHeader.className = 'content-container';
+    revisionHeader.className = 'revision-header';
 
-    // Content section
+    // Content section with columns
     const revisionContent = document.createElement('div');
-    revisionContent.className = 'content-left';
+    revisionContent.className = 'revision-content';
     
     const formattedDate = revisionItem.date instanceof Date 
         ? revisionItem.date.toLocaleString()
         : revisionItem.date;
     
-    revisionContent.textContent = `${revisionItem.id} - ${formattedDate} - ${revisionItem.user} - ${revisionItem.commitNotes}`;
+    // Version column
+    const versionCol = document.createElement('div');
+    versionCol.className = 'revision-version';
+    versionCol.textContent = `v${revisionItem.id}`;
+    
+    // Date/time column
+    const dateCol = document.createElement('div');
+    dateCol.className = 'revision-date';
+    dateCol.textContent = formattedDate;
+    
+    // User column
+    const userCol = document.createElement('div');
+    userCol.className = 'revision-user';
+    userCol.textContent = revisionItem.user;
+    
+    // Commit message column (truncated with tooltip)
+    const messageCol = document.createElement('div');
+    messageCol.className = 'revision-message';
+    messageCol.textContent = revisionItem.commitNotes;
+    messageCol.setAttribute('data-tooltip', revisionItem.commitNotes);
+    
+    revisionContent.appendChild(versionCol);
+    revisionContent.appendChild(dateCol);
+    revisionContent.appendChild(userCol);
+    revisionContent.appendChild(messageCol);
 
     // Buttons section
     const revisionButtons = document.createElement('div');
-    revisionButtons.className = 'right-buttons';
+    revisionButtons.className = 'revision-buttons';
 
     // View changes button (toggle)
     const viewButton = document.createElement('button');
-    viewButton.className = 'dynamic-item text-button';
+    viewButton.className = 'btn dynamic-item';
     viewButton.textContent = 'View Changes';
     viewButton.setAttribute('id', `view-revision-${revisionItem.id}`);
 
     // Revert button
     const revertButton = document.createElement('button');
-    revertButton.className = 'dynamic-item text-button';
+    revertButton.className = 'btn dynamic-item';
     revertButton.textContent = 'Revert';
     revertButton.setAttribute('id', `revert-to-document-${revisionItem.id}`);
 
@@ -149,15 +186,38 @@ function createRevisionListItem(revisionItem) {
     changesSection.setAttribute('id', `changes-section-${revisionItem.id}`);
     changesSection.style.display = 'none';
 
+    // Header with title and search
+    const changesHeader = document.createElement('div');
+    changesHeader.className = 'changes-header-row';
+    
     const changesTitle = document.createElement('h4');
     changesTitle.textContent = 'Changes in this version:';
     changesTitle.className = 'changes-title';
+    
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'changes-search-inline';
+    
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'search-input changes-search-input';
+    searchInput.placeholder = 'Filter changes...';
+    searchInput.setAttribute('data-changes-list', `changes-list-${revisionItem.id}`);
+    
+    const resultsCount = document.createElement('span');
+    resultsCount.className = 'search-results-count';
+    resultsCount.setAttribute('id', `search-count-${revisionItem.id}`);
+    
+    searchContainer.appendChild(searchInput);
+    searchContainer.appendChild(resultsCount);
+    
+    changesHeader.appendChild(changesTitle);
+    changesHeader.appendChild(searchContainer);
 
     const changesList = document.createElement('ul');
     changesList.className = 'changes-list';
     changesList.setAttribute('id', `changes-list-${revisionItem.id}`);
 
-    changesSection.appendChild(changesTitle);
+    changesSection.appendChild(changesHeader);
     changesSection.appendChild(changesList);
 
     listItem.appendChild(revisionHeader);
@@ -196,6 +256,14 @@ export function viewRevision(revisionId) {
             // Hide changes
             changesSection.style.display = 'none';
             viewButton.textContent = 'View Changes';
+            
+            // Clear search in this section
+            const searchInput = changesSection.querySelector('.changes-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                const resultsCount = changesSection.querySelector('.search-results-count');
+                filterChangesInSection(changesList, '', resultsCount);
+            }
         }
         
     } catch (error) {
@@ -220,6 +288,7 @@ function populateChangesList(version, changesList) {
         }
         
         const patches = commit.patch;
+        const author = commit.author || 'User';
         
         if (patches.length === 0) {
             changesList.innerHTML = '<div class="change-item no-changes">No changes in this version</div>';
@@ -236,16 +305,39 @@ function populateChangesList(version, changesList) {
             }
         }
         
-        // Parse each patch operation
-        patches.forEach((patch, index) => {
+        // Create table-like header
+        const headerRow = document.createElement('div');
+        headerRow.className = 'change-header';
+        headerRow.innerHTML = `
+            <div class="change-col-time">Time</div>
+            <div class="change-col-user">User</div>
+            <div class="change-col-action">Action</div>
+            <div class="change-col-previous">Previous</div>
+            <div class="change-col-current">Current</div>
+        `;
+        changesList.appendChild(headerRow);
+        
+        // Store all changes data for search functionality
+        const allChanges = patches.map(patch => {
             const changeItem = document.createElement('div');
             changeItem.className = 'change-item';
             
-            const changeDescription = parsePatchOperation(patch, previousState);
-            changeItem.innerHTML = changeDescription;
+            const changeData = parsePatchOperation(patch, previousState, author);
+            changeItem.innerHTML = changeData;
             
-            changesList.appendChild(changeItem);
+            // Store searchable text for filtering
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = changeData;
+            changeItem.dataset.searchText = tempDiv.textContent.toLowerCase();
+            
+            return changeItem;
         });
+        
+        // Append all changes
+        allChanges.forEach(item => changesList.appendChild(item));
+        
+        // Initialize search for this changes list
+        initializeChangesSearch(changesList);
         
     } catch (error) {
         console.error('Error populating changes list:', error);
@@ -254,12 +346,32 @@ function populateChangesList(version, changesList) {
 }
 
 /**
+ * Format timestamp to time string
+ * @param {string} isoString - ISO timestamp string
+ * @returns {string} Formatted time string
+ */
+function formatTime(isoString) {
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false 
+        });
+    } catch (e) {
+        return '—';
+    }
+}
+
+/**
  * Parse a JSON Patch operation into human-readable description
  * @param {Object} patch - JSON Patch operation
  * @param {Array} previousState - Previous document state for before/after comparison
+ * @param {string} author - User who made the change
  * @returns {string} HTML string describing the change
  */
-function parsePatchOperation(patch, previousState = null) {
+function parsePatchOperation(patch, previousState = null, author = 'User') {
     const { op, path, value, from } = patch;
     
     // Extract meaningful parts from the path
@@ -348,99 +460,123 @@ function parsePatchOperation(patch, previousState = null) {
     const nodeId = getNodeIdFromPath(path);
     const nodeRef = nodeId ? `node ${nodeId}` : 'a node';
     
+    let action = '';
+    let previousVal = '—';
+    let currentVal = '';
+    
     switch (op) {
         case 'add':
-            icon = '➕';
             cssClass = 'change-add';
             
             if (pathParts[pathParts.length - 2] === 'children') {
                 // Adding a child node
                 const childTitle = getNodeTitle(value);
                 const childId = value.id || 'new child';
-                description = `Added child ${nodeRef ? nodeRef + ' → ' : ''}${childId}: "${childTitle}"`;
+                action = `Added child to ${nodeRef}`;
+                currentVal = `${childId}: ${childTitle}`;
             } else if (pathParts[1] === 'content') {
                 // Adding content
                 const contentText = Array.isArray(value) ? value.join(', ') : truncateValue(value, 50);
-                description = `Added content to ${nodeRef}: "${contentText}"`;
+                action = `Added content to ${nodeRef}`;
+                currentVal = contentText;
             } else if (pathParts.length === 1) {
                 // Adding a root node
                 const nodeTitle = getNodeTitle(value);
                 const newNodeId = value.id || (parseInt(pathParts[0]) + 1).toString();
-                description = `Added ${newNodeId}: "${nodeTitle}"`;
+                action = `Added ${newNodeId}`;
+                currentVal = nodeTitle;
             } else {
                 const property = pathParts[pathParts.length - 1];
-                description = `Added ${property} to ${nodeRef}: "${truncateValue(value, 50)}"`;
+                action = `Added ${property} to ${nodeRef}`;
+                currentVal = truncateValue(value, 50);
             }
             break;
             
         case 'remove':
-            icon = '❌';
             cssClass = 'change-remove';
             
             if (pathParts[pathParts.length - 2] === 'children') {
-                description = `Removed child from ${nodeRef}`;
+                action = `Removed child from ${nodeRef}`;
+                const previousValue = getPreviousValue(path);
+                previousVal = previousValue ? getNodeTitle(previousValue) : 'unknown';
             } else if (pathParts.length === 1) {
                 // Removing a root node
-                description = `Removed ${nodeRef}`;
+                action = `Removed ${nodeRef}`;
+                const previousValue = getPreviousValue(path);
+                previousVal = previousValue ? getNodeTitle(previousValue) : 'unknown';
             } else {
                 const property = pathParts[pathParts.length - 1];
-                description = `Removed ${property} from ${nodeRef}`;
+                action = `Removed ${property} from ${nodeRef}`;
+                const previousValue = getPreviousValue(path);
+                previousVal = previousValue ? truncateValue(previousValue, 40) : 'unknown';
             }
+            currentVal = '—';
             break;
             
         case 'replace':
-            icon = '✏️';
             cssClass = 'change-replace';
             
             const property = pathParts[pathParts.length - 1];
             const previousValue = getPreviousValue(path);
             
             if (property === 'name' || property === 'title') {
-                const oldText = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
-                const newText = truncateValue(value, 40);
-                description = `Changed ${nodeRef} from: "${oldText}", to: "${newText}"`;
+                action = `Changed ${nodeRef} title`;
+                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
+                currentVal = truncateValue(value, 40);
             } else if (property === 'content') {
-                const oldContent = previousValue !== null && previousValue !== undefined 
+                action = `Changed ${nodeRef} content`;
+                previousVal = previousValue !== null && previousValue !== undefined 
                     ? (Array.isArray(previousValue) ? previousValue.join(', ') : truncateValue(previousValue, 40)) 
                     : 'empty';
-                const newContent = Array.isArray(value) ? value.join(', ') : truncateValue(value, 40);
-                description = `Changed ${nodeRef} content from: "${oldContent}", to: "${newContent}"`;
+                currentVal = Array.isArray(value) ? value.join(', ') : truncateValue(value, 40);
             } else if (!isNaN(property)) {
                 // It's an array index (content item)
-                const oldText = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
-                const newText = truncateValue(value, 40);
                 const itemNumber = parseInt(property) + 1;
-                description = `Changed ${nodeRef} item ${itemNumber} from: "${oldText}", to: "${newText}"`;
+                action = `Changed ${nodeRef} item ${itemNumber}`;
+                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
+                currentVal = truncateValue(value, 40);
             } else {
-                const oldVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
-                const newVal = truncateValue(value, 40);
-                description = `Changed ${nodeRef} ${property} from: "${oldVal}", to: "${newVal}"`;
+                action = `Changed ${nodeRef} ${property}`;
+                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
+                currentVal = truncateValue(value, 40);
             }
             break;
             
         case 'move':
-            icon = '↔️';
             cssClass = 'change-move';
             const fromId = getNodeIdFromPath(from);
             const toId = getNodeIdFromPath(path);
-            description = `Moved ${fromId ? 'node ' + fromId : 'a node'} to position ${toId || 'new location'}`;
+            action = 'Moved node';
+            previousVal = fromId ? `Position ${fromId}` : 'old position';
+            currentVal = toId ? `Position ${toId}` : 'new position';
             break;
             
         case 'copy':
-            icon = '📋';
             cssClass = 'change-copy';
             const copyFromId = getNodeIdFromPath(from);
             const copyToId = getNodeIdFromPath(path);
-            description = `Copied ${copyFromId ? 'node ' + copyFromId : 'a node'} to ${copyToId || 'new location'}`;
+            action = 'Copied node';
+            previousVal = copyFromId ? `Node ${copyFromId}` : 'source';
+            currentVal = copyToId ? `Node ${copyToId}` : 'destination';
             break;
             
         default:
-            icon = '🔄';
             cssClass = 'change-other';
-            description = `${op} operation on ${nodeRef}`;
+            action = `${op} operation on ${nodeRef}`;
+            previousVal = '—';
+            currentVal = '—';
     }
     
-    return `<span class="change-icon">${icon}</span><span class="${cssClass}">${description}</span>`;
+    // Format timestamp if available
+    const timeStr = patch.timestamp ? formatTime(patch.timestamp) : '—';
+    
+    return `
+        <div class="change-col-time">${timeStr}</div>
+        <div class="change-col-user">${author}</div>
+        <div class="change-col-action ${cssClass}">${action}</div>
+        <div class="change-col-previous">${previousVal}</div>
+        <div class="change-col-current">${currentVal}</div>
+    `;
 }
 
 /**
@@ -456,6 +592,81 @@ function getNodeTitle(value) {
 }
 
 /**
+ * Initialize search functionality for a changes list
+ * @param {HTMLElement} changesList - The changes list container
+ */
+function initializeChangesSearch(changesList) {
+    const changesSection = changesList.closest('.revision-changes-section');
+    if (!changesSection) return;
+    
+    const searchInput = changesSection.querySelector('.changes-search-input');
+    const resultsCount = changesSection.querySelector('.search-results-count');
+    
+    if (!searchInput) return;
+    
+    // Add search event listener
+    searchInput.addEventListener('input', (e) => {
+        filterChangesInSection(changesList, e.target.value, resultsCount);
+    });
+    
+    // Initial count
+    updateSearchResultsCountForSection(changesList, resultsCount);
+}
+
+/**
+ * Filter changes in a specific section based on search query
+ * @param {HTMLElement} changesList - The changes list to filter
+ * @param {string} query - Search query string
+ * @param {HTMLElement} resultsCount - Results counter element
+ */
+function filterChangesInSection(changesList, query, resultsCount) {
+    const normalizedQuery = query.toLowerCase().trim();
+    
+    // Get change items in this specific section
+    const changeItems = changesList.querySelectorAll('.change-item:not(.no-changes)');
+    
+    let visibleCount = 0;
+    
+    changeItems.forEach(item => {
+        const searchText = item.dataset.searchText || '';
+        
+        if (normalizedQuery === '' || searchText.includes(normalizedQuery)) {
+            item.style.display = 'grid';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    updateSearchResultsCountForSection(changesList, resultsCount, visibleCount);
+}
+
+/**
+ * Update search results count display for a specific section
+ * @param {HTMLElement} changesList - The changes list element
+ * @param {HTMLElement} resultsCount - Results counter element
+ * @param {number} visible - Number of visible items (optional)
+ */
+function updateSearchResultsCountForSection(changesList, resultsCount, visible = null) {
+    if (!resultsCount) return;
+    
+    const changeItems = changesList.querySelectorAll('.change-item:not(.no-changes)');
+    const total = changeItems.length;
+    
+    if (visible === null) {
+        visible = Array.from(changeItems).filter(item => item.style.display !== 'none').length;
+    }
+    
+    if (total === 0) {
+        resultsCount.textContent = '';
+    } else if (visible === total) {
+        resultsCount.textContent = `${total}`;
+    } else {
+        resultsCount.textContent = `${visible}/${total}`;
+    }
+}
+
+/**
  * Truncate long values for display
  * @param {*} value - The value to truncate
  * @param {number} maxLength - Maximum length before truncation
@@ -468,18 +679,125 @@ function truncateValue(value, maxLength = 100) {
 }
 
 /**
+ * Initialize search functionality for the revision list
+ */
+function initializeRevisionListSearch() {
+    const searchInput = document.getElementById('revision-tracking-search');
+    const resultsCount = document.getElementById('revision-tracking-count');
+    
+    if (!searchInput) return;
+    
+    // Remove any existing listener
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+    
+    // Add search event listener
+    newSearchInput.addEventListener('input', (e) => {
+        filterRevisionList(e.target.value);
+    });
+    
+    // Initial count
+    updateRevisionListCount();
+}
+
+/**
+ * Filter revision list and change entries based on search query
+ * @param {string} query - Search query string
+ */
+function filterRevisionList(query) {
+    const normalizedQuery = query.toLowerCase().trim();
+    const revisionItems = document.querySelectorAll('.revision-item');
+    
+    let visibleRevisionCount = 0;
+    
+    revisionItems.forEach(item => {
+        const revisionSearchText = item.dataset.searchText || '';
+        const changeItems = item.querySelectorAll('.change-item:not(.no-changes)');
+        
+        // If no query, show everything
+        if (normalizedQuery === '') {
+            item.style.display = 'block';
+            changeItems.forEach(change => change.style.display = 'grid');
+            visibleRevisionCount++;
+            return;
+        }
+        
+        // Check if revision metadata matches
+        const revisionMatches = revisionSearchText.includes(normalizedQuery);
+        
+        // Check if any change entries match
+        let hasMatchingChanges = false;
+        let visibleChangeCount = 0;
+        
+        changeItems.forEach(change => {
+            const changeSearchText = change.dataset.searchText || '';
+            if (changeSearchText.includes(normalizedQuery)) {
+                change.style.display = 'grid';
+                hasMatchingChanges = true;
+                visibleChangeCount++;
+            } else {
+                change.style.display = 'none';
+            }
+        });
+        
+        // Show revision if either the revision matches OR it has matching changes
+        if (revisionMatches || hasMatchingChanges) {
+            item.style.display = 'block';
+            visibleRevisionCount++;
+            
+            // If revision matches, show all changes
+            if (revisionMatches) {
+                changeItems.forEach(change => change.style.display = 'grid');
+            }
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    updateRevisionListCount(visibleRevisionCount, revisionItems.length);
+}
+
+/**
+ * Update revision list search results count
+ * @param {number} visible - Number of visible items
+ * @param {number} total - Total number of items
+ */
+function updateRevisionListCount(visible = null, total = null) {
+    const resultsCount = document.getElementById('revision-tracking-count');
+    if (!resultsCount) return;
+    
+    const revisionItems = document.querySelectorAll('.revision-item');
+    total = total ?? revisionItems.length;
+    
+    if (visible === null) {
+        visible = Array.from(revisionItems).filter(item => item.style.display !== 'none').length;
+    }
+    
+    if (total === 0) {
+        resultsCount.textContent = '';
+    } else if (visible === total) {
+        resultsCount.textContent = `${total}`;
+    } else {
+        resultsCount.textContent = `${visible}/${total}`;
+    }
+}
+
+/**
  * Revert document to a specific revision
  * @param {string|number} revisionId - The revision ID to revert to
  */
-export function revertDocument(revisionId) {
+export async function revertDocument(revisionId) {
     try {
         const version = parseInt(revisionId, 10);
         
-        if (!confirm(
+        const confirmed = await showConfirm(
             `Revert to version ${version}?\n\n` +
             `This will replace your current working copy.\n` +
-            `You'll need to SAVE and COMMIT to make it permanent.`
-        )) {
+            `You'll need to SAVE and COMMIT to make it permanent.`,
+            'Revert',
+            'Cancel'
+        );
+        if (!confirmed) {
             return;
         }
         

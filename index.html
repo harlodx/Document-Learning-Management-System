@@ -149,29 +149,21 @@
         <!-- Document title (that is being edited) -->
         <section class="title dynamic-content">
             <div class="content-container">
-
-                <div class="left-block">
-                    <input type="text" id="document-name" class="document-name" value="Document Title" placeholder="Document Title">
-                    <textarea id="document-subtitle" class="document-subtitle" placeholder="Document description...">Document Sub-title - this should be a short concise description of what the document should do. It should also be editable (although maybe behind a button).</textarea>
-                </div>
-                <div class="right-block">
-                    <button id="toggleDetails" class="btn-collapse">▼</button>
-                </div>
-
-
+                <input type="text" id="document-name" class="document-name" value="Document Title" placeholder="Document Title">
+                <textarea id="document-subtitle" class="document-subtitle" placeholder="Document description...">Document Sub-title - this should be a short concise description of what the document should do. It should also be editable (although maybe behind a button).</textarea>
+                <button id="toggleDetails" class="btn-collapse dynamic-item">▼</button>
             </div>
 
 
             <!-- Drop down revisions list -->
             <div class="revisions">
                 <div class="content-container">
-                    <div class="left-block">
-                        <h3>Revision Tracking</h3>
+                    <h3>Revision Tracking</h3>
+                    <div class="revision-tracking-search">
+                        <input type="text" id="revision-tracking-search" class="search-input" placeholder="Filter changes...">
+                        <span id="revision-tracking-count" class="search-results-count"></span>
                     </div>
-                    <div class="right-buttons">
-                        <button id="toggleRevisionList" class="btn-collapse">▼</button>
-                    </div>
-
+                    <button id="toggleRevisionList" class="btn-collapse dynamic-item">▼</button>
                 </div>
 
                 <!-- Container for the Revisions list Elements -->
