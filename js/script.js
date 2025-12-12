@@ -52,6 +52,7 @@ import { initializeMenu, setUsername } from './menu-manager.js';
 import { initializeContextMenu } from './context-menu.js';
 import { initializeUndoManager } from './undo-manager.js';
 import { initializeTheme } from './theme-manager.js';
+import { initializeMessageCenter, showNotification, showSuccess } from './message-center.js';
 
 // =========================================================================
 // CONFIGURATION & CONSTANTS
@@ -238,6 +239,10 @@ function initializeApplication() {
         debugMessage('Initializing theme...');
         initializeTheme();
 
+        // Initialize message center (for tooltips, notifications, errors)
+        debugMessage('Initializing message center...');
+        initializeMessageCenter();
+
         // Initialize menu system
         debugMessage('Initializing menu...');
         initializeMenu();
@@ -311,18 +316,22 @@ function initializeApplication() {
         // Set up auto-save indicator
         window.addEventListener('dlms:autosaved', (event) => {
             debugMessage('Auto-saved at:', event.detail.timestamp);
-            showSaveIndicator('Auto-saved');
+            showNotification('✓ Auto-saved', 4000);
         });
 
         window.addEventListener('dlms:saved', (event) => {
             debugMessage('Manually saved at:', event.detail.timestamp);
             const uncommitted = event.detail.uncommittedChanges;
-            showSaveIndicator(uncommitted ? 'Saved*' : 'Saved', uncommitted);
+            if (uncommitted) {
+                showNotification('⚠ Saved (uncommitted changes)', 4000);
+            } else {
+                showSuccess('✓ Saved', 4000);
+            }
         });
 
         window.addEventListener('dlms:committed', (event) => {
             debugMessage('Committed version:', event.detail.version);
-            showSaveIndicator(`Committed v${event.detail.version}`, false, '#2196F3');
+            showSuccess(`✓ Committed v${event.detail.version}`, 4000);
         });
 
         // Set up revision refresh handler
@@ -342,7 +351,7 @@ function initializeApplication() {
 
     } catch (error) {
         console.error('Failed to initialize application:', error);
-        alert('Application failed to initialize. Please refresh the page.');
+        showError('Application failed to initialize. Please refresh the page.');
     }
 }
 
@@ -403,6 +412,24 @@ function setupExportImportHandlers() {
         });
     }
     
+    // Set up save and commit button handlers
+    const saveBtn = document.getElementById('saveDocument');
+    const commitBtn = document.getElementById('commitDocument');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            console.log('Save button clicked');
+            saveDocument();
+        });
+    }
+    
+    if (commitBtn) {
+        commitBtn.addEventListener('click', () => {
+            console.log('Commit button clicked');
+            commitDocument();
+        });
+    }
+    
     // Set up auto-save for title and subtitle changes
     const titleElement = document.getElementById('document-name');
     const subtitleElement = document.getElementById('document-subtitle');
@@ -434,55 +461,7 @@ function setupExportImportHandlers() {
  * @param {boolean} hasUncommitted - Whether there are uncommitted changes
  * @param {string} color - Optional background color
  */
-function showSaveIndicator(message, hasUncommitted = false, color = null) {
-    // Check if indicator already exists
-    let indicator = document.getElementById('save-indicator');
-    
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = 'save-indicator';
-        document.body.appendChild(indicator);
-    }
-
-    // Determine background color
-    let bgColor = color;
-    if (!bgColor) {
-        if (hasUncommitted) {
-            bgColor = '#FF9800'; // Orange for uncommitted changes
-        } else {
-            bgColor = '#4CAF50'; // Green for clean save
-        }
-    }
-
-    indicator.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${bgColor};
-        color: white;
-        padding: 10px 20px;
-        border-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        z-index: 10000;
-        opacity: 0;
-        transition: opacity 0.3s;
-        font-weight: bold;
-    `;
-
-    const icon = hasUncommitted ? '⚠' : '✓';
-    indicator.textContent = `${icon} ${message}`;
-    
-    if (hasUncommitted) {
-        indicator.title = 'You have uncommitted changes. Click COMMIT to save to version history.';
-    }
-
-    indicator.style.opacity = '1';
-
-    // Fade out after 2 seconds
-    setTimeout(() => {
-        indicator.style.opacity = '0';
-    }, 2000);
-}
+// Removed showSaveIndicator function - now using centralized message center
 
 // =========================================================================
 // DOM READY EVENT

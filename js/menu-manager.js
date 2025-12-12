@@ -4,6 +4,7 @@
  */
 
 import { saveDocument, commitDocument } from './data-operations.js';
+import { showSuccess } from './message-center.js';
 
 let isMenuOpen = false;
 
@@ -96,7 +97,7 @@ function initializeKeyboardShortcuts() {
             e.preventDefault();
             console.log('Keyboard shortcut: Save (Ctrl+S)');
             saveDocument();
-            showShortcutFeedback('Document Saved');
+            showSuccess('Document Saved');
         }
         
         // Ctrl+Shift+S or Cmd+Shift+S - Commit
@@ -104,7 +105,7 @@ function initializeKeyboardShortcuts() {
             e.preventDefault();
             console.log('Keyboard shortcut: Commit (Ctrl+Shift+S)');
             commitDocument();
-            showShortcutFeedback('Changes Committed');
+            showSuccess('Changes Committed');
         }
 
         // Escape - Close menu
@@ -117,36 +118,6 @@ function initializeKeyboardShortcuts() {
     console.log('  - Ctrl+S (or Cmd+S): Save Draft');
     console.log('  - Ctrl+Shift+S (or Cmd+Shift+S): Commit Changes');
     console.log('  - Escape: Close Menu');
-}
-
-/**
- * Show visual feedback for keyboard shortcuts
- */
-function showShortcutFeedback(message) {
-    // Remove existing feedback if any
-    const existingFeedback = document.querySelector('.shortcut-feedback');
-    if (existingFeedback) {
-        existingFeedback.remove();
-    }
-
-    // Create feedback element
-    const feedback = document.createElement('div');
-    feedback.className = 'shortcut-feedback';
-    feedback.textContent = message;
-    document.body.appendChild(feedback);
-
-    // Show feedback
-    setTimeout(() => {
-        feedback.classList.add('show');
-    }, 10);
-
-    // Remove after 2 seconds
-    setTimeout(() => {
-        feedback.classList.remove('show');
-        setTimeout(() => {
-            feedback.remove();
-        }, 300);
-    }, 2000);
 }
 
 /**

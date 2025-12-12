@@ -66,15 +66,15 @@
         <!-- Document Section -->
         <div class="menu-section">
             <h3 class="menu-section-title">Document</h3>
-            <button id="import-btn" class="menu-item dynamic-item">
+            <button id="import-btn" class="menu-item" data-tooltip="Import a document from your device">
                 <span class="menu-icon">📥</span>
                 <span>Import</span>
             </button>
-            <button id="export-btn" class="menu-item dynamic-item">
+            <button id="export-btn" class="menu-item" data-tooltip="Export document as JSON">
                 <span class="menu-icon">📤</span>
                 <span>Export</span>
             </button>
-            <button id="export-pdf-btn" class="menu-item dynamic-item">
+            <button id="export-pdf-btn" class="menu-item" data-tooltip="Print or save as PDF">
                 <span class="menu-icon">🖨️</span>
                 <span>Print</span>
             </button>
@@ -85,19 +85,13 @@
         <!-- Editing Actions Section -->
         <div class="menu-section">
             <h3 class="menu-section-title">Editing</h3>
-            <button id="unlockDocument" class="menu-item dynamic-item text-button">
-                <span class="menu-icon">✏️</span>
-                <span>Edit</span>
-            </button>
-            <button id="saveDocument" class="menu-item dynamic-item text-button">
+            <button id="saveDocument" class="menu-item" data-tooltip="Save current changes (Ctrl+S)">
                 <span class="menu-icon">💾</span>
-                <span>Save Draft</span>
-                <span class="menu-shortcut">Ctrl+S</span>
+                <span>Save</span>
             </button>
-            <button id="commitDocument" class="menu-item dynamic-item text-button">
+            <button id="commitDocument" class="menu-item" data-tooltip="Commit to version history (Ctrl+Shift+S)">
                 <span class="menu-icon">✓</span>
                 <span>Commit</span>
-                <span class="menu-shortcut">Ctrl+Shift+S</span>
             </button>
         </div>
 
@@ -107,9 +101,9 @@
 
         <!-- Theme Toggle at Bottom -->
         <div class="menu-section menu-bottom">
-            <div class="menu-item menu-theme-toggle">
+            <h3 class="menu-section-title">Themes</h3>
+            <div class="menu-item menu-theme-toggle" data-tooltip="Switch between light and dark themes">
                 <span class="menu-icon">🌓</span>
-                <span>Theme</span>
                 <div class="theme-toggle-inline">
                     <span class="theme-label-small">Light</span>
                     <label class="theme-toggle-small">
@@ -119,7 +113,18 @@
                     <span class="theme-label-small">Dark</span>
                 </div>
             </div>
-            <button id="settings-btn" class="menu-item">
+            <div class="menu-item menu-theme-toggle" data-tooltip="Adjust contrast levels">
+                <span class="menu-icon">◐</span>
+                <div class="theme-toggle-inline">
+                    <span class="theme-label-small">Low</span>
+                    <label class="theme-toggle-small">
+                        <input type="checkbox" id="contrast-toggle-checkbox">
+                        <span class="slider-small"></span>
+                    </label>
+                    <span class="theme-label-small">High</span>
+                </div>
+            </div>
+            <button id="settings-btn" class="menu-item" data-tooltip="Open application settings">
                 <span class="menu-icon">⚙️</span>
                 <span>Settings</span>
             </button>
@@ -150,7 +155,7 @@
                     <textarea id="document-subtitle" class="document-subtitle" placeholder="Document description...">Document Sub-title - this should be a short concise description of what the document should do. It should also be editable (although maybe behind a button).</textarea>
                 </div>
                 <div class="right-block">
-                    <button id="toggleDetails" class="title-collapse-btn dynamic-item">▼</button>
+                    <button id="toggleDetails" class="btn-collapse">▼</button>
                 </div>
 
 
@@ -164,7 +169,7 @@
                         <h3>Revision Tracking</h3>
                     </div>
                     <div class="right-buttons">
-                        <button id="toggleRevisionList" class="title-collapse-btn dynamic-item">▼</button>
+                        <button id="toggleRevisionList" class="btn-collapse">▼</button>
                     </div>
 
                 </div>
@@ -191,8 +196,8 @@
                     <!-- Main content from code goes in here -->
                 </div>
                 <div class="controls index">
-                    <button class="dynamic-item">Add</button>
-                    <button class="dynamic-item">Scrap</button>
+                    <button class="btn">Add</button>
+                    <button class="btn">Scrap</button>
                 </div>
             </section>
 
@@ -208,7 +213,7 @@
                     <!-- Junked items will be rendered here -->
                 </div>
                 <div class="controls junk">
-                    <button id="clear-all-junk-btn" class="dynamic-item" title="Permanently delete all junked items">Clear All</button>
+                    <button id="clear-all-junk-btn" class="btn" data-tooltip="Permanently delete all junked items">Clear All</button>
                 </div>
             </section>
         </aside>

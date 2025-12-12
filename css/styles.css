@@ -55,6 +55,17 @@
     /* Transitions */
     --transition-fast: 0.15s ease;
     --transition-normal: 0.3s ease;
+    
+    /* Menu colors (light theme) */
+    --menu-bg-opacity: rgba(0, 0, 0, 0.45);
+    --menu-text-color: rgba(255, 255, 255, 0.9);
+    --menu-text-secondary: rgba(255, 255, 255, 0.7);
+    --menu-text-tertiary: rgba(255, 255, 255, 0.6);
+    --menu-hover-bg: rgba(255, 255, 255, 0.1);
+    --menu-divider: rgba(255, 255, 255, 0.15);
+    --menu-button-bg: rgba(255, 255, 255, 0.15);
+    --menu-button-hover: rgba(255, 255, 255, 0.25);
+    --menu-button-border: rgba(255, 255, 255, 0.3);
 }
 
 /* Dark Theme */
@@ -62,6 +73,15 @@ body.dark-theme {
     --primary-color: #66BB6A;
     --primary-hover: #81C784;
     --secondary-color: #FFA726;
+    --menu-bg-opacity: rgba(255, 255, 255, 0.55);
+    --menu-text-color: rgba(0, 0, 0, 0.9);
+    --menu-text-secondary: rgba(0, 0, 0, 0.7);
+    --menu-text-tertiary: rgba(0, 0, 0, 0.6);
+    --menu-hover-bg: rgba(0, 0, 0, 0.1);
+    --menu-divider: rgba(0, 0, 0, 0.15);
+    --menu-button-bg: rgba(0, 0, 0, 0.15);
+    --menu-button-hover: rgba(0, 0, 0, 0.25);
+    --menu-button-border: rgba(0, 0, 0, 0.3);
     --secondary-hover: #FFB74D;
     --accent-color: #42A5F5;
     --accent-hover: #64B5F6;
@@ -98,6 +118,40 @@ body.dark-theme {
     /* Tree/Index specific */
     --line-color: #42A5F5;
     --line-gradient-start: #66BB6A;
+}
+
+/* High Contrast Mode (Light Theme) */
+body.high-contrast {
+    --text-color: #000000;
+    --text-secondary: #333333;
+    --text-tertiary: #666666;
+    --background-color: #ffffff;
+    --surface-color: #f8f8f8;
+    --border-color: #000000;
+    --border-light: #333333;
+    --menu-text-color: rgba(255, 255, 255, 1);
+    --menu-text-secondary: rgba(255, 255, 255, 0.85);
+    --menu-text-tertiary: rgba(255, 255, 255, 0.75);
+    --menu-button-bg: rgba(255, 255, 255, 0.25);
+    --menu-button-hover: rgba(255, 255, 255, 0.35);
+    --menu-button-border: rgba(255, 255, 255, 0.5);
+}
+
+/* High Contrast Mode (Dark Theme) */
+body.dark-theme.high-contrast {
+    --text-color: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-tertiary: #b0b0b0;
+    --background-color: #000000;
+    --surface-color: #1a1a1a;
+    --border-color: #ffffff;
+    --border-light: #cccccc;
+    --menu-text-color: rgba(0, 0, 0, 1);
+    --menu-text-secondary: rgba(0, 0, 0, 0.85);
+    --menu-text-tertiary: rgba(0, 0, 0, 0.75);
+    --menu-button-bg: rgba(0, 0, 0, 0.25);
+    --menu-button-hover: rgba(0, 0, 0, 0.35);
+    --menu-button-border: rgba(0, 0, 0, 0.5);
     --line-gradient-mid: rgba(102, 187, 106, 0.4);
     --bracket-color: #42A5F5;
 }
@@ -206,37 +260,42 @@ header h1 {
     top: 20px;
     right: 0;
     z-index: 1001;
-    width: 50px;
-    height: 50px;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: var(--border-radius);
+    width: 60px;
+    height: 70px;
+    background-color: var(--menu-bg-opacity);
+    border: 1px solid var(--menu-divider);
+    border-right: none;
+    border-radius: 12px 0 0 12px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 10px;
-    box-shadow: var(--shadow-md);
-    transition: all var(--transition-fast);
+    padding: 15px 12px;
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+    transition: all var(--transition-normal);
+    pointer-events: auto;
+    backdrop-filter: blur(10px);
 }
 
 .menu-toggle:hover {
-    background-color: var(--primary-hover);
-    transform: scale(1.05);
+    background-color: rgba(0, 0, 0, 0.9);
+    box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.25);
 }
 
 .menu-toggle.active {
     right: 280px;
+    border-radius: 12px 0 0 12px;
 }
 
 .hamburger-line {
-    width: 24px;
-    height: 3px;
-    background-color: white;
+    width: 28px;
+    height: 2.5px;
+    background-color: var(--menu-text-color);
     border-radius: 2px;
     transition: all var(--transition-fast);
+    pointer-events: none;
 }
 
 .menu-toggle.active .hamburger-line:nth-child(1) {
@@ -258,7 +317,7 @@ header h1 {
     right: -300px;
     width: 280px;
     height: 100vh;
-    background-color: var(--surface-color);
+    background-color: var(--menu-bg-opacity);
     box-shadow: var(--shadow-lg);
     z-index: 1000;
     display: flex;
@@ -266,6 +325,8 @@ header h1 {
     padding: 20px 0;
     transition: right var(--transition-normal);
     overflow-y: auto;
+    overflow-x: visible;
+    backdrop-filter: blur(10px);
 }
 
 .side-menu.open {
@@ -280,7 +341,7 @@ header h1 {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+    z-index: 500;
     opacity: 0;
     visibility: hidden;
     transition: opacity var(--transition-normal), visibility var(--transition-normal);
@@ -311,12 +372,12 @@ header h1 {
 .user-name {
     font-weight: 600;
     font-size: 16px;
-    color: var(--text-color);
+    color: var(--menu-text-color);
 }
 
 .user-role {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--menu-text-secondary);
 }
 
 /* Menu Sections */
@@ -327,7 +388,7 @@ header h1 {
 .menu-section-title {
     font-size: 11px;
     font-weight: 600;
-    color: var(--text-tertiary);
+    color: var(--menu-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     padding: 12px 4px 8px 4px;
@@ -337,52 +398,77 @@ header h1 {
 .menu-item {
     display: flex;
     align-items: center;
-    gap: 16px;
-    width: 100%;
-    padding: 12px 4px;
-    margin: 2px 0;
-    background: transparent;
-    border: none;
+    justify-content: center;
+    gap: 12px;
+    width: 80%;
+    margin: 8px auto;
+    padding: 10px 16px;
+    background-color: var(--menu-button-bg);
+    border: 1px solid var(--menu-button-border);
     border-radius: var(--border-radius);
     cursor: pointer;
     font-size: 14px;
-    color: var(--text-color);
-    text-align: left;
+    color: var(--menu-text-color);
+    text-align: center;
     transition: all var(--transition-fast);
     position: relative;
+    font-weight: 500;
 }
 
 .menu-item:hover {
-    background-color: var(--hover-bg);
+    background-color: var(--menu-button-hover);
+    border-color: var(--menu-text-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
+/* Unified button class for all standard buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background-color: var(--menu-button-bg);
+    border: 1px solid var(--menu-button-border);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--menu-text-color);
+    text-align: center;
+    transition: all var(--transition-fast);
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.btn:hover {
+    background-color: var(--menu-button-hover);
+    border-color: var(--menu-text-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Tooltips now handled by message center */
 
 .menu-item > span:nth-child(2) {
     flex: 1;
 }
 
 .menu-icon {
-    font-size: 16px;
-    width: 20px;
-    min-width: 20px;
-    text-align: center;
+    font-size: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
 .menu-shortcut {
-    font-size: 10px;
-    color: var(--text-tertiary);
-    background-color: var(--surface-alt-color);
-    padding: 3px 7px;
-    border-radius: 4px;
-    border: 1px solid var(--border-light);
+    display: none;
 }
 
 .menu-divider {
     height: 1px;
-    background-color: var(--border-color);
-    margin: 12px 0;
+    background-color: var(--menu-divider);
+    margin: 16px 0;
 }
 
 .menu-spacer {
@@ -396,10 +482,16 @@ header h1 {
 /* Theme Toggle in Menu */
 .menu-theme-toggle {
     cursor: default;
+    background-color: transparent !important;
+    width: auto;
+    justify-content: flex-start;
+    padding: 8px 16px;
 }
 
 .menu-theme-toggle:hover {
-    background-color: transparent;
+    background-color: transparent !important;
+    transform: none;
+    box-shadow: none;
 }
 
 .theme-toggle-inline {
@@ -411,7 +503,7 @@ header h1 {
 
 .theme-label-small {
     font-size: 11px;
-    color: var(--text-secondary);
+    color: var(--menu-text-secondary);
 }
 
 .theme-toggle-small {
@@ -434,9 +526,10 @@ header h1 {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--border-color);
+    background-color: var(--menu-hover-bg);
     transition: var(--transition-normal);
     border-radius: 22px;
+    border: 1px solid var(--menu-divider);
 }
 
 .slider-small:before {
@@ -446,10 +539,10 @@ header h1 {
     width: 16px;
     left: 3px;
     bottom: 3px;
-    background-color: var(--surface-color);
+    background-color: var(--menu-text-color);
     transition: var(--transition-normal);
     border-radius: 50%;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .theme-toggle-small input:checked + .slider-small {
@@ -517,26 +610,164 @@ header h1 {
     }
 }
 
-/* Shortcut Feedback Toast */
-.shortcut-feedback {
+/* Message Center - Universal messaging area */
+.message-center {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background-color: var(--primary-color);
-    color: white;
-    padding: 12px 20px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-lg);
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    min-width: 200px;
+    max-width: 600px;
+    padding: 14px 24px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     z-index: 10000;
     opacity: 0;
-    transform: translateY(20px);
-    transition: all var(--transition-normal);
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
     font-weight: 500;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.shortcut-feedback.show {
+.message-center.show {
     opacity: 1;
-    transform: translateY(0);
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Message types */
+.message-center.notification,
+.message-center.success {
+    background-color: rgba(76, 175, 80, 0.95);
+    color: #ffffff;
+}
+
+.message-center.error {
+    background-color: rgba(244, 67, 54, 0.95);
+    color: #ffffff;
+}
+
+.message-center.tooltip {
+    background-color: rgba(0, 0, 0, 0.92);
+    color: #ffffff;
+    font-weight: 400;
+    font-size: 13px;
+}
+
+.message-center.input {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+    min-width: 300px;
+}
+
+/* Dark theme adjustments */
+body.dark-theme .message-center.notification,
+body.dark-theme .message-center.success {
+    background-color: rgba(102, 187, 106, 0.95);
+}
+
+body.dark-theme .message-center.error {
+    background-color: rgba(239, 83, 80, 0.95);
+}
+
+body.dark-theme .message-center.tooltip {
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #000000;
+}
+
+/* High contrast mode */
+body.high-contrast .message-center {
+    border-width: 2px;
+    font-weight: 600;
+}
+
+/* Menu active state - adjust position to avoid menu */
+body .message-center {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), right 0.3s ease;
+}
+
+/* Legacy notification styles - now handled by message center */
+.shortcut-feedback {
+    display: none !important;
+}
+
+/* Universal Input Bar (same location as notifications) */
+.universal-input-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--surface-color);
+    border: 2px solid var(--border-color);
+    padding: 12px 20px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 600px;
+    display: none;
+}
+
+.universal-input-bar.show {
+    display: block;
+}
+
+.universal-input-bar input,
+.universal-input-bar textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--surface-alt-color);
+    color: var(--text-color);
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.universal-input-bar .input-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    justify-content: flex-end;
+}
+
+/* High Contrast Mode Enhancements */
+body.high-contrast {
+    /* Enhance focus visibility */
+    --border-focus: #000000;
+}
+
+body.dark-theme.high-contrast {
+    --border-focus: #ffffff;
+}
+
+body.high-contrast button,
+body.high-contrast input,
+body.high-contrast textarea,
+body.high-contrast select {
+    border-width: 2px;
+}
+
+body.high-contrast button:focus,
+body.high-contrast input:focus,
+body.high-contrast textarea:focus,
+body.high-contrast select:focus {
+    outline: 3px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+body.high-contrast a {
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+body.high-contrast .section-link:hover,
+body.high-contrast .menu-item:hover {
+    outline: 2px solid var(--border-focus);
 }
 
 /* Main container shift when menu is open */
@@ -563,35 +794,10 @@ main {
 }
 
 
-/* For the Import Button etc within the import-block class / grid area */
-
+/* Import block - hidden file inputs only */
 .import-block {
     grid-area: import-block;
     margin-bottom: 1rem;
-}
-
-.import-block button {
-    border-radius: var(--border-radius-lg);
-    padding: 10px 20px;
-    font-size: 14px;
-    color: var(--text-on-primary);
-    background-color: var(--primary-color);
-    border: none;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    box-shadow: var(--shadow-sm);
-    margin-right: 8px;
-}
-
-.import-block button:hover {
-    background-color: var(--primary-hover);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-.import-block button:active {
-    transform: translateY(0);
-    box-shadow: var(--shadow-sm);
 }
 
 .title {
@@ -711,8 +917,11 @@ main {
     transform: rotate(0deg);
 }
 
-/* Title Section Collapse Buttons - Larger and Always Visible */
-.title-collapse-btn {
+/* Collapse buttons - unified with other button styles */
+.btn-collapse {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
@@ -720,28 +929,24 @@ main {
     cursor: pointer;
     padding: 8px 12px;
     border-radius: var(--border-radius);
-    opacity: 1;
     transition: all var(--transition-fast);
     line-height: 1;
     min-width: 40px;
     min-height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.title-collapse-btn:hover {
+.btn-collapse:hover {
     background-color: var(--hover-bg);
     border-color: var(--primary-color);
     color: var(--primary-color);
     transform: scale(1.1);
 }
 
-.title-collapse-btn.rotated {
+.btn-collapse.rotated {
     transform: rotate(180deg);
 }
 
-.title-collapse-btn.rotated:hover {
+.btn-collapse.rotated:hover {
     transform: rotate(180deg) scale(1.1);
 }
 
@@ -883,7 +1088,7 @@ main {
 
 /* Nav bar styling - full width, centered, no decoration  */
 nav {
-    margin-top: 5px;
+    /* margin-top: 5px; */
     display: flex;
     padding: 0.3rem 0.5rem;
     text-align: center;
@@ -1062,21 +1267,6 @@ footer {
     align-items: center;
     gap: 1rem;
     margin-top: 1rem;
-
-    button {
-        width: 100px;
-        background-color: var(--primary-color);
-        color: #fff;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-
-        &:hover {
-            background-color: var(--secondary-color);
-        }
-    }
 }
 
 

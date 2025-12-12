@@ -25,6 +25,7 @@ import {
     getCurrentDocument
 } from './version-control.js';
 import { renderJunkItems } from './junk-manager.js';
+import { showError, showSuccess, showNotification } from './message-center.js';
 
 /**
  * Imports a JSON document and updates the document structure
@@ -139,7 +140,7 @@ export function initializeFileInput(inputId = 'fileInput') {
 
         } catch (error) {
             console.error('Import failed:', error);
-            alert(`Import failed: ${error.message}`);
+            showError(`Import failed: ${error.message}`);
         }
     });
 }
@@ -211,17 +212,17 @@ export function downloadVersionedDocument(customFilename = null) {
         console.log(`Downloaded versioned document as ${filename}`);
         console.log('Document stats:', stats);
         
-        alert(
-            `Successfully downloaded: ${filename}\n\n` +
-            `Version: ${stats.currentVersion}\n` +
-            `Total versions: ${stats.totalVersions}\n` +
-            `Nodes: ${stats.nodeCount}\n` +
+        showSuccess(
+            `Successfully downloaded: ${filename} | ` +
+            `Version: ${stats.currentVersion} | ` +
+            `Total versions: ${stats.totalVersions} | ` +
+            `Nodes: ${stats.nodeCount} | ` +
             `Size: ${stats.totalSizeKB} KB`
         );
 
     } catch (error) {
         console.error('Download failed:', error);
-        alert(`Download failed: ${error.message}`);
+        showError(`Download failed: ${error.message}`);
         throw error;
     }
 }
@@ -323,7 +324,7 @@ export function saveDocument(docId) {
 
     } catch (error) {
         console.error(`Error saving document ${docId}:`, error);
-        alert(`Failed to save document: ${error.message}`);
+        showError(`Failed to save document: ${error.message}`);
         return { success: false, error: error.message };
     }
 }
@@ -339,7 +340,7 @@ export function commitDocument(docId, commitMessage = '', author = 'User') {
     try {
         // Check if there are uncommitted changes
         if (!hasUncommittedChanges()) {
-            alert('No changes to commit. Make changes and save first.');
+            showError('No changes to commit. Make changes and save first.');
             return { success: false, message: 'No changes to commit' };
         }
 
@@ -401,14 +402,14 @@ export function commitDocument(docId, commitMessage = '', author = 'User') {
             // Refresh revision list
             window.dispatchEvent(new CustomEvent('dlms:refreshRevisions'));
             
-            alert(`Successfully committed version ${result.version}:\n${message}`);
+            showSuccess(`Successfully committed version ${result.version}: ${message}`);
         }
 
         return result;
 
     } catch (error) {
         console.error(`Error committing document ${docId}:`, error);
-        alert(`Failed to commit: ${error.message}`);
+        showError(`Failed to commit: ${error.message}`);
         throw error;
     }
 }
@@ -533,7 +534,7 @@ export function deleteNode(nodeId) {
 
     } catch (error) {
         console.error(`Error deleting node ${nodeId}:`, error);
-        alert(`Failed to delete node: ${error.message}`);
+        showError(`Failed to delete node: ${error.message}`);
         throw error;
     }
 }
@@ -606,7 +607,7 @@ export function importDocument() {
 
     } catch (error) {
         console.error('Error triggering import:', error);
-        alert('Failed to open import dialog');
+        showError('Failed to open import dialog');
     }
 }
 
@@ -705,7 +706,7 @@ export async function exportCompleteDocument() {
         const versionHistory = exportVersionHistory();
         
         if (!versionHistory) {
-            alert('No version history available to export');
+            showError('No version history available to export');
             return false;
         }
         
@@ -737,14 +738,14 @@ export async function exportCompleteDocument() {
         
         if (success) {
             clearUnsavedExport();
-            alert('Document exported successfully!');
+            showSuccess('Document exported successfully!');
         }
         
         return success;
         
     } catch (error) {
         console.error('Error exporting document:', error);
-        alert(`Export failed: ${error.message}`);
+        showError(`Export failed: ${error.message}`);
         return false;
     }
 }

@@ -8,6 +8,7 @@ import { stateManager } from './state-manager.js';
 import DocumentNode from './documentnode.js';
 import { renderDocumentStructure } from './tree-renderer.js';
 import { scheduleAutoSave } from './storage-manager.js';
+import { showError, showSuccess } from './message-center.js';
 
 /**
  * Renders the junk items in the junk section
@@ -173,7 +174,7 @@ export function restoreFromJunk(junkId) {
         const itemIndex = junkItems.findIndex(item => item.id === junkId);
 
         if (itemIndex === -1) {
-            alert('Junked item not found');
+            showError('Junked item not found');
             return;
         }
 
@@ -240,7 +241,7 @@ export function restoreFromJunk(junkId) {
 
     } catch (error) {
         console.error('Error restoring from junk:', error);
-        alert(`Failed to restore item: ${error.message}`);
+        showError(`Failed to restore item: ${error.message}`);
     }
 }
 
@@ -254,7 +255,7 @@ export function permanentlyDeleteFromJunk(junkId) {
         const item = junkItems.find(item => item.id === junkId);
 
         if (!item) {
-            alert('Junked item not found');
+            showError('Junked item not found');
             return;
         }
 
@@ -280,7 +281,7 @@ export function permanentlyDeleteFromJunk(junkId) {
 
     } catch (error) {
         console.error('Error permanently deleting from junk:', error);
-        alert(`Failed to delete item: ${error.message}`);
+        showError(`Failed to delete item: ${error.message}`);
     }
 }
 
@@ -291,7 +292,7 @@ export function clearAllJunk() {
     const junkItems = stateManager.getJunkItems() || [];
 
     if (junkItems.length === 0) {
-        alert('Junk is already empty');
+        showError('Junk is already empty');
         return;
     }
 
@@ -318,7 +319,7 @@ export function clearAllJunk() {
 
     } catch (error) {
         console.error('Error clearing junk:', error);
-        alert(`Failed to clear junk: ${error.message}`);
+        showError(`Failed to clear junk: ${error.message}`);
     }
 }
 

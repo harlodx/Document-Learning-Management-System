@@ -6,6 +6,7 @@
 import DocumentNode from './documentnode.js';
 import { stateManager } from './state-manager.js';
 import { scheduleAutoSave } from './storage-manager.js';
+import { showError } from './message-center.js';
 
 // Store collapse states: Set of node IDs that are currently collapsed
 const collapsedNodes = new Set();
@@ -589,13 +590,13 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
         
         if (!sourceInfo) {
             console.error('Could not find source node:', sourceNodeId);
-            alert(`Could not find source node: ${sourceNodeId}`);
+            showError(`Could not find source node: ${sourceNodeId}`);
             return;
         }
         
         if (!targetInfo) {
             console.error('Could not find target node:', targetNodeId);
-            alert(`Could not find target node: ${targetNodeId}`);
+            showError(`Could not find target node: ${targetNodeId}`);
             return;
         }
         
@@ -758,7 +759,7 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
     } catch (error) {
         console.error('Error reordering tree nodes:', error);
         console.error('Stack trace:', error.stack);
-        alert(`Failed to reorder: ${error.message}`);
+        showError(`Failed to reorder: ${error.message}`);
     }
 }
 

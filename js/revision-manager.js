@@ -11,6 +11,7 @@ import {
 import { renderDocumentStructure } from './tree-renderer.js';
 import { stateManager } from './state-manager.js';
 import DocumentNode from './documentnode.js';
+import { showError, showSuccess } from './message-center.js';
 
 /**
  * Revision document structure
@@ -199,7 +200,7 @@ export function viewRevision(revisionId) {
         
     } catch (error) {
         console.error(`Error viewing revision ${revisionId}:`, error);
-        alert(`Failed to view changes: ${error.message}`);
+        showError(`Failed to view changes: ${error.message}`);
     }
 }
 
@@ -501,17 +502,16 @@ export function revertDocument(revisionId) {
             stateManager.setDocumentStructure(rootNodes);
             renderDocumentStructure(rootNodes);
             
-            alert(
-                `Reverted to version ${version}\n\n` +
-                `Remember to:\n` +
-                `1. Click SAVE to save your working copy\n` +
+            showSuccess(
+                `Reverted to version ${version} | ` +
+                `Remember to: 1. Click SAVE to save your working copy | ` +
                 `2. Click COMMIT to make it permanent`
             );
         }
         
     } catch (error) {
         console.error(`Error reverting to revision ${revisionId}:`, error);
-        alert(`Failed to revert: ${error.message}`);
+        showError(`Failed to revert: ${error.message}`);
         throw error;
     }
 }

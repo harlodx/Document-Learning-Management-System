@@ -6,7 +6,9 @@
 */
 
 const THEME_KEY = 'dlms_theme';
+const CONTRAST_KEY = 'dlms_contrast';
 const DARK_THEME_CLASS = 'dark-theme';
+const HIGH_CONTRAST_CLASS = 'high-contrast';
 
 /**
  * Initialize theme system
@@ -16,6 +18,10 @@ export function initializeTheme() {
     const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
     applyTheme(savedTheme);
     
+    // Load saved contrast or default to low
+    const savedContrast = localStorage.getItem(CONTRAST_KEY) || 'low';
+    applyContrast(savedContrast);
+    
     // Set up theme toggle
     const themeToggle = document.getElementById('theme-toggle-checkbox');
     if (themeToggle) {
@@ -23,7 +29,14 @@ export function initializeTheme() {
         themeToggle.addEventListener('change', handleThemeToggle);
     }
     
-    console.log('Theme system initialized:', savedTheme);
+    // Set up contrast toggle
+    const contrastToggle = document.getElementById('contrast-toggle-checkbox');
+    if (contrastToggle) {
+        contrastToggle.checked = savedContrast === 'high';
+        contrastToggle.addEventListener('change', handleContrastToggle);
+    }
+    
+    console.log('Theme system initialized:', savedTheme, 'contrast:', savedContrast);
 }
 
 /**
@@ -70,4 +83,50 @@ export function toggleTheme() {
     }
     
     return newTheme;
+}
+
+/**
+ * Handle contrast toggle change
+ */
+function handleContrastToggle(event) {
+    const newContrast = event.target.checked ? 'high' : 'low';
+    applyContrast(newContrast);
+    localStorage.setItem(CONTRAST_KEY, newContrast);
+    console.log('Contrast changed to:', newContrast);
+}
+
+/**
+ * Apply contrast to document
+ */
+function applyContrast(contrast) {
+    if (contrast === 'high') {
+        document.body.classList.add(HIGH_CONTRAST_CLASS);
+    } else {
+        document.body.classList.remove(HIGH_CONTRAST_CLASS);
+    }
+}
+
+/**
+ * Get current contrast
+ */
+export function getCurrentContrast() {
+    return document.body.classList.contains(HIGH_CONTRAST_CLASS) ? 'high' : 'low';
+}
+
+/**
+ * Toggle contrast programmatically
+ */
+export function toggleContrast() {
+    const currentContrast = getCurrentContrast();
+    const newContrast = currentContrast === 'low' ? 'high' : 'low';
+    applyContrast(newContrast);
+    localStorage.setItem(CONTRAST_KEY, newContrast);
+    
+    // Update checkbox if it exists
+    const contrastToggle = document.getElementById('contrast-toggle-checkbox');
+    if (contrastToggle) {
+        contrastToggle.checked = newContrast === 'high';
+    }
+    
+    return newContrast;
 }

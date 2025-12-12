@@ -4,6 +4,7 @@
  */
 
 import { stateManager } from './state-manager.js';
+import { showError } from './message-center.js';
 
 // Store active event listeners for cleanup
 const activeListeners = new Map();
@@ -344,7 +345,7 @@ function deleteContentItem(nodeId, index) {
 
     } catch (error) {
         console.error('Error deleting content item:', error);
-        alert(`Failed to delete content: ${error.message}`);
+        showError(`Failed to delete content: ${error.message}`);
     }
 }
 
@@ -465,7 +466,7 @@ function reorderContentItems(fromIndex, toIndex) {
         
     } catch (error) {
         console.error('Error reordering content items:', error);
-        alert(`Failed to reorder: ${error.message}`);
+        showError(`Failed to reorder: ${error.message}`);
     }
 }
 

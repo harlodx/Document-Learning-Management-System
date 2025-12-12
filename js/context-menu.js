@@ -10,6 +10,7 @@ import { findNodeById, renderDocumentStructure } from './tree-renderer.js';
 import { deleteNode } from './data-operations.js';
 import { undo, canUndo, getUndoCount, saveStateBeforeChange } from './undo-manager.js';
 import DocumentNode from './documentnode.js';
+import { showError, showSuccess, showNotification } from './message-center.js';
 
 let contextMenu = null;
 let currentNodeId = null;
@@ -273,7 +274,7 @@ function handleMenuItemClick(event) {
  */
 function handleUndo() {
     if (!canUndo()) {
-        alert('Nothing to undo.');
+        showError('Nothing to undo.');
         return;
     }
     
@@ -577,7 +578,7 @@ function handleMoveNode() {
     const targetList = buildTargetList(documentStructure, currentNodeId);
     
     if (targetList.length === 0) {
-        alert('No valid target locations available.');
+        showError('No valid target locations available.');
         return;
     }
     
@@ -646,7 +647,7 @@ function showMoveDialog(targetList, sourceNode) {
     const selectedIndex = parseInt(selection, 10) - 1;
     
     if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= targetList.length) {
-        alert('Invalid selection.');
+        showError('Invalid selection.');
         return;
     }
     
@@ -736,7 +737,7 @@ function handleAddReference() {
     const nodeList = buildNodeList(documentStructure, currentNodeId);
     
     if (nodeList.length === 0) {
-        alert('No other sections available to reference.');
+        showError('No other sections available to reference.');
         return;
     }
     
@@ -793,7 +794,7 @@ function showAddReferenceDialog(nodeList, sourceNode) {
     const validSelections = selections.filter(i => !isNaN(i) && i >= 0 && i < nodeList.length);
     
     if (validSelections.length === 0) {
-        alert('Invalid selection.');
+        showError('Invalid selection.');
         return;
     }
     
@@ -830,7 +831,7 @@ function addReferencesToNode(node, referencedNodes) {
     renderDocumentStructure(documentStructure);
     
     console.log('Added references to node:', node.id, referencedNodes);
-    alert(`Added ${referencedNodes.length} reference(s) successfully.`);
+    showSuccess(`Added ${referencedNodes.length} reference(s) successfully.`);
 }
 
 /**
@@ -842,7 +843,7 @@ export function navigateToReference(nodeId) {
     
     if (!targetNode) {
         console.error('Referenced node not found:', nodeId);
-        alert('Referenced section not found.');
+        showError('Referenced section not found.');
         return;
     }
     
