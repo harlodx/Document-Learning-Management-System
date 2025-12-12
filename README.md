@@ -9,6 +9,9 @@ A comprehensive web-based application for hierarchical document creation, manage
 - Drag-and-drop reorganization
 - Automatic ID management and re-numbering
 - Visual tree rendering with indent guides
+- **Smart tree loading** - Automatically collapses subnodes on load
+- **Last edit tracking** - Returns to recently edited nodes (within 24 hours)
+- **Collapse state management** - Preserves user's view preferences during session
 
 ### 💾 Git-like Version Control
 - **Save** - Fast, frequent working copy saves
@@ -16,6 +19,7 @@ A comprehensive web-based application for hierarchical document creation, manage
 - **History** - Complete version history with JSON Patch deltas
 - **Revert** - Restore any previous version
 - **View** - Preview any version without changing current work
+- **Timestamp tracking** - Individual change timestamps for full audit trail
 
 ### 📁 File Management
 - **Download** - Export complete document with full version history
@@ -31,9 +35,24 @@ A comprehensive web-based application for hierarchical document creation, manage
 
 ### 📊 Revision Tracking
 - View all committed versions
-- See commit messages, authors, dates
-- Compare versions
+- See commit messages, authors, dates, and **individual change times**
+- **Dual-level search** - Filter both revisions and individual changes
 - Track document statistics
+- **Real-time change filtering** - Search by time, user, action, or content
+- **Zebra-striped displays** - Enhanced readability for change lists
+
+### 🎨 Modern UI/UX
+- **Custom modal dialogs** - Consistent, themed confirmation and input prompts
+- **Unified messaging system** - Toast notifications for all app messages
+- **Dark theme support** - Automatic theme switching
+- **Responsive design** - Works on desktop and mobile
+- **Smooth animations** - Polished interactions throughout
+
+### 🗑️ Soft Delete System
+- **Junk management** - Safely remove nodes without permanent deletion
+- **Restore capability** - Recover junked items anytime
+- **Permanent delete option** - Clear junk when ready
+- **Bulk operations** - Clear all junk at once
 
 ### 🎨 Modern Modular Architecture
 - Clean separation of concerns
@@ -107,17 +126,25 @@ DLMS/
 ├── index.html                      # Main application
 ├── js/
 │   ├── script.js                   # Application entry point
-│   ├── version-control.js          # Version control system (NEW)
-│   ├── data-operations.js          # File operations (UPDATED)
-│   ├── revision-manager.js         # Revision UI (UPDATED)
+│   ├── version-control.js          # Version control system
+│   ├── data-operations.js          # File operations & smart loading
+│   ├── revision-manager.js         # Revision UI with search
 │   ├── state-manager.js            # State management
 │   ├── storage-manager.js          # Browser storage
-│   ├── tree-renderer.js            # Tree visualization
+│   ├── tree-renderer.js            # Tree visualization & collapse
 │   ├── tree-reconstruction.js      # Tree building
-│   ├── content-editor.js           # Content editing
+│   ├── content-editor.js           # Content editing with timestamps
 │   ├── event-handlers.js           # Event delegation
 │   ├── storage-ui.js               # Storage controls
-│   └── documentnode.js             # Document node class
+│   ├── documentnode.js             # Document node class
+│   ├── message-center.js           # Unified messaging & modals
+│   ├── junk-manager.js             # Soft delete management
+│   ├── undo-manager.js             # Undo/redo functionality
+│   ├── context-menu.js             # Right-click operations
+│   ├── theme-manager.js            # Theme switching
+│   ├── menu-manager.js             # Menu system
+│   ├── search-manager.js           # Search functionality
+│   └── print-formatter.js          # Print/PDF export
 ├── css/
 │   └── styles.css                  # Application styles
 └── docs/
@@ -202,6 +229,8 @@ DLMS/
 - Multi-paragraph support
 - Inline editing
 - Auto-save of edits
+- **Last edit timestamps** - Track when each node was modified
+- Content item management (add, edit, delete)
 
 ### 🔢 Automatic ID Management
 - Sequential IDs (1, 1-1, 1-1-1, etc.)
@@ -215,6 +244,8 @@ DLMS/
 - Revert to any version
 - Compare versions (console)
 - JSON Patch for efficiency
+- **Individual change timestamps** - Audit trail for every modification
+- **Searchable history** - Find changes by time, user, action, or content
 
 ### 💼 Professional Workflow
 - Separate save/commit actions
@@ -222,6 +253,20 @@ DLMS/
 - Visual indicators for uncommitted changes
 - Download with custom filenames
 - Import with preserved history
+- **Smart resume** - Return to your last edited location
+- **Custom modals** - Professional confirmation and input dialogs
+- **Unified notifications** - Consistent feedback system
+
+## Recent Updates
+
+### Version 2.0 (December 2025)
+- ✅ **Smart document loading** - Auto-collapse subnodes, return to last edit
+- ✅ **Timestamp tracking** - Full audit trail for individual changes
+- ✅ **Dual-level search** - Filter revisions and changes simultaneously
+- ✅ **Custom modals** - Replaced all browser dialogs with themed modals
+- ✅ **Enhanced UI** - Zebra striping, improved contrast, better readability
+- ✅ **Unified messaging** - Consistent toast notifications throughout
+- ✅ **Last edit memory** - Automatically opens recently edited branches
 
 ## Future Enhancements
 
@@ -229,11 +274,13 @@ DLMS/
 - [ ] Multi-user collaboration
 - [ ] Conflict resolution
 - [ ] Branch/merge capability
-- [ ] Export to PDF/Word
+- [ ] Export to PDF/Word (basic print support exists)
 - [ ] Rich text formatting
 - [ ] Attachments support
-- [ ] Search functionality
+- [ ] Full-text search across document
 - [ ] Keyboard shortcuts
+- [ ] Change comparison view
+- [ ] Export to Markdown
 
 ## Contributing
 
