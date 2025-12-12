@@ -123,22 +123,17 @@ header {
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative;
     min-height: 60px;
     width: 100%;
-    padding: 0 2rem;
+    padding: 0 2rem 0 80px;
     background-color: var(--header-bg-color);
+    transition: all var(--transition-normal);
 }
 
 header h1 {
     margin: 0;
     text-align: center;
     color: var(--text-color);
-}
-
-header .theme-toggle-container {
-    position: absolute;
-    right: 2rem;
 }
 
 /* Theme Toggle Styles */
@@ -205,13 +200,361 @@ header .theme-toggle-container {
     opacity: 0.8;
 }
 
+/* Hamburger Menu Button - Tab Style */
+.menu-toggle {
+    position: fixed;
+    top: 20px;
+    right: 0;
+    z-index: 1001;
+    width: 50px;
+    height: 50px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-fast);
+}
+
+.menu-toggle:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.menu-toggle.active {
+    right: 280px;
+}
+
+.hamburger-line {
+    width: 24px;
+    height: 3px;
+    background-color: white;
+    border-radius: 2px;
+    transition: all var(--transition-fast);
+}
+
+.menu-toggle.active .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translateY(9px);
+}
+
+.menu-toggle.active .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-toggle.active .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translateY(-9px);
+}
+
+/* Side Menu */
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -300px;
+    width: 280px;
+    height: 100vh;
+    background-color: var(--surface-color);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    transition: right var(--transition-normal);
+    overflow-y: auto;
+}
+
+.side-menu.open {
+    right: 0;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* User Section */
+.menu-user-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px 20px 20px;
+}
+
+.user-avatar {
+    flex-shrink: 0;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-color);
+}
+
+.user-role {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Menu Sections */
+.menu-section {
+    padding: 0 16px;
+}
+
+.menu-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 12px 4px 8px 4px;
+    margin: 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 12px 4px;
+    margin: 2px 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-color);
+    text-align: left;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.menu-item:hover {
+    background-color: var(--hover-bg);
+}
+
+.menu-item > span:nth-child(2) {
+    flex: 1;
+}
+
+.menu-icon {
+    font-size: 16px;
+    width: 20px;
+    min-width: 20px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-shortcut {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    background-color: var(--surface-alt-color);
+    padding: 3px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+}
+
+.menu-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 12px 0;
+}
+
+.menu-spacer {
+    flex-grow: 1;
+}
+
+.menu-bottom {
+    margin-top: auto;
+}
+
+/* Theme Toggle in Menu */
+.menu-theme-toggle {
+    cursor: default;
+}
+
+.menu-theme-toggle:hover {
+    background-color: transparent;
+}
+
+.theme-toggle-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.theme-label-small {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.theme-toggle-small {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 22px;
+}
+
+.theme-toggle-small input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-small {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: var(--transition-normal);
+    border-radius: 22px;
+}
+
+.slider-small:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--surface-color);
+    transition: var(--transition-normal);
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle-small input:checked + .slider-small {
+    background-color: var(--primary-color);
+}
+
+.theme-toggle-small input:checked + .slider-small:before {
+    transform: translateX(20px);
+}
+
+/* Responsive Design for Smaller Screens */
+@media (max-width: 768px) {
+    .side-menu {
+        width: 260px;
+        right: -260px;
+    }
+    
+    .menu-toggle.active {
+        right: 260px;
+    }
+    
+    #dynamic-container.menu-active {
+        transform: translateX(-80px);
+    }
+}
+
+@media (max-width: 480px) {
+    .side-menu {
+        width: 80%;
+        max-width: 280px;
+        right: -100%;
+    }
+    
+    .menu-toggle {
+        top: 10px;
+        right: 0;
+        width: 45px;
+        height: 45px;
+    }
+    
+    .menu-toggle:hover {
+        width: 45px;
+    }
+    
+    .menu-toggle.active {
+        right: 80%;
+        max-width: 280px;
+    }
+    
+    .hamburger-line {
+        width: 20px;
+    }
+    
+    #dynamic-container.menu-active {
+        transform: translateX(0);
+    }
+    
+    .menu-section {
+        padding: 0 12px;
+    }
+    
+    .menu-item {
+        padding: 10px 4px;
+        font-size: 13px;
+    }
+}
+
+/* Shortcut Feedback Toast */
+.shortcut-feedback {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 10000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all var(--transition-normal);
+    font-weight: 500;
+}
+
+.shortcut-feedback.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Main container shift when menu is open */
+#dynamic-container {
+    transition: all var(--transition-normal);
+}
+
+#dynamic-container.menu-active {
+    transform: translateX(-100px);
+    filter: brightness(0.7);
+    pointer-events: none;
+}
 
 main {
     display: grid;
     grid-template-areas:
         "import-block import-block"
         "title title"
-        "button-toolbar button-toolbar"
         "aside content"
         "aside content";
 
@@ -250,113 +593,6 @@ main {
     transform: translateY(0);
     box-shadow: var(--shadow-sm);
 }
-
-/* Sticky Button Toolbar */
-.button-toolbar {
-    grid-area: button-toolbar;
-    position: sticky;
-    top: 5px;
-    z-index: 100;
-    background-color: var(--surface-color);
-    border-bottom: 2px solid var(--border-color);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-    padding: 12px 0;
-    margin-bottom: 0.25rem;
-    margin-top: 0.5rem;
-    width: 100%;
-}
-
-.toolbar-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-    padding: 0 20px;
-    max-width: none;
-    flex-wrap: nowrap;
-}
-
-.button-group {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.toolbar-btn {
-    border-radius: var(--border-radius);
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-on-primary);
-    background-color: var(--primary-color);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    box-shadow: var(--shadow-sm);
-    white-space: nowrap;
-}
-
-/* Edit action buttons - blue accent */
-.toolbar-btn-edit,
-.toolbar-btn-save,
-.toolbar-btn-commit {
-    background-color: var(--accent-color);
-}
-
-.toolbar-btn-edit:hover,
-.toolbar-btn-save:hover,
-.toolbar-btn-commit:hover {
-    background-color: var(--accent-hover);
-}
-
-/* Import/Export buttons - green primary */
-.toolbar-btn-import,
-.toolbar-btn-export {
-    background-color: var(--primary-color);
-}
-
-.toolbar-btn-import:hover,
-.toolbar-btn-export:hover {
-    background-color: var(--primary-hover);
-}
-
-.toolbar-btn:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-.toolbar-btn:active {
-    transform: translateY(0);
-    box-shadow: var(--shadow-sm);
-}
-
-.toolbar-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Responsive toolbar for smaller screens */
-@media (max-width: 768px) {
-    .toolbar-container {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .button-group {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .toolbar-btn {
-        padding: 8px 16px;
-        font-size: 13px;
-    }
-}
-
 
 .title {
     grid-area: title;
@@ -521,6 +757,10 @@ main {
     margin-top: 1rem;
 }
 
+.revisions li {
+    list-style-type: none;
+}
+
 .revision-item {
     /* border: 1px solid var(--text-color); */
     border-radius: 10px;
@@ -680,8 +920,8 @@ aside {
 .document-content {
     grid-area: content;
     position: sticky;
-    top: 80px;
-    height: calc(100vh - 100px);
+    top: 10px;
+    height: calc(100vh - 20px);
     overflow-y: auto;
     margin-top: 10px;
     margin-left: 10px;
@@ -1257,15 +1497,6 @@ footer {
 
 .export-btn:hover {
     background-color: var(--secondary-hover);
-}
-
-#export-pdf-btn {
-    background-color: var(--accent-color);
-    color: var(--text-on-primary);
-}
-
-#export-pdf-btn:hover {
-    background-color: var(--accent-hover);
 }
 
 .info-btn {

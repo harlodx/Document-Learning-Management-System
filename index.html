@@ -37,16 +37,100 @@
 </head>
 
 <body>
+    <!-- Hamburger Menu Button -->
+    <button id="menu-toggle" class="menu-toggle" aria-label="Toggle Menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+
+    <!-- Slide-out Menu -->
+    <nav id="side-menu" class="side-menu">
+        <!-- User Section -->
+        <div class="menu-user-section">
+            <div class="user-avatar">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="currentColor">
+                    <circle cx="20" cy="20" r="20" fill="#4CAF50"/>
+                    <circle cx="20" cy="15" r="7" fill="white"/>
+                    <path d="M8 35c0-6.627 5.373-12 12-12s12 5.373 12 12" fill="white"/>
+                </svg>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="user-name">User Name</span>
+                <span class="user-role">Editor</span>
+            </div>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <!-- Document Section -->
+        <div class="menu-section">
+            <h3 class="menu-section-title">Document</h3>
+            <button id="import-btn" class="menu-item dynamic-item">
+                <span class="menu-icon">📥</span>
+                <span>Import</span>
+            </button>
+            <button id="export-btn" class="menu-item dynamic-item">
+                <span class="menu-icon">📤</span>
+                <span>Export</span>
+            </button>
+            <button id="export-pdf-btn" class="menu-item dynamic-item">
+                <span class="menu-icon">🖨️</span>
+                <span>Print</span>
+            </button>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <!-- Editing Actions Section -->
+        <div class="menu-section">
+            <h3 class="menu-section-title">Editing</h3>
+            <button id="unlockDocument" class="menu-item dynamic-item text-button">
+                <span class="menu-icon">✏️</span>
+                <span>Edit</span>
+            </button>
+            <button id="saveDocument" class="menu-item dynamic-item text-button">
+                <span class="menu-icon">💾</span>
+                <span>Save Draft</span>
+                <span class="menu-shortcut">Ctrl+S</span>
+            </button>
+            <button id="commitDocument" class="menu-item dynamic-item text-button">
+                <span class="menu-icon">✓</span>
+                <span>Commit</span>
+                <span class="menu-shortcut">Ctrl+Shift+S</span>
+            </button>
+        </div>
+
+        <!-- Push settings and theme to bottom -->
+        <div class="menu-spacer"></div>
+        <div class="menu-divider"></div>
+
+        <!-- Theme Toggle at Bottom -->
+        <div class="menu-section menu-bottom">
+            <div class="menu-item menu-theme-toggle">
+                <span class="menu-icon">🌓</span>
+                <span>Theme</span>
+                <div class="theme-toggle-inline">
+                    <span class="theme-label-small">Light</span>
+                    <label class="theme-toggle-small">
+                        <input type="checkbox" id="theme-toggle-checkbox">
+                        <span class="slider-small"></span>
+                    </label>
+                    <span class="theme-label-small">Dark</span>
+                </div>
+            </div>
+            <button id="settings-btn" class="menu-item">
+                <span class="menu-icon">⚙️</span>
+                <span>Settings</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay" class="menu-overlay"></div>
+
     <header>
         <h1>Company Logo</h1>
-        <div class="theme-toggle-container">
-            <span class="theme-label">Light</span>
-            <label class="theme-toggle">
-                <input type="checkbox" id="theme-toggle-checkbox">
-                <span class="slider"></span>
-            </label>
-            <span class="theme-label">Dark</span>
-        </div>
     </header>
     <main id="dynamic-container">
         <section class="import-block" style="display: none;">
@@ -92,22 +176,6 @@
             </div>
 
 
-        </section>
-
-        <!-- Sticky Button Toolbar -->
-        <section class="button-toolbar">
-            <div class="toolbar-container">
-                <div class="button-group">
-                    <button id="unlockDocument" class="toolbar-btn toolbar-btn-edit dynamic-item text-button">Edit</button>
-                    <button id="saveDocument" class="toolbar-btn toolbar-btn-save dynamic-item text-button">Save Draft</button>
-                    <button id="commitDocument" class="toolbar-btn toolbar-btn-commit dynamic-item text-button">Commit</button>
-                </div>
-                <div class="button-group">
-                    <button id="import-btn" class="toolbar-btn toolbar-btn-import dynamic-item">Import Document</button>
-                    <button id="export-btn" class="toolbar-btn toolbar-btn-export dynamic-item">Export Document</button>
-                    <button id="export-pdf-btn" class="toolbar-btn toolbar-btn-export dynamic-item">Export to PDF</button>
-                </div>
-            </div>
         </section>
 
         <aside>

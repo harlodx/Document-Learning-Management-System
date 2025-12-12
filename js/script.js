@@ -48,6 +48,7 @@ import {
 import { renderJunkItems, clearAllJunk } from './junk-manager.js';
 import { exportToPDF } from './print-formatter.js';
 import { initializeSearch } from './search-manager.js';
+import { initializeMenu, setUsername } from './menu-manager.js';
 import { initializeContextMenu } from './context-menu.js';
 import { initializeUndoManager } from './undo-manager.js';
 import { initializeTheme } from './theme-manager.js';
@@ -236,6 +237,10 @@ function initializeApplication() {
         // Initialize theme system first (affects visual rendering)
         debugMessage('Initializing theme...');
         initializeTheme();
+
+        // Initialize menu system
+        debugMessage('Initializing menu...');
+        initializeMenu();
 
         // Initialize storage system
         const storageAvailable = initializeStorage();
