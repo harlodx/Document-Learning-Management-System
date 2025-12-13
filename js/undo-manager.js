@@ -7,6 +7,7 @@
 
 import { stateManager } from './state-manager.js';
 import { renderDocumentStructure } from './tree-renderer.js';
+import DocumentNode from './documentnode.js';
 
 const MAX_HISTORY_SIZE = 50;
 let undoStack = [];
@@ -107,10 +108,13 @@ export function undo() {
     // Pop from undo stack
     const previousEntry = undoStack.pop();
     
+    // Reconstruct DocumentNode objects from JSON
+    const reconstructedStructure = previousEntry.state.map(nodeJson => DocumentNode.fromJSON(nodeJson));
+    
     // Restore previous state
     isUndoRedoOperation = true;
-    stateManager.setDocumentStructure(previousEntry.state);
-    renderDocumentStructure(previousEntry.state);
+    stateManager.setDocumentStructure(reconstructedStructure);
+    renderDocumentStructure(reconstructedStructure);
     isUndoRedoOperation = false;
     
     console.log('Undo performed. Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);
@@ -138,10 +142,13 @@ export function redo() {
     // Pop from redo stack
     const nextEntry = redoStack.pop();
     
+    // Reconstruct DocumentNode objects from JSON
+    const reconstructedStructure = nextEntry.state.map(nodeJson => DocumentNode.fromJSON(nodeJson));
+    
     // Restore next state
     isUndoRedoOperation = true;
-    stateManager.setDocumentStructure(nextEntry.state);
-    renderDocumentStructure(nextEntry.state);
+    stateManager.setDocumentStructure(reconstructedStructure);
+    renderDocumentStructure(reconstructedStructure);
     isUndoRedoOperation = false;
     
     console.log('Redo performed. Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);

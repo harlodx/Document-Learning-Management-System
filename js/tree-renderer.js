@@ -634,6 +634,26 @@ function isDescendant(sourceId, targetId) {
 }
 
 /**
+ * Recursively updates children IDs without sorting
+ * @param {DocumentNode} node - The node whose children need ID updates
+ */
+function updateChildrenIdsRecursive(node) {
+    if (!node.children || node.children.length === 0) return;
+    
+    node.children.forEach((child, index) => {
+        if (child && typeof child === 'object' && child.id !== undefined) {
+            DocumentNode._existingIds.delete(child.id);
+            child.parentId = node.id;
+            child.order = index + 1;
+            child.id = `${node.id}-${index + 1}`;
+            DocumentNode._existingIds.add(child.id);
+            // Recursively update this child's children
+            updateChildrenIdsRecursive(child);
+        }
+    });
+}
+
+/**
  * Performs the actual tree reorder operation (called after drag completes)
  * @param {string} sourceNodeId - The node to move
  * @param {string} targetNodeId - The position to move to
@@ -697,27 +717,44 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
             
             console.log('After adding as child - target children:', targetNode.children.map(n => n.id));
             
-            // Re-index source parent's remaining children
+            // Re-index source parent's remaining children WITHOUT SORTING
             if (sourceParent) {
                 console.log('Re-indexing source parent\'s children:', sourceParent.id);
                 sourceParent.children.forEach((child, index) => {
-                    if (child && child._recalculateId) {
-                        child._recalculateId(sourceParent.id, index + 1);
+                    if (child) {
+                        DocumentNode._existingIds.delete(child.id);
+                        child.parentId = sourceParent.id;
+                        child.order = index + 1;
+                        child.id = `${sourceParent.id}-${index + 1}`;
+                        DocumentNode._existingIds.add(child.id);
+                        updateChildrenIdsRecursive(child);
                     }
                 });
             } else {
                 // Re-index root level
                 sourceArray.forEach((node, idx) => {
-                    if (node && node._recalculateId) {
-                        node._recalculateId(null, idx + 1);
+                    if (node) {
+                        DocumentNode._existingIds.delete(node.id);
+                        node.parentId = null;
+                        node.order = idx + 1;
+                        node.id = (idx + 1).toString();
+                        DocumentNode._existingIds.add(node.id);
+                        updateChildrenIdsRecursive(node);
                     }
                 });
             }
             
-            // Re-index target's children (including new one)
+            // Re-index target's children (including new one) WITHOUT SORTING
             console.log('Re-indexing target\'s children:', targetNode.id);
             targetNode.children.forEach((child, index) => {
-                child._recalculateId(targetNode.id, index + 1);
+                if (child) {
+                    DocumentNode._existingIds.delete(child.id);
+                    child.parentId = targetNode.id;
+                    child.order = index + 1;
+                    child.id = `${targetNode.id}-${index + 1}`;
+                    DocumentNode._existingIds.add(child.id);
+                    updateChildrenIdsRecursive(child);
+                }
             });
             
         } else {
@@ -746,12 +783,20 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
             sourceNode.parentId = targetParent ? targetParent.id : null;
             
             // Re-index the affected array WITHOUT SORTING (preserve new order)
+            // We need to manually update IDs without calling _recalculateId which triggers reIndexChildren and sorts
             if (targetParent) {
                 console.log('Re-indexing children of parent:', targetParent.id);
                 console.log('Children before reIndex:', targetParent.children.map(n => n.id));
                 targetParent.children.forEach((child, index) => {
-                    if (child && child._recalculateId) {
-                        child._recalculateId(targetParent.id, index + 1);
+                    if (child) {
+                        // Manually update ID and order without sorting
+                        DocumentNode._existingIds.delete(child.id);
+                        child.parentId = targetParent.id;
+                        child.order = index + 1;
+                        child.id = `${targetParent.id}-${index + 1}`;
+                        DocumentNode._existingIds.add(child.id);
+                        // Recursively fix children without sorting
+                        updateChildrenIdsRecursive(child);
                     }
                 });
                 console.log('Children after reIndex:', targetParent.children.map(n => n.id));
@@ -760,53 +805,81 @@ function performTreeReorder(sourceNodeId, targetNodeId, dropZone = 'before') {
                 console.log('Re-indexing root level nodes');
                 console.log('Root before reIndex:', targetArray.map(n => n.id));
                 targetArray.forEach((node, idx) => {
-                    if (node && node._recalculateId) {
-                        node._recalculateId(null, idx + 1);
+                    if (node) {
+                        // Manually update ID and order without sorting
+                        DocumentNode._existingIds.delete(node.id);
+                        node.parentId = null;
+                        node.order = idx + 1;
+                        node.id = (idx + 1).toString();
+                        DocumentNode._existingIds.add(node.id);
+                        // Recursively fix children without sorting
+                        updateChildrenIdsRecursive(node);
                     }
                 });
                 console.log('Root after reIndex:', targetArray.map(n => n.id));
             }
         }
         
-        // Re-index the affected array WITHOUT SORTING (preserve new order)
-        if (sourceParent) {
-            console.log('Re-indexing children of parent:', sourceParent.id);
+        // Re-index source parent's remaining children if different from target
+        if (sourceParent && sourceParent !== targetParent) {
+            console.log('Re-indexing source parent children:', sourceParent.id);
             console.log('Children before reIndex:', sourceParent.children.map(n => n.id));
-            // Manually recalculate IDs without sorting
             sourceParent.children.forEach((child, index) => {
-                const newIndex = index + 1;
-                if (child && child._recalculateId) {
-                    child._recalculateId(sourceParent.id, newIndex);
+                if (child) {
+                    // Manually update ID and order without sorting
+                    DocumentNode._existingIds.delete(child.id);
+                    child.parentId = sourceParent.id;
+                    child.order = index + 1;
+                    child.id = `${sourceParent.id}-${index + 1}`;
+                    DocumentNode._existingIds.add(child.id);
+                    // Recursively fix children without sorting
+                    updateChildrenIdsRecursive(child);
                 }
             });
             console.log('Children after reIndex:', sourceParent.children.map(n => n.id));
-        } else {
-            // Re-index root level
-            console.log('Re-indexing root level nodes');
+        } else if (!sourceParent && sourceArray !== targetArray) {
+            // Re-index root level if source was also root level but different array
+            console.log('Re-indexing root level nodes (source)');
             console.log('Root before reIndex:', sourceArray.map(n => n.id));
             sourceArray.forEach((node, idx) => {
-                if (node && node._recalculateId) {
-                    node._recalculateId(null, idx + 1);
+                if (node) {
+                    // Manually update ID and order without sorting
+                    DocumentNode._existingIds.delete(node.id);
+                    node.parentId = null;
+                    node.order = idx + 1;
+                    node.id = (idx + 1).toString();
+                    DocumentNode._existingIds.add(node.id);
+                    // Recursively fix children without sorting
+                    updateChildrenIdsRecursive(node);
                 }
             });
             console.log('Root after reIndex:', sourceArray.map(n => n.id));
         }
         
-        // Only re-index target if different parent
-        if (targetParent && targetParent !== sourceParent) {
-            console.log('Re-indexing target parent:', targetParent.id);
-            // Manually recalculate IDs without sorting
-            targetParent.children.forEach((child, index) => {
-                const newIndex = index + 1;
-                if (child && child._recalculateId) {
-                    child._recalculateId(targetParent.id, newIndex);
-                }
-            });
-        }
-        
         // Log final structure before updating
         console.log('Final array after reorder:', sourceArray.map(n => n.id));
         console.log('Final document structure:', documentStructure.map(n => ({ id: n.id, children: n.children?.map(c => c.id) })));
+        
+        // VALIDATION: Check if all nodes and their children are actual objects
+        const validateStructure = (nodes, path = 'root') => {
+            nodes.forEach((node, idx) => {
+                if (typeof node !== 'object' || !node.id) {
+                    console.error(`INVALID NODE at ${path}[${idx}]:`, node, typeof node);
+                    return false;
+                }
+                if (node.children && node.children.length > 0) {
+                    node.children.forEach((child, childIdx) => {
+                        if (typeof child !== 'object' || !child.id) {
+                            console.error(`INVALID CHILD at ${path}[${idx}].children[${childIdx}]:`, child, typeof child);
+                        }
+                    });
+                    validateStructure(node.children, `${path}[${idx}].children`);
+                }
+            });
+            return true;
+        };
+        console.log('Validating structure before setState...');
+        validateStructure(documentStructure);
         
         // Update state
         console.log('Updating state with modified structure');
