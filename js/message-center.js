@@ -6,6 +6,10 @@
 let messageTimeout = null;
 let currentMessage = null;
 
+// Stacked notifications system
+let notificationQueue = [];
+let isProcessingQueue = false;
+
 /**
  * Initialize the message center
  */
@@ -16,6 +20,14 @@ export function initializeMessageCenter() {
         messageCenter.id = 'message-center';
         messageCenter.className = 'message-center';
         document.body.appendChild(messageCenter);
+    }
+    
+    // Create stacked notifications container
+    if (!document.getElementById('stacked-notifications')) {
+        const stackedContainer = document.createElement('div');
+        stackedContainer.id = 'stacked-notifications';
+        stackedContainer.className = 'stacked-notifications';
+        document.body.appendChild(stackedContainer);
     }
 
     // Add hover listeners to all elements with tooltips
@@ -157,6 +169,112 @@ export function showSuccess(text, duration = 2000) {
  */
 export function showError(text, duration = 4000) {
     showMessage(text, 'error', duration);
+}
+
+/**
+ * Show a stacked notification that queues with sequential timeouts
+ * @param {string} text - The notification text
+ * @param {number} duration - Duration in ms (default: 10000)
+ */
+export function showStackedNotification(text, duration = 10000) {
+    const container = document.getElementById('stacked-notifications');
+    if (!container) {
+        console.error('Stacked notifications container not found');
+        return;
+    }
+    
+    // Create notification card
+    const notification = document.createElement('div');
+    notification.className = 'stacked-notification';
+    
+    const textSpan = document.createElement('span');
+    textSpan.className = 'notification-text';
+    textSpan.textContent = text;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'notification-close';
+    closeBtn.innerHTML = '✕';
+    closeBtn.setAttribute('aria-label', 'Dismiss notification');
+    
+    notification.appendChild(textSpan);
+    notification.appendChild(closeBtn);
+    
+    // Add to queue
+    const notificationData = {
+        element: notification,
+        duration: duration,
+        timeout: null
+    };
+    
+    notificationQueue.push(notificationData);
+    container.appendChild(notification);
+    
+    // Trigger animation
+    requestAnimationFrame(() => {
+        notification.classList.add('show');
+    });
+    
+    // Close button handler
+    closeBtn.addEventListener('click', () => {
+        removeNotification(notificationData);
+    });
+    
+    // Start processing queue if not already processing
+    if (!isProcessingQueue) {
+        processNotificationQueue();
+    }
+}
+
+/**
+ * Process the notification queue with sequential timeouts
+ */
+function processNotificationQueue() {
+    if (notificationQueue.length === 0) {
+        isProcessingQueue = false;
+        return;
+    }
+    
+    isProcessingQueue = true;
+    const currentNotification = notificationQueue[0];
+    
+    // Set timeout for the first notification in queue
+    currentNotification.timeout = setTimeout(() => {
+        removeNotification(currentNotification);
+    }, currentNotification.duration);
+}
+
+/**
+ * Remove a notification and process next in queue
+ */
+function removeNotification(notificationData) {
+    const { element, timeout } = notificationData;
+    
+    // Clear timeout
+    if (timeout) {
+        clearTimeout(timeout);
+    }
+    
+    // Remove from queue
+    const index = notificationQueue.indexOf(notificationData);
+    if (index > -1) {
+        notificationQueue.splice(index, 1);
+    }
+    
+    // Animate out
+    element.classList.remove('show');
+    element.classList.add('hide');
+    
+    // Remove from DOM after animation
+    setTimeout(() => {
+        if (element.parentNode) {
+            element.parentNode.removeChild(element);
+        }
+        
+        // Process next notification
+        if (index === 0) {
+            processNotificationQueue();
+        }
+    }, 300);
 }
 
 /**

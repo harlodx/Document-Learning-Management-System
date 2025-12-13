@@ -44,6 +44,11 @@
         <span class="hamburger-line"></span>
     </button>
 
+    <!-- Junk Toggle Button -->
+    <button id="junk-toggle" class="junk-toggle" aria-label="Toggle Junk">
+        <span class="junk-icon">🗑</span>
+    </button>
+
     <!-- Slide-out Menu -->
     <nav id="side-menu" class="side-menu">
         <!-- User Section -->
@@ -138,6 +143,22 @@
     <!-- Menu Overlay -->
     <div id="menu-overlay" class="menu-overlay"></div>
 
+    <!-- Junk Panel -->
+    <aside id="junk-panel" class="junk-panel">
+        <div class="junk-panel-header">
+            <h3 title="Items moved here can be restored or permanently deleted">Junk / Trash</h3>
+        </div>
+        <div class="search-container">
+            <input type="text" id="junk-search" class="search-input" placeholder="Search junk...">
+        </div>
+        <div id="junk-items-container" class="junk-items">
+            <!-- Junked items will be rendered here -->
+        </div>
+        <div class="controls junk">
+            <button id="clear-all-junk-btn" class="btn" data-tooltip="Permanently delete all junked items">Clear All</button>
+        </div>
+    </aside>
+
     <header>
         <h1>Company Logo</h1>
     </header>
@@ -197,21 +218,6 @@
                 </div>
             </section>
 
-            <section class="junk">
-                <div class="section-heading">
-                    <h3>Junk / Trash</h3>
-                    <p class="junk-description">Items moved here can be restored or permanently deleted</p>
-                </div>
-                <div class="search-container">
-                    <input type="text" id="junk-search" class="search-input" placeholder="Search junk...">
-                </div>
-                <div id="junk-items-container" class="junk-items">
-                    <!-- Junked items will be rendered here -->
-                </div>
-                <div class="controls junk">
-                    <button id="clear-all-junk-btn" class="btn" data-tooltip="Permanently delete all junked items">Clear All</button>
-                </div>
-            </section>
         </aside>
 
         <!-- Main Document Content Area -->

@@ -7,6 +7,7 @@ import { saveDocument, commitDocument } from './data-operations.js';
 import { showSuccess } from './message-center.js';
 
 let isMenuOpen = false;
+let isJunkPanelOpen = false;
 
 /**
  * Initialize menu functionality
@@ -36,10 +37,68 @@ export function initializeMenu() {
         }
     });
 
+    // Initialize junk panel
+    initializeJunkPanel();
+
     // Initialize keyboard shortcuts
     initializeKeyboardShortcuts();
 
     console.log('Menu manager initialized');
+}
+
+/**
+ * Initialize junk panel functionality
+ */
+function initializeJunkPanel() {
+    const junkToggle = document.getElementById('junk-toggle');
+    const junkPanel = document.getElementById('junk-panel');
+
+    if (!junkToggle || !junkPanel) {
+        console.error('Junk panel elements not found');
+        return;
+    }
+
+    // Toggle junk panel on button click
+    junkToggle.addEventListener('click', toggleJunkPanel);
+
+    console.log('Junk panel initialized');
+}
+
+/**
+ * Toggle junk panel open/closed
+ */
+function toggleJunkPanel() {
+    if (isJunkPanelOpen) {
+        closeJunkPanel();
+    } else {
+        openJunkPanel();
+    }
+}
+
+/**
+ * Open the junk panel
+ */
+function openJunkPanel() {
+    const junkPanel = document.getElementById('junk-panel');
+    const junkToggle = document.getElementById('junk-toggle');
+
+    junkPanel.classList.add('open');
+    junkToggle.classList.add('active');
+    
+    isJunkPanelOpen = true;
+}
+
+/**
+ * Close the junk panel
+ */
+function closeJunkPanel() {
+    const junkPanel = document.getElementById('junk-panel');
+    const junkToggle = document.getElementById('junk-toggle');
+
+    junkPanel.classList.remove('open');
+    junkToggle.classList.remove('active');
+    
+    isJunkPanelOpen = false;
 }
 
 /**
@@ -108,9 +167,13 @@ function initializeKeyboardShortcuts() {
             showSuccess('Changes Committed');
         }
 
-        // Escape - Close menu
-        if (e.key === 'Escape' && isMenuOpen) {
-            closeMenu();
+        // Escape - Close menu or junk panel
+        if (e.key === 'Escape') {
+            if (isMenuOpen) {
+                closeMenu();
+            } else if (isJunkPanelOpen) {
+                closeJunkPanel();
+            }
         }
     });
 

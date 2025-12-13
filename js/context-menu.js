@@ -272,13 +272,13 @@ function handleMenuItemClick(event) {
 /**
  * Handle undo action
  */
-function handleUndo() {
+async function handleUndo() {
     if (!canUndo()) {
         showError('Nothing to undo.');
         return;
     }
     
-    const success = undo();
+    const success = await undo();
     if (success) {
         console.log('Undo completed successfully');
     } else {

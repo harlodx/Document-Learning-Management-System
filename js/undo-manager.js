@@ -34,14 +34,15 @@ let isUndoRedoOperation = false;
 /**
  * Save current state to history
  */
-function saveStateToHistory(structure) {
+function saveStateToHistory(structure, description = 'Document change') {
     // Deep clone the structure
     const stateCopy = JSON.parse(JSON.stringify(structure));
     
-    // Create history entry with timestamp
+    // Create history entry with timestamp and description
     const historyEntry = {
         state: stateCopy,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        description: description
     };
     
     // Add to undo stack
@@ -62,7 +63,7 @@ function saveStateToHistory(structure) {
  * Save current state before making a change
  * Call this before operations like delete, move, etc.
  */
-export function saveStateBeforeChange() {
+export function saveStateBeforeChange(description = 'Document change') {
     const currentStructure = stateManager.getDocumentStructure();
     const stateCopy = JSON.parse(JSON.stringify(currentStructure));
     
@@ -71,7 +72,8 @@ export function saveStateBeforeChange() {
     if (undoStack.length === 0 || JSON.stringify(lastState) !== JSON.stringify(stateCopy)) {
         const historyEntry = {
             state: stateCopy,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            description: description
         };
         
         undoStack.push(historyEntry);
@@ -90,7 +92,7 @@ export function saveStateBeforeChange() {
 /**
  * Undo the last action
  */
-export function undo() {
+export async function undo() {
     if (!canUndo()) {
         console.warn('Nothing to undo');
         return false;
@@ -99,9 +101,11 @@ export function undo() {
     // Get current state and save to redo stack
     const currentStructure = stateManager.getDocumentStructure();
     const currentStateCopy = JSON.parse(JSON.stringify(currentStructure));
+    const lastUndoEntry = undoStack[undoStack.length - 1];
     const redoEntry = {
         state: currentStateCopy,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        description: lastUndoEntry.description || 'Change'
     };
     redoStack.push(redoEntry);
     
@@ -117,6 +121,11 @@ export function undo() {
     renderDocumentStructure(reconstructedStructure);
     isUndoRedoOperation = false;
     
+    // Show notification with action description
+    const { showStackedNotification } = await import('./message-center.js');
+    const description = previousEntry.description || 'Action';
+    showStackedNotification(`Undone: ${description}`);
+    
     console.log('Undo performed. Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);
     return true;
 }
@@ -124,7 +133,7 @@ export function undo() {
 /**
  * Redo the last undone action
  */
-export function redo() {
+export async function redo() {
     if (!canRedo()) {
         console.warn('Nothing to redo');
         return false;
@@ -133,23 +142,30 @@ export function redo() {
     // Get current state and save to undo stack
     const currentStructure = stateManager.getDocumentStructure();
     const currentStateCopy = JSON.parse(JSON.stringify(currentStructure));
+    const nextEntry = redoStack[redoStack.length - 1];
     const undoEntry = {
         state: currentStateCopy,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        description: nextEntry.description || 'Change'
     };
     undoStack.push(undoEntry);
     
     // Pop from redo stack
-    const nextEntry = redoStack.pop();
+    const redoEntryPopped = redoStack.pop();
     
     // Reconstruct DocumentNode objects from JSON
-    const reconstructedStructure = nextEntry.state.map(nodeJson => DocumentNode.fromJSON(nodeJson));
+    const reconstructedStructure = redoEntryPopped.state.map(nodeJson => DocumentNode.fromJSON(nodeJson));
     
     // Restore next state
     isUndoRedoOperation = true;
     stateManager.setDocumentStructure(reconstructedStructure);
     renderDocumentStructure(reconstructedStructure);
     isUndoRedoOperation = false;
+    
+    // Show notification with action description
+    const { showStackedNotification } = await import('./message-center.js');
+    const description = redoEntryPopped.description || 'Action';
+    showStackedNotification(`Redone: ${description}`);
     
     console.log('Redo performed. Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);
     return true;

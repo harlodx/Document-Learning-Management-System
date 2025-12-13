@@ -52,23 +52,25 @@ export function renderJunkItems() {
         
         html += `
             <div class="junk-item" data-junk-id="${itemId}" data-junk-index="${index}">
-                <div class="junk-item-header">
-                    ${hasChildren ? `<button class="junk-expand-btn" data-junk-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="junk-no-children"></span>'}
-                    <div class="junk-item-info" data-junk-node-id="${itemId}" style="flex: 1; cursor: pointer;">
-                        <div class="junk-item-title-row">
-                            <span class="junk-item-title">${escapeHtml(title)}</span>
-                            ${hasChildren ? `<span class="junk-child-count">(${childCount} sub-item${childCount > 1 ? 's' : ''})</span>` : ''}
-                        </div>
-                        ${contentPreview ? `<div class="junk-item-preview">${escapeHtml(contentPreview)}</div>` : ''}
-                        <span class="junk-item-date">Deleted: ${junkedDate}</span>
-                    </div>
-                    <div class="junk-item-actions">
+                <div class="junk-item-main">
+                    <div class="junk-item-buttons">
                         <button class="restore-btn" data-junk-id="${itemId}" title="Restore this item and all sub-items" data-tooltip="Restore">
                             ↺
                         </button>
                         <button class="delete-junk-btn" data-junk-id="${itemId}" title="Permanently delete this item and all sub-items" data-tooltip="Delete">
                             ✕
                         </button>
+                    </div>
+                    <div class="junk-item-content">
+                        <div class="junk-item-info" data-junk-node-id="${itemId}" style="flex: 1; cursor: pointer;">
+                            <div class="junk-item-title-row">
+                                <span class="junk-item-title">${escapeHtml(title)}</span>
+                                ${hasChildren ? `<span class="junk-child-count">(${childCount} sub-item${childCount > 1 ? 's' : ''})</span>` : ''}
+                            </div>
+                            ${contentPreview ? `<div class="junk-item-preview">${escapeHtml(contentPreview)}</div>` : ''}
+                            <span class="junk-item-date">Deleted: ${junkedDate}</span>
+                        </div>
+                        ${hasChildren ? `<button class="junk-expand-btn" data-junk-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="junk-no-children"></span>'}
                     </div>
                 </div>
                 ${hasChildren ? `<div class="junk-children-container" data-junk-id="${itemId}" style="display: none;">${renderJunkChildren(item)}</div>` : ''}
