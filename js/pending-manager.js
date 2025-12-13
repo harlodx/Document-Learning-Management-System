@@ -1,7 +1,7 @@
 /**
- * Junk Manager Module
- * Handles rendering and management of junked (soft-deleted) items
- * @module junk-manager
+ * Pending Manager Module
+ * Handles rendering and management of pending (soft-deleted) items
+ * @module pending-manager
  */
 
 import { stateManager } from './state-manager.js';
@@ -13,26 +13,26 @@ import { showError, showSuccess } from './message-center.js';
 import { saveWorkingCopy } from './version-control.js';
 
 /**
- * Renders the junk items in the junk section
+ * Renders the pending items in the pending section
  */
-export function renderJunkItems() {
-    const container = document.getElementById('junk-items-container');
+export function renderPendingItems() {
+    const container = document.getElementById('pending-items-container');
     if (!container) {
-        console.error('Junk items container not found');
+        console.error('Pending items container not found');
         return;
     }
 
-    const junkItems = stateManager.getJunkItems() || [];
+    const pendingItems = stateManager.getPendingItems() || [];
 
-    if (junkItems.length === 0) {
-        container.innerHTML = '<p style="color: #666; font-style: italic; padding: 10px;">No junked items</p>';
+    if (pendingItems.length === 0) {
+        container.innerHTML = '<p style="color: #666; font-style: italic; padding: 10px;">No pending items</p>';
         return;
     }
 
-    // Build HTML for junk items
+    // Build HTML for pending items
     let html = '';
-    junkItems.forEach((item, index) => {
-        const junkedDate = new Date(item._junkedAt).toLocaleString();
+    pendingItems.forEach((item, index) => {
+        const pendingDate = new Date(item._pendingAt).toLocaleString();
         const title = item.title || item.name || 'Untitled';
         const itemId = item.id;
         
@@ -52,29 +52,29 @@ export function renderJunkItems() {
         const hasChildren = childCount > 0;
         
         html += `
-            <div class="junk-item" data-junk-id="${itemId}" data-junk-index="${index}">
-                <div class="junk-item-main">
-                    <div class="junk-item-buttons">
-                        <button class="restore-btn" data-junk-id="${itemId}" title="Restore this item and all sub-items" data-tooltip="Restore">
+            <div class="pending-item" data-Pending-id="${itemId}" data-Pending-index="${index}">
+                <div class="pending-item-main">
+                    <div class="pending-item-buttons">
+                        <button class="restore-btn" data-Pending-id="${itemId}" title="Restore this item and all sub-items" data-tooltip="Restore">
                             ↺
                         </button>
-                        <button class="delete-junk-btn" data-junk-id="${itemId}" title="Permanently delete this item and all sub-items" data-tooltip="Delete">
+                        <button class="delete-pending-btn" data-Pending-id="${itemId}" title="Permanently delete this item and all sub-items" data-tooltip="Delete">
                             ✕
                         </button>
                     </div>
-                    <div class="junk-item-content">
-                        <div class="junk-item-info" data-junk-node-id="${itemId}" style="flex: 1; cursor: pointer;">
-                            <div class="junk-item-title-row">
-                                <span class="junk-item-title">${escapeHtml(title)}</span>
-                                ${hasChildren ? `<span class="junk-child-count">(${childCount} sub-item${childCount > 1 ? 's' : ''})</span>` : ''}
+                    <div class="pending-item-content">
+                        <div class="pending-item-info" data-Pending-node-id="${itemId}" style="flex: 1; cursor: pointer;">
+                            <div class="pending-item-title-row">
+                                <span class="pending-item-title">${escapeHtml(title)}</span>
+                                ${hasChildren ? `<span class="pending-child-count">(${childCount} sub-item${childCount > 1 ? 's' : ''})</span>` : ''}
                             </div>
-                            ${contentPreview ? `<div class="junk-item-preview">${escapeHtml(contentPreview)}</div>` : ''}
-                            <span class="junk-item-date">Deleted: ${junkedDate}</span>
+                            ${contentPreview ? `<div class="pending-item-preview">${escapeHtml(contentPreview)}</div>` : ''}
+                            <span class="pending-item-date">Deleted: ${pendingDate}</span>
                         </div>
-                        ${hasChildren ? `<button class="junk-expand-btn" data-junk-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="junk-no-children"></span>'}
+                        ${hasChildren ? `<button class="pending-expand-btn" data-Pending-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="pending-no-children"></span>'}
                     </div>
                 </div>
-                ${hasChildren ? `<div class="junk-children-container" data-junk-id="${itemId}" style="display: none;">${renderJunkChildren(item)}</div>` : ''}
+                ${hasChildren ? `<div class="pending-children-container" data-Pending-id="${itemId}" style="display: none;">${renderPendingChildren(item)}</div>` : ''}
             </div>
         `;
     });
@@ -82,26 +82,26 @@ export function renderJunkItems() {
     container.innerHTML = html;
 
     // Attach event listeners
-    attachJunkEventListeners();
+    attachPendingEventListeners();
 }
 
 /**
- * Renders children of a junk item as a hierarchical list
+ * Renders children of a Pending item as a hierarchical list
  * @private
- * @param {Object} item - The junk item
+ * @param {Object} item - The Pending item
  * @returns {string} HTML string of children
  */
-function renderJunkChildren(item) {
+function renderPendingChildren(item) {
     if (!item.children || item.children.length === 0) {
         return '';
     }
     
-    let html = '<ul class="junk-child-list">';
+    let html = '<ul class="pending-child-list">';
     
     item.children.forEach(child => {
         const childTitle = child.title || child.name || 'Untitled';
         const childHasChildren = child.children && child.children.length > 0;
-        const childId = child.id || `junk-child-${Date.now()}-${Math.random()}`;
+        const childId = child.id || `pending-child-${Date.now()}-${Math.random()}`;
         
         // Get content preview for child
         let childPreview = '';
@@ -111,10 +111,10 @@ function renderJunkChildren(item) {
             if (childPreview && childPreview.length >= 50) childPreview += '...';
         }
         
-        html += `<li class="junk-child-item" data-junk-node-id="${childId}" title="${childPreview || 'Click to view'}">
-            <span class="junk-child-title">${escapeHtml(childTitle)}</span>
-            ${childHasChildren ? ` <span class="junk-child-count">(${child.children.length})</span>` : ''}
-            ${childHasChildren ? renderJunkChildren(child) : ''}
+        html += `<li class="pending-child-item" data-Pending-node-id="${childId}" title="${childPreview || 'Click to view'}">
+            <span class="pending-child-title">${escapeHtml(childTitle)}</span>
+            ${childHasChildren ? ` <span class="pending-child-count">(${child.children.length})</span>` : ''}
+            ${childHasChildren ? renderPendingChildren(child) : ''}
         </li>`;
     });
     
@@ -142,16 +142,16 @@ function countAllChildren(item) {
 }
 
 /**
- * Attaches event listeners to junk item buttons
+ * Attaches event listeners to Pending item buttons
  * @private
  */
-function attachJunkEventListeners() {
+function attachPendingEventListeners() {
     // Expand/collapse buttons
-    document.querySelectorAll('.junk-expand-btn').forEach(btn => {
+    document.querySelectorAll('.pending-expand-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent triggering item click
-            const junkId = e.target.getAttribute('data-junk-id');
-            const childrenContainer = document.querySelector(`.junk-children-container[data-junk-id="${junkId}"]`);
+            const PendingId = e.target.getAttribute('data-Pending-id');
+            const childrenContainer = document.querySelector(`.pending-children-container[data-Pending-id="${PendingId}"]`);
             const button = e.target;
             
             if (childrenContainer) {
@@ -162,23 +162,23 @@ function attachJunkEventListeners() {
         });
     });
     
-    // Click handlers for viewing junk items (including children)
-    document.querySelectorAll('[data-junk-node-id]').forEach(element => {
+    // Click handlers for viewing Pending items (including children)
+    document.querySelectorAll('[data-Pending-node-id]').forEach(element => {
         element.addEventListener('click', async (e) => {
             // Don't trigger if clicking on a button
             if (e.target.tagName === 'BUTTON') return;
             
-            const junkNodeId = e.currentTarget.getAttribute('data-junk-node-id');
-            console.log('Junk item clicked:', junkNodeId);
+            const PendingNodeId = e.currentTarget.getAttribute('data-Pending-node-id');
+            console.log('Pending item clicked:', PendingNodeId);
             
-            // Find the junk item in the junk array
-            const junkItems = stateManager.getJunkItems() || [];
-            const junkItem = findJunkNodeById(junkItems, junkNodeId);
+            // Find the Pending item in the Pending array
+            const pendingItems = stateManager.getPendingItems() || [];
+            const PendingItem = findPendingNodeById(pendingItems, PendingNodeId);
             
-            if (junkItem) {
-                console.log('Viewing junk item:', junkItem.name || junkItem.title);
+            if (PendingItem) {
+                console.log('Viewing Pending item:', PendingItem.name || PendingItem.title);
                 const { loadContentForEditing } = await import('./content-editor.js');
-                loadContentForEditing(junkItem);
+                loadContentForEditing(PendingItem);
             }
         });
     });
@@ -186,40 +186,40 @@ function attachJunkEventListeners() {
     // Restore buttons
     document.querySelectorAll('.restore-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const junkId = e.target.getAttribute('data-junk-id');
-            restoreFromJunk(junkId);
+            const PendingId = e.target.getAttribute('data-Pending-id');
+            restoreFromPending(PendingId);
         });
     });
 
     // Delete buttons
-    document.querySelectorAll('.delete-junk-btn').forEach(btn => {
+    document.querySelectorAll('.delete-pending-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const junkId = e.target.getAttribute('data-junk-id');
-            permanentlyDeleteFromJunk(junkId);
+            const PendingId = e.target.getAttribute('data-Pending-id');
+            permanentlyDeleteFromPending(PendingId);
         });
     });
 }
 
 /**
- * Restores a junked item back to the document tree
- * @param {string} junkId - ID of the junked item to restore
+ * Restores a Pendinged item back to the document tree
+ * @param {string} PendingId - ID of the Pendinged item to restore
  */
-export function restoreFromJunk(junkId) {
+export function restoreFromPending(PendingId) {
     try {
-        const junkItems = stateManager.getJunkItems() || [];
-        const itemIndex = junkItems.findIndex(item => item.id === junkId);
+        const pendingItems = stateManager.getPendingItems() || [];
+        const itemIndex = pendingItems.findIndex(item => item.id === PendingId);
 
         if (itemIndex === -1) {
-            showError('Junked item not found');
+            showError('Pendinged item not found');
             return;
         }
 
-        const item = junkItems[itemIndex];
+        const item = pendingItems[itemIndex];
         const documentStructure = stateManager.getDocumentStructure();
 
-        // Clone the item and remove junk metadata
+        // Clone the item and remove Pending metadata
         const restoredNode = JSON.parse(JSON.stringify(item));
-        delete restoredNode._junkedAt;
+        delete restoredNode._PendingedAt;
         delete restoredNode._originalParentId;
         delete restoredNode._originalIndex;
 
@@ -258,43 +258,43 @@ export function restoreFromJunk(junkId) {
         }
 
         if (restored) {
-            // Remove from junk
-            junkItems.splice(itemIndex, 1);
-            stateManager.setJunkItems(junkItems);
+            // Remove from Pending
+            pendingItems.splice(itemIndex, 1);
+            stateManager.setPendingItems(pendingItems);
 
             // Update document structure
             stateManager.setDocumentStructure(documentStructure);
 
-            // Save to version control working copy (with updated junk items)
-            saveWorkingCopy(documentStructure, junkItems);
+            // Save to version control working copy (with updated Pending items)
+            saveWorkingCopy(documentStructure, pendingItems);
 
             // Re-render
             renderDocumentStructure(documentStructure);
-            renderJunkItems();
+            renderpendingItems();
 
             // Auto-save
             scheduleAutoSave();
 
-            console.log(`Restored item ${junkId} from junk`);
+            console.log(`Restored item ${PendingId} from Pending`);
         }
 
     } catch (error) {
-        console.error('Error restoring from junk:', error);
+        console.error('Error restoring from Pending:', error);
         showError(`Failed to restore item: ${error.message}`);
     }
 }
 
 /**
- * Permanently deletes a junked item
- * @param {string} junkId - ID of the junked item to delete
+ * Permanently deletes a Pendinged item
+ * @param {string} PendingId - ID of the Pendinged item to delete
  */
-export async function permanentlyDeleteFromJunk(junkId) {
+export async function permanentlyDeleteFromPending(PendingId) {
     try {
-        const junkItems = stateManager.getJunkItems() || [];
-        const item = junkItems.find(item => item.id === junkId);
+        const pendingItems = stateManager.getPendingItems() || [];
+        const item = pendingItems.find(item => item.id === PendingId);
 
         if (!item) {
-            showError('Junked item not found');
+            showError('Pendinged item not found');
             return;
         }
 
@@ -307,82 +307,82 @@ export async function permanentlyDeleteFromJunk(junkId) {
         // Delete all IDs recursively to prevent conflicts
         DocumentNode.deleteIdsRecursively(item);
 
-        // Remove from junk array
-        const newJunkItems = junkItems.filter(item => item.id !== junkId);
-        stateManager.setJunkItems(newJunkItems);
+        // Remove from Pending array
+        const newPendingItems = pendingItems.filter(item => item.id !== PendingId);
+        stateManager.setPendingItems(newPendingItems);
 
-        // Save to version control working copy (with updated junk items)
+        // Save to version control working copy (with updated Pending items)
         const documentStructure = stateManager.getDocumentStructure();
-        saveWorkingCopy(documentStructure, newJunkItems);
+        saveWorkingCopy(documentStructure, newPendingItems);
 
         // Re-render
-        renderJunkItems();
+        renderPendingItems();
 
         // Auto-save
         scheduleAutoSave();
 
-        console.log(`Permanently deleted junked item ${junkId}`);
+        console.log(`Permanently deleted Pendinged item ${PendingId}`);
 
     } catch (error) {
-        console.error('Error permanently deleting from junk:', error);
+        console.error('Error permanently deleting from Pending:', error);
         showError(`Failed to delete item: ${error.message}`);
     }
 }
 
 /**
- * Clears all junked items after confirmation
+ * Clears all Pendinged items after confirmation
  */
-export async function clearAllJunk() {
-    const junkItems = stateManager.getJunkItems() || [];
+export async function clearAllPending() {
+    const pendingItems = stateManager.getPendingItems() || [];
 
-    if (junkItems.length === 0) {
-        showError('Junk is already empty');
+    if (pendingItems.length === 0) {
+        showError('Pending is already empty');
         return;
     }
 
-    const confirmed = await showConfirm(`Permanently delete all ${junkItems.length} junked item(s)?\n\nThis cannot be undone!`, 'Delete All', 'Cancel');
+    const confirmed = await showConfirm(`Permanently delete all ${pendingItems.length} Pendinged item(s)?\n\nThis cannot be undone!`, 'Delete All', 'Cancel');
     if (!confirmed) {
         return;
     }
 
     try {
         // Delete all IDs to prevent conflicts
-        junkItems.forEach(item => {
+        pendingItems.forEach(item => {
             DocumentNode.deleteIdsRecursively(item);
         });
 
-        // Clear junk
-        stateManager.setJunkItems([]);
+        // Clear Pending
+        stateManager.setPendingItems([]);
 
         // Re-render
-        renderJunkItems();
+        renderPendingItems();
 
         // Auto-save
         scheduleAutoSave();
 
-        console.log('Cleared all junk items');
+        console.log('Cleared all Pending items');
 
     } catch (error) {
-        console.error('Error clearing junk:', error);
-        showError(`Failed to clear junk: ${error.message}`);
+        console.error('Error clearing Pending:', error);
+        showError(`Failed to clear Pending: ${error.message}`);
     }
 }
 
 /**
- * Finds a junk node by ID (searches recursively through children)
+ * Finds a Pending node by ID (searches recursively through children)
  * @private
- * @param {Object[]} junkItems - Array of junk items to search
+ * @param {Object[]} pendingItems - Array of Pending items to search
  * @param {string} nodeId - ID to find
  * @returns {Object|null} The found node or null
  */
-function findJunkNodeById(junkItems, nodeId) {
-    for (const item of junkItems) {
+function findPendingNodeById(pendingItems, nodeId) {
+    for (const item of pendingItems) {
         if (item.id === nodeId) {
             return item;
         }
         // Search in children recursively
         if (item.children && item.children.length > 0) {
-            const found = findJunkNodeById(item.children, nodeId);
+            const found = findPendingNodeById(item.children, nodeId);
             if (found) return found;
         }
     }

@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
     AUTO_SAVE_ENABLED: 'dlms_auto_save_enabled',
     DOCUMENT_TITLE: 'dlms_document_title',
     DOCUMENT_SUBTITLE: 'dlms_document_subtitle',
-    JUNK_ITEMS: 'dlms_junk_items'
+    pending_items: 'dlms_pending_items'
 };
 
 // Auto-save configuration
@@ -196,48 +196,48 @@ export function loadRevisionsFromStorage() {
 }
 
 /**
- * Saves junk items to localStorage
- * @param {Object[]} junkItems - Array of junked items
+ * Saves Pending items to localStorage
+ * @param {Object[]} pendingItems - Array of pending items
  * @returns {boolean} True if save was successful
  */
-export function saveJunkToStorage(junkItems) {
+export function savePendingToStorage(pendingItems) {
     if (!isLocalStorageAvailable()) {
         return false;
     }
 
     try {
-        const jsonString = JSON.stringify(junkItems || []);
-        localStorage.setItem(STORAGE_KEYS.JUNK_ITEMS, jsonString);
-        console.log('Junk items saved to local storage');
+        const jsonString = JSON.stringify(pendingItems || []);
+        localStorage.setItem(STORAGE_KEYS.pending_items, jsonString);
+        console.log('Pending items saved to local storage');
         return true;
 
     } catch (error) {
-        console.error('Error saving junk items to storage:', error);
+        console.error('Error saving Pending items to storage:', error);
         return false;
     }
 }
 
 /**
- * Loads junk items from localStorage
- * @returns {Object[]|null} The loaded junk items or null
+ * Loads Pending items from localStorage
+ * @returns {Object[]|null} The loaded Pending items or null
  */
-export function loadJunkFromStorage() {
+export function loadPendingFromStorage() {
     if (!isLocalStorageAvailable()) {
         return null;
     }
 
     try {
-        const jsonString = localStorage.getItem(STORAGE_KEYS.JUNK_ITEMS);
+        const jsonString = localStorage.getItem(STORAGE_KEYS.pending_items);
         
         if (!jsonString) {
             return [];
         }
 
-        const junkItems = JSON.parse(jsonString);
-        return Array.isArray(junkItems) ? junkItems : [];
+        const pendingItems = JSON.parse(jsonString);
+        return Array.isArray(pendingItems) ? pendingItems : [];
 
     } catch (error) {
-        console.error('Error loading junk items from storage:', error);
+        console.error('Error loading Pending items from storage:', error);
         return [];
     }
 }
@@ -374,7 +374,7 @@ export function loadVersionHistoryFromStorage() {
  * @returns {Object} Complete export package
  */
 export function createExportPackage(documentStructure, versionHistory, documentTitle = '', documentSubtitle = '', usersData = null) {
-    const junkItems = stateManager.getJunkItems() || [];
+    const pendingItems = stateManager.getPendingItems() || [];
     
     const exportPackage = {
         metadata: {
@@ -386,7 +386,7 @@ export function createExportPackage(documentStructure, versionHistory, documentT
         },
         documentStructure: documentStructure,
         versionHistory: versionHistory,
-        junkItems: junkItems
+        pendingItems: pendingItems
     };
     
     // Include users data if provided
@@ -541,10 +541,10 @@ export function scheduleAutoSave(documentStructure) {
             localStorage.setItem(STORAGE_KEYS.DOCUMENT_SUBTITLE, subtitleElement.value || '');
         }
         
-        // Save junk items
-        const junkItems = stateManager.getJunkItems();
-        if (junkItems) {
-            localStorage.setItem(STORAGE_KEYS.JUNK_ITEMS, JSON.stringify(junkItems));
+        // Save Pending items
+        const pendingItems = stateManager.getPendingItems();
+        if (pendingItems) {
+            localStorage.setItem(STORAGE_KEYS.pending_items, JSON.stringify(pendingItems));
         }
         
         // Dispatch custom event for UI updates
@@ -573,10 +573,10 @@ export function initializeStorage() {
         }
     });
     
-    // Subscribe to junk items changes for auto-save
-    stateManager.subscribe('junkItemsChanged', (junkItems) => {
+    // Subscribe to Pending items changes for auto-save
+    stateManager.subscribe('pendingItemsChanged', (pendingItems) => {
         if (autoSaveEnabled) {
-            saveJunkToStorage(junkItems);
+            savePendingToStorage(pendingItems);
         }
     });
 

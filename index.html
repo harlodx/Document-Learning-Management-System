@@ -44,9 +44,9 @@
         <span class="hamburger-line"></span>
     </button>
 
-    <!-- Junk Toggle Button -->
-    <button id="junk-toggle" class="junk-toggle" aria-label="Toggle Junk">
-        <span class="junk-icon">🗑</span>
+    <!-- Pending Toggle Button -->
+    <button id="pending-toggle" class="pending-toggle" aria-label="Toggle Pending">
+        <span class="pending-icon">🗑</span>
     </button>
 
     <!-- Slide-out Menu -->
@@ -143,19 +143,19 @@
     <!-- Menu Overlay -->
     <div id="menu-overlay" class="menu-overlay"></div>
 
-    <!-- Junk Panel -->
-    <aside id="junk-panel" class="junk-panel">
-        <div class="junk-panel-header">
-            <h3 title="Items moved here can be restored or permanently deleted">Junk / Trash</h3>
+    <!-- Pending Panel -->
+    <aside id="pending-panel" class="pending-panel">
+        <div class="pending-panel-header">
+            <h3 title="Items moved here can be restored or permanently deleted">Pending</h3>
         </div>
         <div class="search-container">
-            <input type="text" id="junk-search" class="search-input" placeholder="Search junk...">
+            <input type="text" id="pending-search" class="search-input" placeholder="Search pending...">
         </div>
-        <div id="junk-items-container" class="junk-items">
-            <!-- Junked items will be rendered here -->
+        <div id="pending-items-container" class="pending-items">
+            <!-- Pending items will be rendered here -->
         </div>
-        <div class="controls junk">
-            <button id="clear-all-junk-btn" class="btn" data-tooltip="Permanently delete all junked items">Clear All</button>
+        <div class="controls pending">
+            <button id="clear-all-pending-btn" class="btn" data-tooltip="Permanently delete all pending items">Clear All</button>
         </div>
     </aside>
 

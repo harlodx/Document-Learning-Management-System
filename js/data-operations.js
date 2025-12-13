@@ -24,7 +24,7 @@ import {
     getDocumentStats,
     getCurrentDocument
 } from './version-control.js';
-import { renderJunkItems } from './junk-manager.js';
+import { renderPendingItems } from './pending-manager.js';
 import { showError, showSuccess, showNotification, showConfirm, showPrompt } from './message-center.js';
 
 /**
@@ -288,6 +288,7 @@ export function downloadDocumentAsFile(documentStructure, filename = 'document.j
 export function saveDocument(docId) {
     try {
         const documentStructure = stateManager.getDocumentStructure();
+        const pendingItems = stateManager.getPendingItems() || [];
         
         if (!documentStructure || documentStructure.length === 0) {
             throw new Error('No document to save');
@@ -295,8 +296,8 @@ export function saveDocument(docId) {
 
         console.log(`Saving document ${docId || 'default'}...`);
         
-        // Save to version control (working copy)
-        const result = saveWorkingCopy(documentStructure);
+        // Save to version control (working copy) including pending items
+        const result = saveWorkingCopy(documentStructure, pendingItems);
         
         // Also save to localStorage for persistence
         const storageSuccess = saveDocumentToStorage(documentStructure);
@@ -469,19 +470,13 @@ function updateSaveCommitUI(hasUncommitted) {
 }
 
 /**
- * Moves a node to junk (soft delete)
- * @param {string} nodeId - The ID of the node to junk
+ * Moves a node to pending (soft delete)
+ * @param {string} nodeId - The ID of the node to pending
  */
 export async function deleteNode(nodeId) {
     try {
         if (!nodeId) {
             throw new Error('Node ID is required');
-        }
-
-        // Confirm moving to junk
-        const confirmed = await showConfirm(`Move node ${nodeId} to junk?\n\nYou can restore it later from the Junk section.`, 'Move to Junk', 'Cancel');
-        if (!confirmed) {
-            return;
         }
 
         // Get current document structure
@@ -491,7 +486,7 @@ export async function deleteNode(nodeId) {
             throw new Error('No document structure loaded');
         }
 
-        // Find the node to junk
+        // Find the node to pending
         const nodeInfo = findNodeAndParent(documentStructure, nodeId);
         
         if (!nodeInfo || !nodeInfo.node) {
@@ -500,15 +495,15 @@ export async function deleteNode(nodeId) {
         }
 
         // Clone the node before removing it
-        const nodeToJunk = JSON.parse(JSON.stringify(nodeInfo.node));
-        nodeToJunk._junkedAt = new Date().toISOString();
-        nodeToJunk._originalParentId = nodeInfo.parent?.id || 'root';
-        nodeToJunk._originalIndex = nodeInfo.index;
+        const nodeToPending = JSON.parse(JSON.stringify(nodeInfo.node));
+        nodeToPending._pendingAt = new Date().toISOString();
+        nodeToPending._originalParentId = nodeInfo.parent?.id || 'root';
+        nodeToPending._originalIndex = nodeInfo.index;
         
-        // Get or initialize junk array
-        let junkItems = stateManager.getJunkItems() || [];
-        junkItems.push(nodeToJunk);
-        stateManager.setJunkItems(junkItems);
+        // Get or initialize pending array
+        let pendingItems = stateManager.getPendingItems() || [];
+        pendingItems.push(nodeToPending);
+        stateManager.setPendingItems(pendingItems);
 
         // Remove from document structure
         const result = findAndDeleteNode(documentStructure, nodeId);
@@ -520,11 +515,14 @@ export async function deleteNode(nodeId) {
         // Update state with modified structure
         stateManager.setDocumentStructure(documentStructure);
 
-        // Re-render the tree and junk section
-        renderDocumentStructure(documentStructure);
-        renderJunkItems();
+        // Save to version control working copy (with updated pending items)
+        saveWorkingCopy(documentStructure, pendingItems);
 
-        // Clear content editor if junked node was being edited
+        // Re-render the tree and Pending section
+        renderDocumentStructure(documentStructure);
+        renderPendingItems();
+
+        // Clear content editor if pending node was being edited
         const currentNode = stateManager.getCurrentEditingItem();
         if (currentNode && currentNode.id === nodeId) {
             stateManager.setCurrentEditingItem(null);
@@ -536,8 +534,12 @@ export async function deleteNode(nodeId) {
             if (contentID) contentID.textContent = '';
         }
 
-        // Auto-save after junking
+        // Auto-save after moving to pending
         scheduleAutoSave();
+
+        // Show brief informational message
+        const nodeName = nodeToPending.title || nodeToPending.name || 'Item';
+        showSuccess(`${nodeName} moved to Pending`);
 
         console.log(`Deleted node ${nodeId} successfully`);
 
@@ -640,22 +642,22 @@ export async function createNewDocument() {
             console.warn('Tree container not found in DOM!');
         }
         
-        // Clear junk items from state and DOM
-        console.log('Clearing junk items...');
-        const currentJunk = stateManager.getJunkItems() || [];
-        console.log('Current junk items:', currentJunk.length);
+        // Clear pending items from state and DOM
+        console.log('Clearing pending items...');
+        const currentPending = stateManager.getPendingItems() || [];
+        console.log('Current pending items:', currentPending.length);
         
         // Delete IDs to prevent conflicts
-        currentJunk.forEach(item => {
+        currentPending.forEach(item => {
             DocumentNode.deleteIdsRecursively(item);
         });
         
-        // Clear junk state
-        stateManager.setJunkItems([]);
+        // Clear pending state
+        stateManager.setPendingItems([]);
         
-        // Re-render empty junk
-        renderJunkItems();
-        console.log('Junk items cleared');
+        // Re-render empty pending
+        renderPendingItems();
+        console.log('Pending items cleared');
         
         // Create a single root node
         console.log('Creating new root node...');
@@ -981,12 +983,12 @@ export async function importCompleteDocument() {
                     }
                 }
                 
-                // Restore junk items if available
-                if (importData.junkItems && Array.isArray(importData.junkItems)) {
-                    stateManager.setJunkItems(importData.junkItems);
-                    console.log(`Restored ${importData.junkItems.length} junked items`);
+                // Restore pending items if available
+                if (importData.pendingItems && Array.isArray(importData.pendingItems)) {
+                    stateManager.setPendingItems(importData.pendingItems);
+                    console.log(`Restored ${importData.pendingItems.length} pending items`);
                 } else {
-                    stateManager.setJunkItems([]);
+                    stateManager.setPendingItems([]);
                 }
                 
                 // Restore users if available
@@ -1005,7 +1007,7 @@ export async function importCompleteDocument() {
                 
                 // Re-render everything
                 renderDocumentStructure(validated.documentStructure);
-                renderJunkItems();
+                renderPendingItems();
                 
                 // Rebuild revision list from imported history
                 const { buildRevisionListFromHistory } = await import('./revision-manager.js');

@@ -17,6 +17,7 @@ class VersionedDocument {
             currentVersion: 0
         };
         this.document = [];
+        this.pendingItems = []; // Track pending items as part of versioned state
         this.history = [];
         this.users = { users: [], currentUserId: null }; // User management data
         this.uncommittedChanges = false;
@@ -33,22 +34,32 @@ let hasUnsavedExport = false; // Tracks if there are changes since last export
  * Initializes a new versioned document
  * @param {string} documentName - Name of the document
  * @param {Object[]} initialData - Initial document structure
+ * @param {Object[]} initialPending - Initial pending items
  * @returns {VersionedDocument} The initialized document
  */
-export function initializeVersionedDocument(documentName, initialData = []) {
+export function initializeVersionedDocument(documentName, initialData = [], initialPending = []) {
     currentDocument = new VersionedDocument(documentName);
+    
+    // Initialize complete state with document and pending items
+    const initialState = {
+        document: initialData,
+        pendingItems: initialPending
+    };
+    
     currentDocument.document = initialData;
-    workingCopy = JSON.parse(JSON.stringify(initialData));
-    lastCommittedState = JSON.parse(JSON.stringify(initialData));
+    currentDocument.pendingItems = initialPending;
+    workingCopy = JSON.parse(JSON.stringify(initialState));
+    lastCommittedState = JSON.parse(JSON.stringify(initialState));
     
     // Create version 0 commit with the initial state
-    if (initialData.length > 0) {
+    if (initialData.length > 0 || initialPending.length > 0) {
+        const emptyState = { document: [], pendingItems: [] };
         const initialCommit = {
             version: 0,
             timestamp: new Date().toISOString(),
             author: 'System',
             message: 'Initial document state',
-            patch: jsonpatch.compare([], initialData), // Patch from empty to initial
+            patch: jsonpatch.compare(emptyState, initialState),
             nodeCount: countNodes(initialData)
         };
         currentDocument.history.push(initialCommit);
@@ -69,17 +80,25 @@ export function getCurrentDocument() {
 /**
  * Updates the working copy (save without commit)
  * @param {Object[]} newDocumentState - The new document state
+ * @param {Object[]} pendingItems - Optional pending items to track
  */
-export function saveWorkingCopy(newDocumentState) {
+export function saveWorkingCopy(newDocumentState, pendingItems = null) {
     if (!currentDocument) {
         throw new Error('No document initialized. Call initializeVersionedDocument first.');
     }
 
-    workingCopy = JSON.parse(JSON.stringify(newDocumentState));
-    currentDocument.document = workingCopy;
+    // Create complete state object including document and pending items
+    const completeState = {
+        document: JSON.parse(JSON.stringify(newDocumentState)),
+        pendingItems: pendingItems ? JSON.parse(JSON.stringify(pendingItems)) : (currentDocument.pendingItems || [])
+    };
+
+    workingCopy = completeState;
+    currentDocument.document = completeState.document;
+    currentDocument.pendingItems = completeState.pendingItems;
     currentDocument.metadata.lastModified = new Date().toISOString();
     
-    // Check if there are uncommitted changes
+    // Check if there are uncommitted changes by comparing complete state
     const hasChanges = JSON.stringify(workingCopy) !== JSON.stringify(lastCommittedState);
     currentDocument.uncommittedChanges = hasChanges;
 
@@ -168,7 +187,7 @@ export function getVersionHistory() {
 /**
  * Gets a specific version of the document
  * @param {number} version - Version number to retrieve
- * @returns {Object[]} Document state at that version
+ * @returns {Object[]|Object} Document state at that version (array for old format, object for new)
  */
 export function getDocumentAtVersion(version) {
     if (!currentDocument) {
@@ -180,8 +199,14 @@ export function getDocumentAtVersion(version) {
     }
 
     try {
-        // Start from empty state and apply patches sequentially
-        let documentState = [];
+        // Determine if we're using the new format (object with document/pendingItems)
+        // by checking the first patch
+        const firstCommit = currentDocument.history[0];
+        const usesNewFormat = firstCommit && firstCommit.patch && firstCommit.patch.length > 0 &&
+            firstCommit.patch.some(op => op.path && (op.path.startsWith('/document') || op.path.startsWith('/pendingItems')));
+        
+        // Start from appropriate empty state
+        let documentState = usesNewFormat ? { document: [], pendingItems: [] } : [];
         
         // Apply patches from version 0 up to and including target version
         for (let i = 0; i <= version; i++) {
@@ -204,7 +229,13 @@ export function getDocumentAtVersion(version) {
             }
         }
 
-        return documentState;
+        // For backward compatibility, return just the document array if old format
+        if (!usesNewFormat && Array.isArray(documentState)) {
+            return documentState;
+        }
+        
+        // Return document array from new format, or the array itself for old format
+        return usesNewFormat ? documentState.document : documentState;
 
     } catch (error) {
         console.error(`Error reconstructing version ${version}:`, error);

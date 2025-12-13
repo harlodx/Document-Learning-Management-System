@@ -36,7 +36,7 @@ import {
     createBackup,
     listBackups,
     scheduleAutoSave,
-    loadJunkFromStorage
+    loadPendingFromStorage
 } from './storage-manager.js';
 import {
     initializeVersionedDocument,
@@ -45,7 +45,7 @@ import {
     hasUncommittedChanges,
     revertToVersion
 } from './version-control.js';
-import { renderJunkItems, clearAllJunk } from './junk-manager.js';
+import { renderPendingItems, clearAllPending } from './pending-manager.js';
 import { exportToPDF } from './print-formatter.js';
 import { initializeSearch } from './search-manager.js';
 import { initializeMenu, setUsername } from './menu-manager.js';
@@ -277,13 +277,13 @@ function initializeApplication() {
         // Load title and subtitle from localStorage
         loadTitleAndSubtitle();
         
-        // Load junk items from localStorage
-        const junkItems = loadJunkFromStorage();
-        if (junkItems && junkItems.length > 0) {
-            stateManager.setJunkItems(junkItems);
-            debugMessage(`Loaded ${junkItems.length} junked items`);
+        // Load pending items from localStorage
+        const pendingItems = loadPendingFromStorage();
+        if (pendingItems && pendingItems.length > 0) {
+            stateManager.setPendingItems(pendingItems);
+            debugMessage(`Loaded ${pendingItems.length} pending items`);
         }
-        renderJunkItems();
+        renderPendingItems();
         
         // Initialize search functionality
         debugMessage('Initializing search...');
@@ -305,10 +305,13 @@ function initializeApplication() {
             debugMessage(`Loaded ${loadedData.length} root nodes`);
         }
 
-        // Initialize version control with loaded data
+        // Get pending items from state (already loaded above)
+        const currentPendingItems = stateManager.getPendingItems() || [];
+
+        // Initialize version control with loaded data and pending items
         debugMessage('Initializing version control...');
         const documentName = 'DLMS Document'; // TODO: Get from user or metadata
-        initializeVersionedDocument(documentName, loadedData);
+        initializeVersionedDocument(documentName, loadedData, currentPendingItems);
 
         // Build revision list from version history
         debugMessage('Building revision list from version history...');
@@ -461,11 +464,11 @@ function setupExportImportHandlers() {
         });
     }
     
-    // Set up clear all junk button
-    const clearAllJunkBtn = document.getElementById('clear-all-junk-btn');
-    if (clearAllJunkBtn) {
-        clearAllJunkBtn.addEventListener('click', () => {
-            clearAllJunk();
+    // Set up clear all pending button
+    const clearAllPendingBtn = document.getElementById('clear-all-pending-btn');
+    if (clearAllPendingBtn) {
+        clearAllPendingBtn.addEventListener('click', () => {
+            clearAllPending();
         });
     }
     

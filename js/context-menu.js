@@ -66,9 +66,9 @@ function createContextMenuElement() {
             </div>
         </div>
         <div class="context-menu-divider"></div>
-        <div class="context-menu-item" data-action="junk">
+        <div class="context-menu-item" data-action="pending">
             <span class="context-menu-icon">🗑️</span>
-            <span>Move to Junk</span>
+            <span>Move to Pending</span>
         </div>
         <div class="context-menu-item" data-action="delete">
             <span class="context-menu-icon">❌</span>
@@ -250,8 +250,8 @@ function handleMenuItemClick(event) {
         case 'add-rootnode':
             handleAddRootNode();
             break;
-        case 'junk':
-            handleJunkNode();
+        case 'pending':
+            handlePendingNode();
             break;
         case 'delete':
             handleDeleteNode();
@@ -525,16 +525,16 @@ function reIndexChildrenPlain(parentNode, parentId) {
 }
 
 /**
- * Move node to junk
+ * Move node to pending
  */
-function handleJunkNode() {
+function handlePendingNode() {
     if (!currentNodeId) return;
     
     // Save state before change
     saveStateBeforeChange();
     
-    console.log('Moving node to junk:', currentNodeId);
-    deleteNode(currentNodeId); // This already moves to junk
+    console.log('Moving node to pending:', currentNodeId);
+    deleteNode(currentNodeId); // This already moves to pending
 }
 
 /**

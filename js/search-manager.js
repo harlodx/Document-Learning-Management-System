@@ -1,23 +1,23 @@
 /*
 // =========================================================================
 // SEARCH MANAGER MODULE
-// Handles search/filter functionality for document tree and junk items
+// Handles search/filter functionality for document tree and pending items
 // =========================================================================
 */
 
 import { stateManager } from './state-manager.js';
 import { renderDocumentStructure } from './tree-renderer.js';
-import { renderJunkItems } from './junk-manager.js';
+import { renderPendingItems } from './pending-manager.js';
 
 let indexSearchTerm = '';
-let junkSearchTerm = '';
+let pendingSearchTerm = '';
 
 /**
  * Initialize search functionality
  */
 export function initializeSearch() {
     const indexSearchInput = document.getElementById('index-search');
-    const junkSearchInput = document.getElementById('junk-search');
+    const junkSearchInput = document.getElementById('pending-search');
     
     if (indexSearchInput) {
         indexSearchInput.addEventListener('input', (e) => {
@@ -28,8 +28,8 @@ export function initializeSearch() {
     
     if (junkSearchInput) {
         junkSearchInput.addEventListener('input', (e) => {
-            junkSearchTerm = e.target.value.toLowerCase().trim();
-            filterAndRenderJunkItems();
+            pendingSearchTerm = e.target.value.toLowerCase().trim();
+            filterAndrenderPendingItems();
         });
     }
     
@@ -41,8 +41,8 @@ export function initializeSearch() {
     });
     
     stateManager.subscribe('junkItemsChanged', () => {
-        if (junkSearchTerm) {
-            filterAndRenderJunkItems();
+        if (pendingSearchTerm) {
+            filterAndrenderPendingItems();
         }
     });
 }
@@ -65,24 +65,24 @@ function filterAndRenderDocumentTree() {
 }
 
 /**
- * Filter and render junk items based on search term
+ * Filter and render pending items based on search term
  */
-function filterAndRenderJunkItems() {
+function filterAndrenderPendingItems() {
     const junkItems = stateManager.getJunkItems();
     
-    if (!junkSearchTerm) {
+    if (!pendingSearchTerm) {
         // No search term, show all
-        renderJunkItems();
+        renderPendingItems();
         return;
     }
     
-    // Filter junk items
-    const filteredJunk = junkItems.filter(item => matchesSearchTerm(item, junkSearchTerm));
+    // Filter pending items
+    const filteredJunk = junkItems.filter(item => matchesSearchTerm(item, pendingSearchTerm));
     
-    // Temporarily replace junk items with filtered list for rendering
+    // Temporarily replace pending items with filtered list for rendering
     const originalJunk = stateManager.getJunkItems();
     stateManager.setJunkItems(filteredJunk);
-    renderJunkItems();
+    renderPendingItems();
     stateManager.setJunkItems(originalJunk);
 }
 
@@ -154,7 +154,7 @@ function matchesSearchTerm(node, searchTerm) {
  */
 export function clearSearchFilters() {
     const indexSearchInput = document.getElementById('index-search');
-    const junkSearchInput = document.getElementById('junk-search');
+    const junkSearchInput = document.getElementById('pending-search');
     
     if (indexSearchInput) {
         indexSearchInput.value = '';
@@ -163,13 +163,13 @@ export function clearSearchFilters() {
     
     if (junkSearchInput) {
         junkSearchInput.value = '';
-        junkSearchTerm = '';
+        pendingSearchTerm = '';
     }
     
     // Re-render with full data
     const documentStructure = stateManager.getDocumentStructure();
     renderDocumentStructure(documentStructure);
-    renderJunkItems();
+    renderPendingItems();
 }
 
 /**
@@ -178,6 +178,6 @@ export function clearSearchFilters() {
 export function getSearchTerms() {
     return {
         index: indexSearchTerm,
-        junk: junkSearchTerm
+        junk: pendingSearchTerm
     };
 }

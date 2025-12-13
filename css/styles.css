@@ -774,12 +774,12 @@ header h1 {
         transform: translateX(-80px);
     }
 
-    .junk-panel {
+    .pending-panel {
         width: 300px;
         right: -320px;
     }
 
-    .junk-toggle.active {
+    .pending-toggle.active {
         right: 300px;
     }
 }
@@ -819,25 +819,25 @@ header h1 {
         transform: translateX(0);
     }
 
-    .junk-panel {
+    .pending-panel {
         width: 85%;
         max-width: 300px;
         right: -100%;
     }
 
-    .junk-toggle {
+    .pending-toggle {
         top: 70px;
         width: 16px;
         height: 45px;
         padding: 8px 3px;
     }
 
-    .junk-toggle:hover {
+    .pending-toggle:hover {
         width: 40px;
         padding: 8px 8px;
     }
 
-    .junk-toggle.active {
+    .pending-toggle.active {
         right: 85%;
         max-width: 300px;
         width: 40px;
@@ -1152,12 +1152,12 @@ body.dark-theme .content-letter-designator {
     color: var(--primary-color);
 }
 
-body.dark-theme .junk-item {
+body.dark-theme .pending-item {
     background-color: #2d2d2d;
     border: 1px solid #404040;
 }
 
-body.dark-theme .junk-item:hover {
+body.dark-theme .pending-item:hover {
     background-color: #353535;
 }
 
@@ -2482,8 +2482,8 @@ footer {
     background-color: var(--danger-hover);
 }
 
-/* Junk Toggle Button */
-.junk-toggle {
+/* Pending Toggle Button */
+.pending-toggle {
     position: fixed;
     top: calc(50vh + 50px);
     right: 0;
@@ -2507,26 +2507,26 @@ footer {
     overflow: hidden;
 }
 
-.junk-toggle:hover {
-    width: 60px;
+.pending-toggle:hover {
+    width: 40px;
     padding: 15px 12px;
     background-color: rgba(244, 67, 54, 0.65);
     box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.25);
 }
 
-.junk-toggle.active {
+.pending-toggle.active {
     right: 350px;
-    width: 60px;
+    width: 40px;
     padding: 15px 12px;
     border-radius: 12px 0 0 12px;
 }
 
-.junk-icon {
+.pending-icon {
     display: none;
 }
 
-/* Junk Panel */
-.junk-panel {
+/* Pending Panel */
+.pending-panel {
     position: fixed;
     top: 0;
     right: -370px;
@@ -2544,34 +2544,34 @@ footer {
     overflow-y: auto;
 }
 
-.junk-panel.open {
+.pending-panel.open {
     right: 0;
 }
 
-.junk-panel-header {
+.pending-panel-header {
     margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
 }
 
-.junk-panel-header h3 {
+.pending-panel-header h3 {
     margin: 0;
     color: var(--text-color);
     font-size: 1.5em;
 }
 
-.junk-panel .search-container {
+.pending-panel .search-container {
     margin-bottom: 16px;
 }
 
-.junk-items {
+.pending-items {
     flex: 1;
     overflow-y: auto;
     margin-bottom: 16px;
     padding: 0.5rem;
 }
 
-.junk-item {
+.pending-item {
     margin: 0.25rem 0;
     background: var(--surface-color);
     border: 1px solid var(--border-color);
@@ -2582,25 +2582,25 @@ footer {
     overflow: hidden;
 }
 
-.junk-item:hover {
+.pending-item:hover {
     background: var(--hover-bg);
     border-color: var(--primary-color);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.junk-item-main {
+.pending-item-main {
     display: flex;
     flex-direction: row;
 }
 
-.junk-item-buttons {
+.pending-item-buttons {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     flex-shrink: 0;
 }
 
-.junk-item-content {
+.pending-item-content {
     flex: 1;
     padding: 0.5rem;
     min-width: 0;
@@ -2609,14 +2609,14 @@ footer {
     gap: 12px;
 }
 
-.junk-item-header {
+.pending-item-header {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     position: relative;
 }
 
-.junk-expand-btn {
+.pending-expand-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -2628,18 +2628,18 @@ footer {
     order: 1;
 }
 
-.junk-expand-btn:hover {
+.pending-expand-btn:hover {
     color: var(--text-color);
 }
 
-.junk-no-children {
+.pending-no-children {
     display: inline-block;
     width: 28px;
     flex-shrink: 0;
     order: 1;
 }
 
-.junk-item-info {
+.pending-item-info {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -2647,14 +2647,14 @@ footer {
     min-width: 0;
 }
 
-.junk-item-title-row {
+.pending-item-title-row {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.junk-item-title {
+.pending-item-title {
     font-weight: 600;
     color: var(--text-color);
     font-size: 1em;
@@ -2662,17 +2662,17 @@ footer {
     transition: color 0.2s ease;
 }
 
-.junk-item-title:hover {
+.pending-item-title:hover {
     color: var(--primary-color);
 }
 
-.junk-child-count {
+.pending-child-count {
     font-size: 0.85em;
     color: #888;
     font-weight: normal;
 }
 
-.junk-item-preview {
+.pending-item-preview {
     font-size: 0.9em;
     color: #555;
     line-height: 1.4;
@@ -2681,25 +2681,25 @@ footer {
     text-overflow: ellipsis;
 }
 
-.junk-item-date {
+.pending-item-date {
     font-size: 0.8em;
     color: #999;
 }
 
-.junk-children-container {
+.pending-children-container {
     margin-top: 0.5rem;
     margin-left: 2rem;
     padding-left: 0.75rem;
     border-left: 2px solid var(--border-color);
 }
 
-.junk-child-list {
+.pending-child-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.junk-child-item {
+.pending-child-item {
     padding: 0.25rem 0.5rem;
     color: var(--text-color);
     font-size: 0.9em;
@@ -2709,34 +2709,34 @@ footer {
     list-style: none;
 }
 
-.junk-child-item:hover {
+.pending-child-item:hover {
     background: var(--hover-bg);
 }
 
-.junk-child-item::before {
+.pending-child-item::before {
     content: "└─ ";
     color: var(--text-muted);
     margin-right: 0.5rem;
 }
 
-.junk-child-title {
+.pending-child-title {
     color: var(--text-color);
     transition: color 0.2s ease;
 }
 
-.junk-child-item:hover .junk-child-title {
+.pending-child-item:hover .pending-child-title {
     color: var(--primary-color);
 }
 
-.junk-child-list .junk-child-list {
+.pending-child-list .pending-child-list {
     margin-left: 16px;
 }
 
-.junk-child-list .junk-child-list .junk-child-item::before {
+.pending-child-list .pending-child-list .pending-child-item::before {
     content: "├─ ";
 }
 
-.junk-item-actions {
+.pending-item-actions {
     display: contents;
 }
 
@@ -2764,7 +2764,7 @@ footer {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.delete-junk-btn {
+.delete-pending-btn {
     padding: 6px 8px;
     background: #f44336;
     color: white;
@@ -2782,13 +2782,13 @@ footer {
     height: 36px;
 }
 
-.delete-junk-btn:hover {
+.delete-pending-btn:hover {
     background: #da190b;
     transform: scale(1.05);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-#clear-all-junk-btn {
+#clear-all-pending-btn {
     padding: 8px 16px;
     background: #f44336;
     color: white;
@@ -2799,7 +2799,7 @@ footer {
     transition: background 0.2s;
 }
 
-#clear-all-junk-btn:hover {
+#clear-all-pending-btn:hover {
     background: #da190b;
 }
 

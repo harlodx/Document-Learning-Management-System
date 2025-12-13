@@ -7,7 +7,7 @@ import { saveDocument, commitDocument } from './data-operations.js';
 import { showSuccess } from './message-center.js';
 
 let isMenuOpen = false;
-let isJunkPanelOpen = false;
+let ispendingPanelOpen = false;
 
 /**
  * Initialize menu functionality
@@ -37,8 +37,8 @@ export function initializeMenu() {
         }
     });
 
-    // Initialize junk panel
-    initializeJunkPanel();
+    // Initialize pending panel
+    initializePendingPanel();
 
     // Initialize keyboard shortcuts
     initializeKeyboardShortcuts();
@@ -47,58 +47,58 @@ export function initializeMenu() {
 }
 
 /**
- * Initialize junk panel functionality
+ * Initialize pending panel functionality
  */
-function initializeJunkPanel() {
-    const junkToggle = document.getElementById('junk-toggle');
-    const junkPanel = document.getElementById('junk-panel');
+function initializePendingPanel() {
+    const pendingToggle = document.getElementById('pending-toggle');
+    const pendingPanel = document.getElementById('pending-panel');
 
-    if (!junkToggle || !junkPanel) {
-        console.error('Junk panel elements not found');
+    if (!pendingToggle || !pendingPanel) {
+        console.error('pending panel elements not found');
         return;
     }
 
-    // Toggle junk panel on button click
-    junkToggle.addEventListener('click', toggleJunkPanel);
+    // Toggle pending panel on button click
+    pendingToggle.addEventListener('click', togglePendingPanel);
 
-    console.log('Junk panel initialized');
+    console.log('pending panel initialized');
 }
 
 /**
- * Toggle junk panel open/closed
+ * Toggle pending panel open/closed
  */
-function toggleJunkPanel() {
-    if (isJunkPanelOpen) {
-        closeJunkPanel();
+function togglePendingPanel() {
+    if (ispendingPanelOpen) {
+        closePendingPanel();
     } else {
-        openJunkPanel();
+        openPendingPanel();
     }
 }
 
 /**
- * Open the junk panel
+ * Open the pending panel
  */
-function openJunkPanel() {
-    const junkPanel = document.getElementById('junk-panel');
-    const junkToggle = document.getElementById('junk-toggle');
+function openPendingPanel() {
+    const pendingPanel = document.getElementById('pending-panel');
+    const pendingToggle = document.getElementById('pending-toggle');
 
-    junkPanel.classList.add('open');
-    junkToggle.classList.add('active');
+    pendingPanel.classList.add('open');
+    pendingToggle.classList.add('active');
     
-    isJunkPanelOpen = true;
+    ispendingPanelOpen = true;
 }
 
 /**
- * Close the junk panel
+ * Close the pending panel
  */
-function closeJunkPanel() {
-    const junkPanel = document.getElementById('junk-panel');
-    const junkToggle = document.getElementById('junk-toggle');
+function closePendingPanel() {
+    const pendingPanel = document.getElementById('pending-panel');
+    const pendingToggle = document.getElementById('pending-toggle');
 
-    junkPanel.classList.remove('open');
-    junkToggle.classList.remove('active');
+    pendingPanel.classList.remove('open');
+    pendingToggle.classList.remove('active');
     
-    isJunkPanelOpen = false;
+    ispendingPanelOpen = false;
 }
 
 /**
@@ -167,12 +167,12 @@ function initializeKeyboardShortcuts() {
             showSuccess('Changes Committed');
         }
 
-        // Escape - Close menu or junk panel
+        // Escape - Close menu or pending panel
         if (e.key === 'Escape') {
             if (isMenuOpen) {
                 closeMenu();
-            } else if (isJunkPanelOpen) {
-                closeJunkPanel();
+            } else if (ispendingPanelOpen) {
+                closePendingPanel();
             }
         }
     });

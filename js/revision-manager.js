@@ -365,6 +365,81 @@ function formatTime(isoString) {
 }
 
 /**
+ * Parse a Pending-related operation into human-readable description
+ * @param {Object} patch - JSON Patch operation
+ * @param {Object} previousState - Previous document state
+ * @param {string} author - User who made the change
+ * @returns {string} HTML string describing the change
+ */
+function parsePendingOperation(patch, previousState = null, author = 'User') {
+    const { op, path, value } = patch;
+    const pathParts = path.split('/').filter(p => p);
+    
+    let action = '';
+    let previousVal = '—';
+    let currentVal = '—';
+    let cssClass = '';
+    
+    // Get the Pending item title if available
+    const getPendingTitle = (item) => {
+        if (!item) return 'Untitled';
+        return item.title || item.name || 'Untitled';
+    };
+    
+    // Extract Pending items from previous state
+    const previousPending = previousState?.pendingItems || [];
+    
+    try {
+        switch (op) {
+            case 'add':
+                // Adding to Pending (deleting from document)
+                cssClass = 'change-remove';
+                const itemTitle = getPendingTitle(value);
+                action = `Moved '${itemTitle}' to Pending`;
+                previousVal = 'Document';
+                currentVal = 'Pending';
+                break;
+                
+            case 'remove':
+                // Removing from Pending (either restoring or permanently deleting)
+                const PendingIndex = parseInt(pathParts[1]);
+                const removedItem = previousPending[PendingIndex];
+                const removedTitle = getPendingTitle(removedItem);
+                
+                cssClass = 'change-remove';
+                action = `Permanently deleted '${removedTitle}'`;
+                previousVal = 'Pending';
+                currentVal = '—';
+                break;
+                
+            case 'replace':
+                cssClass = 'change-replace';
+                action = `Modified Pending item`;
+                break;
+                
+            default:
+                cssClass = 'change-other';
+                action = `Pending operation: ${op}`;
+        }
+    } catch (error) {
+        console.warn('Error parsing Pending operation:', error);
+        cssClass = 'change-other';
+        action = 'Pending operation';
+    }
+    
+    // Format timestamp
+    const timeStr = patch.timestamp ? formatTime(patch.timestamp) : '—';
+    
+    return `
+        <div class="change-col-time">${timeStr}</div>
+        <div class="change-col-user">${author}</div>
+        <div class="change-col-action ${cssClass}">${action}</div>
+        <div class="change-col-previous">${previousVal}</div>
+        <div class="change-col-current">${currentVal}</div>
+    `;
+}
+
+/**
  * Parse a JSON Patch operation into human-readable description
  * @param {Object} patch - JSON Patch operation
  * @param {Array} previousState - Previous document state for before/after comparison
@@ -381,20 +456,38 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
     let description = '';
     let cssClass = '';
     
+    // Check if this is a Pending-related operation
+    const isPendingOperation = pathParts[0] === 'pendingItems';
+    const isDocumentOperation = pathParts[0] === 'document';
+    
+    // Handle Pending operations specially
+    if (isPendingOperation) {
+        return parsePendingOperation(patch, previousState, author);
+    }
+    
+    // Adjust pathParts if using new format with /document/ prefix
+    if (isDocumentOperation) {
+        pathParts.shift(); // Remove 'document' from the beginning
+    }
+    
     // Helper to get node ID from path
     const getNodeIdFromPath = (pathStr) => {
         const parts = pathStr.split('/').filter(p => p);
         if (parts.length === 0) return null;
         
+        // Get the actual document array (handle both old and new format)
+        const documentArray = previousState?.document || previousState;
+        if (!Array.isArray(documentArray)) return null;
+        
         // Navigate through the path to find the node ID
         let nodeId = null;
         try {
             // First element is the root index
-            if (previousState && previousState[parts[0]]) {
-                nodeId = previousState[parts[0]].id || (parseInt(parts[0]) + 1).toString();
+            if (documentArray && documentArray[parts[0]]) {
+                nodeId = documentArray[parts[0]].id || (parseInt(parts[0]) + 1).toString();
                 
                 // If there are more parts, we're navigating into children
-                let current = previousState[parts[0]];
+                let current = documentArray[parts[0]];
                 for (let i = 1; i < parts.length; i += 2) {
                     if (parts[i] === 'children' && parts[i + 1] !== undefined) {
                         const childIndex = parseInt(parts[i + 1]);
@@ -426,7 +519,8 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
         
         const parts = pathStr.split('/').filter(p => p);
         try {
-            let current = previousState;
+            // Start from the appropriate root (handle both old and new format)
+            let current = previousState?.document || previousState;
             
             // Navigate through each part of the path
             for (let i = 0; i < parts.length; i++) {
