@@ -16,6 +16,7 @@ import {
     saveDocument,
     commitDocument,
     unlockDocument,
+    createNewDocument,
     importDocument,
     downloadVersionedDocument,
     deleteNode
@@ -271,6 +272,7 @@ function handleSpecificButtons(elementId) {
             }
         },
         'commitDocument': () => commitDocument(),
+        'new-document-btn': () => createNewDocument(),
         'importDocument': importDocument,
         'downloadDocument': () => downloadVersionedDocument(),
         'exportDocument': () => downloadVersionedDocument()

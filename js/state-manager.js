@@ -8,6 +8,8 @@ class StateManager {
         this._documentStructure = [];
         this._currentEditingItem = null;
         this._junkItems = [];
+        this._users = [];
+        this._currentUser = null;
         this._listeners = new Map();
     }
 
@@ -112,13 +114,59 @@ class StateManager {
     }
 
     /**
+     * Get users
+     * @returns {Array} The array of users
+     */
+    getUsers() {
+        return this._users;
+    }
+
+    /**
+     * Set users
+     * @param {Array} users - The users array
+     */
+    setUsers(users) {
+        if (!Array.isArray(users)) {
+            throw new Error('Users must be an array');
+        }
+        this._users = users;
+        this._notifyListeners('usersChanged', users);
+    }
+
+    /**
+     * Get current user
+     * @returns {Object|null} The current user
+     */
+    getCurrentUser() {
+        return this._currentUser;
+    }
+
+    /**
+     * Set current user
+     * @param {Object|null} user - The current user
+     */
+    setCurrentUser(user) {
+        this._currentUser = user;
+        this._notifyListeners('currentUserChanged', user);
+    }
+
+    /**
      * Reset all state to initial values
      */
     reset() {
         this._documentStructure = [];
         this._currentEditingItem = null;
         this._junkItems = [];
+        this._users = [];
+        this._currentUser = null;
         this._notifyListeners('stateReset', null);
+    }
+    
+    /**
+     * Alias for addListener (for compatibility)
+     */
+    addListener(event, callback) {
+        return this.subscribe(event, callback);
     }
 }
 

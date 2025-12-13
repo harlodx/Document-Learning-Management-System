@@ -133,8 +133,8 @@ export function initializeFileInput(inputId = 'fileInput') {
             // Update state
             stateManager.setDocumentStructure(rootNodes);
 
-            // Render the imported structure
-            renderDocumentStructure(rootNodes);
+            // Smart tree initialization (sets collapse states, loads appropriate node)
+            initializeTreeState(rootNodes);
 
             console.log(`Successfully imported document with ${rootNodes.length} root nodes`);
 
@@ -354,9 +354,15 @@ export async function commitDocument(docId, commitMessage = '', author = 'User')
             }
         }
 
-        // Prompt for author name if not provided
+        // Get current user info from user manager
+        const { getCurrentUserInfo } = await import('./user-manager.js');
+        const userInfo = getCurrentUserInfo();
+        
+        // Use author name from current user or prompt
         let authorName = author;
-        if (author === 'User') {
+        if (userInfo && userInfo.name) {
+            authorName = userInfo.name;
+        } else if (author === 'User') {
             const storedAuthor = localStorage.getItem('dlms_author_name');
             if (storedAuthor) {
                 authorName = storedAuthor;
@@ -370,9 +376,10 @@ export async function commitDocument(docId, commitMessage = '', author = 'User')
         }
 
         console.log(`Committing document ${docId || 'default'}: ${message}`);
+        console.log('User info:', userInfo);
         
-        // Commit to version history
-        const result = commitChanges(message, authorName);
+        // Commit to version history with user info
+        const result = commitChanges(message, authorName, userInfo);
         
         if (result.success) {
             console.log(`Committed as version ${result.version}`);
@@ -594,6 +601,99 @@ export function unlockDocument(docId) {
 }
 
 /**
+ * Creates a new blank document
+ */
+export async function createNewDocument() {
+    try {
+        console.log('=== CREATE NEW DOCUMENT STARTED ===');
+        
+        // Check if there are unsaved changes
+        if (hasUncommittedChanges()) {
+            console.log('Uncommitted changes detected, prompting user...');
+            const confirmed = await showConfirm(
+                'You have unsaved changes. Creating a new document will discard them. Continue?',
+                'Create New Document'
+            );
+            
+            if (!confirmed) {
+                console.log('New document creation cancelled by user');
+                return;
+            }
+        }
+
+        // Clear existing IDs
+        console.log('Clearing existing DocumentNode IDs...');
+        DocumentNode._existingIds.clear();
+        console.log('IDs cleared. Count:', DocumentNode._existingIds.size);
+        
+        // Clear the tree DOM
+        console.log('Looking for tree container...');
+        const treeContainer = document.querySelector('.tree');
+        console.log('Tree container found:', !!treeContainer);
+        
+        if (treeContainer) {
+            console.log('Tree container children before clear:', treeContainer.children.length);
+            console.log('Tree container innerHTML length:', treeContainer.innerHTML.length);
+            treeContainer.innerHTML = '';
+            console.log('Tree container cleared. Children after:', treeContainer.children.length);
+        } else {
+            console.warn('Tree container not found in DOM!');
+        }
+        
+        // Clear junk items from state and DOM
+        console.log('Clearing junk items...');
+        const currentJunk = stateManager.getJunkItems() || [];
+        console.log('Current junk items:', currentJunk.length);
+        
+        // Delete IDs to prevent conflicts
+        currentJunk.forEach(item => {
+            DocumentNode.deleteIdsRecursively(item);
+        });
+        
+        // Clear junk state
+        stateManager.setJunkItems([]);
+        
+        // Re-render empty junk
+        renderJunkItems();
+        console.log('Junk items cleared');
+        
+        // Create a single root node
+        console.log('Creating new root node...');
+        const newRoot = new DocumentNode('1', 'New Document', [], []);
+        const rootNodes = [newRoot];
+        console.log('New root node created:', newRoot.id, newRoot.name);
+        
+        // Update state
+        console.log('Updating state with new structure...');
+        stateManager.setDocumentStructure(rootNodes);
+        console.log('State updated');
+        
+        // Smart tree initialization (collapses and loads first node)
+        console.log('Initializing tree state...');
+        initializeTreeState(rootNodes);
+        console.log('Tree state initialized');
+        
+        // Clear any existing revision history
+        console.log('Clearing revision history...');
+        saveRevisionsToStorage([]);
+        console.log('Revision history cleared');
+        
+        // Save the new blank document
+        console.log('Saving new document...');
+        saveDocument();
+        console.log('Document saved');
+        
+        showSuccess('New document created');
+        console.log('=== CREATE NEW DOCUMENT COMPLETED ===');
+
+    } catch (error) {
+        console.error('Error creating new document:', error);
+        console.error('Stack trace:', error.stack);
+        showError('Failed to create new document');
+    }
+}
+
+/**
  * Triggers the import document flow
  */
 export function importDocument() {
@@ -766,10 +866,12 @@ export async function exportCompleteDocument() {
     try {
         const { exportVersionHistory, clearUnsavedExport, getDefaultFilename } = await import('./version-control.js');
         const { createExportPackage, downloadExportFile, saveVersionHistoryToStorage } = await import('./storage-manager.js');
+        const { exportUsersData } = await import('./user-manager.js');
         
         // Get current state
         const documentStructure = stateManager.getDocumentStructure();
         const versionHistory = exportVersionHistory();
+        const usersData = exportUsersData();
         
         if (!versionHistory) {
             showError('No version history available to export');
@@ -782,8 +884,8 @@ export async function exportCompleteDocument() {
         const documentTitle = titleElement?.value || titleElement?.textContent || 'Untitled Document';
         const documentSubtitle = subtitleElement?.value || '';
         
-        // Create export package
-        const exportPackage = createExportPackage(documentStructure, versionHistory, documentTitle, documentSubtitle);
+        // Create export package (includes users data)
+        const exportPackage = createExportPackage(documentStructure, versionHistory, documentTitle, documentSubtitle, usersData);
         
         // Save to localStorage
         saveVersionHistoryToStorage(versionHistory);
@@ -885,6 +987,16 @@ export async function importCompleteDocument() {
                     console.log(`Restored ${importData.junkItems.length} junked items`);
                 } else {
                     stateManager.setJunkItems([]);
+                }
+                
+                // Restore users if available
+                if (importData.users) {
+                    const { importUsersData, updateUserSelector } = await import('./user-manager.js');
+                    const imported = importUsersData(importData.users);
+                    if (imported) {
+                        console.log(`Restored ${importData.users.users?.length || 0} users`);
+                        updateUserSelector();
+                    }
                 }
                 
                 // Save to localStorage

@@ -288,24 +288,42 @@ function handleUndo() {
 
 /**
  * Add a subnode (child) to the current node
+ * @param {string} nodeId - Optional node ID to add subnode to (uses currentNodeId if not provided)
  */
-async function handleAddSubnode() {
-    if (!currentNodeId) return;
+export async function handleAddSubnode(nodeId = null) {
+    const targetNodeId = nodeId || currentNodeId;
+    
+    console.log('=== ADD SUBNODE CLICKED ===');
+    console.log('Provided nodeId:', nodeId);
+    console.log('Current nodeId:', currentNodeId);
+    console.log('Target nodeId:', targetNodeId);
+    
+    if (!targetNodeId) {
+        console.warn('No node selected for adding subnode');
+        showError('Please select a node first');
+        return;
+    }
     
     const nodeName = await showPrompt('Enter name for new subnode:', 'New Subnode', 'Subnode name');
-    if (!nodeName) return; // User cancelled
+    if (!nodeName) {
+        console.log('User cancelled subnode creation');
+        return;
+    }
     
     // Save state before change
+    console.log('Saving state before adding subnode...');
     saveStateBeforeChange();
     
     const documentStructure = stateManager.getDocumentStructure();
-    const parentNode = findNodeById(documentStructure, currentNodeId);
+    const parentNode = findNodeById(documentStructure, targetNodeId);
     
     if (!parentNode) {
-        console.error('Parent node not found:', currentNodeId);
-        alert('Error: Could not find node');
+        console.error('Parent node not found:', targetNodeId);
+        showError('Error: Could not find node');
         return;
     }
+    
+    console.log('Adding subnode to parent:', parentNode.id, parentNode.name);
     
     console.log('Add Subnode - Adding child to node:', parentNode.id);
     
@@ -339,21 +357,34 @@ async function handleAddSubnode() {
 
 /**
  * Add a new root node near the current node's position
+ * @param {string} nodeId - Optional node ID to add root node after (uses currentNodeId if not provided)
  */
-async function handleAddRootNode() {
+export async function handleAddRootNode(nodeId = null) {
+    const targetNodeId = nodeId || currentNodeId;
+    
+    console.log('=== ADD ROOT NODE CLICKED ===');
+    console.log('Provided nodeId:', nodeId);
+    console.log('Current nodeId:', currentNodeId);
+    console.log('Target nodeId:', targetNodeId);
+    
     const nodeName = await showPrompt('Enter name for new root node:', 'New Section', 'Section name');
-    if (!nodeName) return; // User cancelled
+    if (!nodeName) {
+        console.log('User cancelled root node creation');
+        return;
+    }
     
     // Save state before change
+    console.log('Saving state before adding root node...');
     saveStateBeforeChange();
     
     const documentStructure = stateManager.getDocumentStructure();
+    console.log('Current document structure has', documentStructure.length, 'root nodes');
     
     // Find the root ancestor of the current node
     let insertIndex = documentStructure.length; // Default to end
     
-    if (currentNodeId) {
-        const rootAncestor = findRootAncestor(documentStructure, currentNodeId);
+    if (targetNodeId) {
+        const rootAncestor = findRootAncestor(documentStructure, targetNodeId);
         if (rootAncestor) {
             // Find index of root ancestor
             insertIndex = documentStructure.findIndex(node => node.id === rootAncestor.id);

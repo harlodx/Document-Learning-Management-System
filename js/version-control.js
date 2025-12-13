@@ -18,6 +18,7 @@ class VersionedDocument {
         };
         this.document = [];
         this.history = [];
+        this.users = { users: [], currentUserId: null }; // User management data
         this.uncommittedChanges = false;
     }
 }
@@ -96,7 +97,7 @@ export function saveWorkingCopy(newDocumentState) {
  * @param {string} author - Author of the commit
  * @returns {Object} Commit result with version number
  */
-export function commitChanges(commitMessage, author = 'User') {
+export function commitChanges(commitMessage, author = 'User', userInfo = null) {
     if (!currentDocument) {
         throw new Error('No document initialized');
     }
@@ -119,11 +120,12 @@ export function commitChanges(commitMessage, author = 'User') {
             timestamp: new Date().toISOString()
         }));
 
-        // Create commit entry
+        // Create commit entry with user info
         const commit = {
             version: currentDocument.metadata.currentVersion + 1,
             timestamp: new Date().toISOString(),
             author: author,
+            userInfo: userInfo, // Include full user information
             message: commitMessage,
             patch: timestampedPatch,
             nodeCount: countNodes(workingCopy)
@@ -251,9 +253,14 @@ export function revertToVersion(targetVersion) {
  * Exports the versioned document as JSON string
  * @returns {string} JSON string of the complete document with history
  */
-export function exportVersionedDocument() {
+export function exportVersionedDocument(usersData = null) {
     if (!currentDocument) {
         throw new Error('No document initialized');
+    }
+
+    // Include users data if provided
+    if (usersData) {
+        currentDocument.users = usersData;
     }
 
     return JSON.stringify(currentDocument, null, 2);
@@ -282,10 +289,14 @@ export function importVersionedDocument(jsonString) {
         } else {
             lastCommittedState = [];
         }
-
+        
         console.log(`Imported document: ${imported.metadata.documentName}, version ${imported.metadata.currentVersion}`);
 
-        return currentDocument;
+        // Return document and users data
+        return {
+            document: currentDocument,
+            users: imported.users || null
+        };
 
     } catch (error) {
         console.error('Error importing versioned document:', error);

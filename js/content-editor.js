@@ -97,6 +97,12 @@ function createContentListItem(contentText, nodeId, index) {
     dragHandle.innerHTML = '&#8597;'; // Up-down arrow
     dragHandle.title = 'Drag to reorder';
     
+    // Create alphabetical designator (a, b, c, etc.)
+    const letterDesignator = document.createElement('span');
+    letterDesignator.className = 'content-letter-designator';
+    letterDesignator.textContent = String.fromCharCode(97 + index) + '.'; // 97 is 'a'
+    letterDesignator.title = `Item ${String.fromCharCode(97 + index)}`;
+    
     // Create content text span (editable)
     const contentSpan = document.createElement('span');
     contentSpan.className = 'content-text';
@@ -114,7 +120,9 @@ function createContentListItem(contentText, nodeId, index) {
         deleteContentItem(nodeId, index);
     };
     
+    // Layout order: drag handle, letter designator, content text, delete button
     listItem.appendChild(dragHandle);
+    listItem.appendChild(letterDesignator);
     listItem.appendChild(contentSpan);
     listItem.appendChild(deleteBtn);
 

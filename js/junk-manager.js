@@ -54,7 +54,7 @@ export function renderJunkItems() {
             <div class="junk-item" data-junk-id="${itemId}" data-junk-index="${index}">
                 <div class="junk-item-header">
                     ${hasChildren ? `<button class="junk-expand-btn" data-junk-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="junk-no-children"></span>'}
-                    <div class="junk-item-info">
+                    <div class="junk-item-info" data-junk-node-id="${itemId}" style="flex: 1; cursor: pointer;">
                         <div class="junk-item-title-row">
                             <span class="junk-item-title">${escapeHtml(title)}</span>
                             ${hasChildren ? `<span class="junk-child-count">(${childCount} sub-item${childCount > 1 ? 's' : ''})</span>` : ''}
@@ -63,11 +63,11 @@ export function renderJunkItems() {
                         <span class="junk-item-date">Deleted: ${junkedDate}</span>
                     </div>
                     <div class="junk-item-actions">
-                        <button class="restore-btn" data-junk-id="${itemId}" title="Restore this item and all sub-items">
-                            ↺ Restore
+                        <button class="restore-btn" data-junk-id="${itemId}" title="Restore this item and all sub-items" data-tooltip="Restore">
+                            ↺
                         </button>
-                        <button class="delete-junk-btn" data-junk-id="${itemId}" title="Permanently delete this item and all sub-items">
-                            🗑 Delete
+                        <button class="delete-junk-btn" data-junk-id="${itemId}" title="Permanently delete this item and all sub-items" data-tooltip="Delete">
+                            ✕
                         </button>
                     </div>
                 </div>
@@ -98,9 +98,19 @@ function renderJunkChildren(item) {
     item.children.forEach(child => {
         const childTitle = child.title || child.name || 'Untitled';
         const childHasChildren = child.children && child.children.length > 0;
+        const childId = child.id || `junk-child-${Date.now()}-${Math.random()}`;
         
-        html += `<li class="junk-child-item">
+        // Get content preview for child
+        let childPreview = '';
+        if (child.content && Array.isArray(child.content) && child.content.length > 0) {
+            const firstContent = child.content[0]?.text || child.content[0] || '';
+            childPreview = typeof firstContent === 'string' ? firstContent.substring(0, 50) : '';
+            if (childPreview && childPreview.length >= 50) childPreview += '...';
+        }
+        
+        html += `<li class="junk-child-item" data-junk-node-id="${childId}" title="${childPreview || 'Click to view'}">
             <span class="junk-child-title">${escapeHtml(childTitle)}</span>
+            ${childHasChildren ? ` <span class="junk-child-count">(${child.children.length})</span>` : ''}
             ${childHasChildren ? renderJunkChildren(child) : ''}
         </li>`;
     });
@@ -136,6 +146,7 @@ function attachJunkEventListeners() {
     // Expand/collapse buttons
     document.querySelectorAll('.junk-expand-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering item click
             const junkId = e.target.getAttribute('data-junk-id');
             const childrenContainer = document.querySelector(`.junk-children-container[data-junk-id="${junkId}"]`);
             const button = e.target;
@@ -144,6 +155,27 @@ function attachJunkEventListeners() {
                 const isExpanded = childrenContainer.style.display !== 'none';
                 childrenContainer.style.display = isExpanded ? 'none' : 'block';
                 button.textContent = isExpanded ? '▶' : '▼';
+            }
+        });
+    });
+    
+    // Click handlers for viewing junk items (including children)
+    document.querySelectorAll('[data-junk-node-id]').forEach(element => {
+        element.addEventListener('click', async (e) => {
+            // Don't trigger if clicking on a button
+            if (e.target.tagName === 'BUTTON') return;
+            
+            const junkNodeId = e.currentTarget.getAttribute('data-junk-node-id');
+            console.log('Junk item clicked:', junkNodeId);
+            
+            // Find the junk item in the junk array
+            const junkItems = stateManager.getJunkItems() || [];
+            const junkItem = findJunkNodeById(junkItems, junkNodeId);
+            
+            if (junkItem) {
+                console.log('Viewing junk item:', junkItem.name || junkItem.title);
+                const { loadContentForEditing } = await import('./content-editor.js');
+                loadContentForEditing(junkItem);
             }
         });
     });
@@ -324,6 +356,27 @@ export async function clearAllJunk() {
         console.error('Error clearing junk:', error);
         showError(`Failed to clear junk: ${error.message}`);
     }
+}
+
+/**
+ * Finds a junk node by ID (searches recursively through children)
+ * @private
+ * @param {Object[]} junkItems - Array of junk items to search
+ * @param {string} nodeId - ID to find
+ * @returns {Object|null} The found node or null
+ */
+function findJunkNodeById(junkItems, nodeId) {
+    for (const item of junkItems) {
+        if (item.id === nodeId) {
+            return item;
+        }
+        // Search in children recursively
+        if (item.children && item.children.length > 0) {
+            const found = findJunkNodeById(item.children, nodeId);
+            if (found) return found;
+        }
+    }
+    return null;
 }
 
 /**

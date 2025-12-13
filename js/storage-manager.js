@@ -373,10 +373,10 @@ export function loadVersionHistoryFromStorage() {
  * @param {string} documentSubtitle - The document subtitle
  * @returns {Object} Complete export package
  */
-export function createExportPackage(documentStructure, versionHistory, documentTitle = '', documentSubtitle = '') {
+export function createExportPackage(documentStructure, versionHistory, documentTitle = '', documentSubtitle = '', usersData = null) {
     const junkItems = stateManager.getJunkItems() || [];
     
-    return {
+    const exportPackage = {
         metadata: {
             exportDate: new Date().toISOString(),
             appVersion: '1.0',
@@ -388,6 +388,13 @@ export function createExportPackage(documentStructure, versionHistory, documentT
         versionHistory: versionHistory,
         junkItems: junkItems
     };
+    
+    // Include users data if provided
+    if (usersData) {
+        exportPackage.users = usersData;
+    }
+    
+    return exportPackage;
 }
 
 /**

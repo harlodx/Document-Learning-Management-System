@@ -53,6 +53,7 @@ import { initializeContextMenu } from './context-menu.js';
 import { initializeUndoManager } from './undo-manager.js';
 import { initializeTheme } from './theme-manager.js';
 import { initializeMessageCenter, showNotification, showSuccess } from './message-center.js';
+import { initializeUserManagement, updateUserSelector, getCurrentUserInfo, exportUsersData, importUsersData } from './user-manager.js';
 
 // =========================================================================
 // CONFIGURATION & CONSTANTS
@@ -246,6 +247,11 @@ function initializeApplication() {
         // Initialize menu system
         debugMessage('Initializing menu...');
         initializeMenu();
+        
+        // Initialize user management system
+        debugMessage('Initializing user management...');
+        initializeUserManagement();
+        updateUserSelector();
 
         // Initialize storage system
         const storageAvailable = initializeStorage();
@@ -384,9 +390,18 @@ function loadTitleAndSubtitle() {
  * Sets up export and import button handlers
  */
 function setupExportImportHandlers() {
+    const newBtn = document.getElementById('new-document-btn');
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const pdfBtn = document.getElementById('export-pdf-btn');
+    
+    if (newBtn) {
+        newBtn.addEventListener('click', async () => {
+            console.log('New document button clicked');
+            const { createNewDocument } = await import('./data-operations.js');
+            await createNewDocument();
+        });
+    }
     
     if (exportBtn) {
         exportBtn.addEventListener('click', async () => {
@@ -453,6 +468,105 @@ function setupExportImportHandlers() {
             clearAllJunk();
         });
     }
+    
+    // Set up Add Root and Add Subnode buttons
+    setupAddNodeButtons();
+}
+
+/**
+ * Set up Add Root and Add Subnode button handlers
+ */
+async function setupAddNodeButtons() {
+    const addRootBtn = document.getElementById('add-root-btn');
+    const addSubnodeBtn = document.getElementById('add-subnode-btn');
+    
+    console.log('Setting up Add Node buttons...');
+    console.log('Add Root button found:', !!addRootBtn);
+    console.log('Add Subnode button found:', !!addSubnodeBtn);
+    
+    if (addRootBtn) {
+        addRootBtn.addEventListener('click', async () => {
+            console.log('Add Root button clicked');
+            const { handleAddRootNode } = await import('./context-menu.js');
+            
+            // Get currently editing item to insert after
+            const currentItem = stateManager.getCurrentEditingItem();
+            const nodeId = currentItem ? currentItem.id : null;
+            
+            console.log('Adding root node. Current editing item:', nodeId);
+            await handleAddRootNode(nodeId);
+        });
+    }
+    
+    if (addSubnodeBtn) {
+        addSubnodeBtn.addEventListener('click', async () => {
+            console.log('Add Subnode button clicked');
+            const { handleAddSubnode } = await import('./context-menu.js');
+            
+            // Get currently editing item as parent
+            const currentItem = stateManager.getCurrentEditingItem();
+            
+            if (!currentItem) {
+                console.warn('No node selected - cannot add subnode');
+                const { showError } = await import('./message-center.js');
+                showError('Please select a node first');
+                return;
+            }
+            
+            console.log('Adding subnode to:', currentItem.id);
+            await handleAddSubnode(currentItem.id);
+        });
+        
+        // Listen for selection changes
+        console.log('Adding listener for editingItemChanged...');
+        stateManager.addListener('editingItemChanged', () => {
+            console.log('editingItemChanged event fired!');
+            updateAddSubnodeButtonState();
+        });
+        
+        // Set initial button state
+        console.log('Setting initial Add Subnode button state...');
+        updateAddSubnodeButtonState();
+    }
+    
+    console.log('Add Node buttons setup complete');
+}
+
+/**
+ * Update the Add Subnode button state based on selection
+ */
+function updateAddSubnodeButtonState() {
+    console.log('=== UPDATE ADD SUBNODE BUTTON STATE ===');
+    
+    const addSubnodeBtn = document.getElementById('add-subnode-btn');
+    console.log('Button element found:', !!addSubnodeBtn);
+    
+    if (!addSubnodeBtn) {
+        console.warn('Add Subnode button not found in DOM');
+        return;
+    }
+    
+    const currentItem = stateManager.getCurrentEditingItem();
+    console.log('Current editing item:', currentItem);
+    console.log('Current item ID:', currentItem?.id);
+    console.log('Current item name:', currentItem?.name);
+    
+    if (!currentItem) {
+        addSubnodeBtn.disabled = true;
+        addSubnodeBtn.style.opacity = '0.5';
+        addSubnodeBtn.style.cursor = 'not-allowed';
+        addSubnodeBtn.title = 'Please select a node first';
+        console.log('✗ Add Subnode button DISABLED (no selection)');
+    } else {
+        addSubnodeBtn.disabled = false;
+        addSubnodeBtn.style.opacity = '1';
+        addSubnodeBtn.style.cursor = 'pointer';
+        addSubnodeBtn.title = `Add a subnode to "${currentItem.name}"`;
+        console.log('✓ Add Subnode button ENABLED (node selected:', currentItem.id, currentItem.name, ')');
+    }
+    
+    console.log('Button disabled state:', addSubnodeBtn.disabled);
+    console.log('Button opacity:', addSubnodeBtn.style.opacity);
 }
 
 /**
