@@ -3,6 +3,8 @@
  * Handles content editing functionality with proper event management
  */
 
+console.log('===== CONTENT EDITOR MODULE LOADING =====');
+
 import { stateManager } from './state-manager.js';
 import { showError, showConfirm } from './message-center.js';
 
@@ -596,17 +598,57 @@ export function cleanup() {
  * Initialize drag and drop for the content editor
  */
 export function initializeContentEditorDragDrop() {
+    console.log('initializeContentEditorDragDrop called');
     const myList = document.getElementById('myList');
     const contentForm = document.getElementById('contentForm');
     
-    if (!myList || !contentForm) return;
+    console.log('Found elements:', { myList: !!myList, contentForm: !!contentForm });
     
-    // Make the content area accept drops
+    if (!myList || !contentForm) {
+        console.warn('Content editor elements not found for drag/drop setup');
+        return;
+    }
+    
+    console.log('Setting up content editor drag/drop handlers');
+    
+    // Find the parent container that holds the entire editing area
+    const contentContainer = document.getElementById('contentForm') || document.getElementById('myList');
+    if (!contentContainer) {
+        console.warn('Content container not found');
+        return;
+    }
+    
+    // Find the parent element (the whole content area)
+    const editorParent = contentContainer.closest('.content-editor') || contentContainer.parentElement;
+    
+    console.log('Attaching handlers to editor parent:', editorParent?.id || editorParent?.className);
+    
+    // Attach to the parent container to capture all drops in the content area
+    if (editorParent) {
+        editorParent.addEventListener('dragover', handleEditorDragOver, true); // Use capture phase
+        editorParent.addEventListener('dragenter', handleEditorDragEnter, true);
+        editorParent.addEventListener('dragleave', handleEditorDragLeave, false);
+        editorParent.addEventListener('drop', handleEditorDrop, true); // Use capture phase to intercept before children
+        console.log('Handlers attached to editor parent using capture phase');
+    }
+    
+    // Also attach to the individual elements as fallback
     [myList, contentForm].forEach(element => {
-        element.addEventListener('dragover', handleEditorDragOver);
-        element.addEventListener('drop', handleEditorDrop);
-        element.addEventListener('dragleave', handleEditorDragLeave);
-        element.addEventListener('dragenter', handleEditorDragEnter);
+        if (element) {
+            element.addEventListener('dragover', handleEditorDragOver, false);
+            element.addEventListener('drop', handleEditorDrop, false);
+        }
+    });
+    
+    console.log('All content editor drag/drop handlers attached');
+    
+    // Add a test handler to document to see if drops are firing at all
+    document.addEventListener('drop', (e) => {
+        console.log('DOCUMENT DROP EVENT FIRED - target:', e.target.id || e.target.className);
+    });
+    
+    document.addEventListener('dragend', (e) => {
+        console.log('DOCUMENT DRAGEND EVENT FIRED - dropEffect:', e.dataTransfer.dropEffect);
     });
 }
 
@@ -614,6 +656,7 @@ export function initializeContentEditorDragDrop() {
  * Handles drag over for content editor
  */
 function handleEditorDragOver(e) {
+    console.log('Editor dragover triggered');
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'copy';
@@ -644,6 +687,7 @@ function handleEditorDragLeave(e) {
  * Handles drop for content editor
  */
 async function handleEditorDrop(e) {
+    console.log('Editor drop triggered');
     e.preventDefault();
     e.stopPropagation();
     
@@ -651,21 +695,29 @@ async function handleEditorDrop(e) {
     element.classList.remove('drag-over-editor');
     
     const draggedId = e.dataTransfer.getData('text/plain');
-    if (!draggedId) return;
+    console.log('Dragged ID:', draggedId);
+    if (!draggedId) {
+        console.warn('No dragged ID found');
+        return;
+    }
     
     console.log('Node dropped on editor:', draggedId);
     
     // Find the node in the document structure
     const documentStructure = stateManager.getDocumentStructure();
+    console.log('Document structure:', documentStructure);
     const node = findNodeById(documentStructure, draggedId);
+    console.log('Found node:', node);
     
     if (!node) {
         console.warn('Dropped node not found:', draggedId);
         return;
     }
     
+    console.log('About to call loadContentForEditing with node:', node);
     // Load the node into the editor
     loadContentForEditing(node);
+    console.log('loadContentForEditing completed');
     
     const { showSuccess } = await import('./message-center.js');
     const nodeName = node.title || node.name || 'Item';

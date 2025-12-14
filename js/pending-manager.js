@@ -4,6 +4,8 @@
  * @module pending-manager
  */
 
+console.log('===== PENDING MANAGER MODULE LOADING =====');
+
 import { stateManager } from './state-manager.js';
 import DocumentNode from './documentnode.js';
 import { renderDocumentStructure } from './tree-renderer.js';
@@ -16,16 +18,22 @@ import { saveWorkingCopy } from './version-control.js';
  * Renders the pending items in the pending section
  */
 export function renderPendingItems() {
+    console.log('renderPendingItems called');
     const container = document.getElementById('pending-items-container');
     if (!container) {
         console.error('Pending items container not found');
         return;
     }
+    console.log('Pending container found, setting up...');
 
     const pendingItems = stateManager.getPendingItems() || [];
 
     if (pendingItems.length === 0) {
         container.innerHTML = '<p style="color: #666; font-style: italic; padding: 10px;">No pending items</p>';
+        // Still need to setup drop zone even when empty
+        console.log('About to call setupPendingDropZone() (empty state)');
+        setupPendingDropZone();
+        console.log('setupPendingDropZone() completed (empty state)');
         return;
     }
 
@@ -84,8 +92,10 @@ export function renderPendingItems() {
     // Attach event listeners
     attachPendingEventListeners();
     
+    console.log('About to call setupPendingDropZone()');
     // Setup drop zone for pending panel
     setupPendingDropZone();
+    console.log('setupPendingDropZone() completed');
 }
 
 /**
@@ -484,30 +494,60 @@ function handlePendingDragEnd(e) {
  * Sets up the pending panel as a drop zone for tree nodes
  */
 function setupPendingDropZone() {
-    const pendingPanel = document.getElementById('pending-panel');
     const pendingContainer = document.getElementById('pending-items-container');
+    const pendingToggle = document.getElementById('pending-toggle');
     
-    if (!pendingPanel || !pendingContainer) return;
+    if (!pendingContainer) {
+        console.warn('Pending container not found for drop zone setup');
+        return;
+    }
 
-    // Handle dragover on both panel and container
-    [pendingPanel, pendingContainer].forEach(element => {
-        element.addEventListener('dragover', handlePendingDragOver);
-        element.addEventListener('dragenter', handlePendingDragEnter);
-        element.addEventListener('dragleave', handlePendingDragLeave);
-        element.addEventListener('drop', handlePendingDrop);
-    });
+    console.log('Setting up pending drop zone handlers');
+
+    // Handle dragover only on the items container
+    pendingContainer.addEventListener('dragover', handlePendingDragOver);
+    pendingContainer.addEventListener('dragenter', handlePendingDragEnter);
+    pendingContainer.addEventListener('dragleave', handlePendingDragLeave);
+    pendingContainer.addEventListener('drop', handlePendingDrop);
+    
+    // Auto-open pending panel when dragging over the toggle button
+    if (pendingToggle) {
+        console.log('Setting up pending toggle auto-open handlers');
+        pendingToggle.addEventListener('dragenter', handleToggleDragEnter);
+        pendingToggle.addEventListener('dragover', handleToggleDragOver);
+    } else {
+        console.warn('Pending toggle button not found');
+    }
+}
+
+/**
+ * Handles dragover on pending toggle to allow drop
+ */
+function handleToggleDragOver(e) {
+    console.log('Toggle dragover triggered');
+    // Allow all dragover events (can't read dataTransfer during dragover)
+    e.preventDefault();
+}
+
+/**
+ * Handles dragenter on pending toggle to auto-open panel
+ */
+function handleToggleDragEnter(e) {
+    console.log('Toggle dragenter triggered');
+    // Auto-open panel for all drag operations (can't read dataTransfer during dragenter)
+    const pendingPanel = document.getElementById('pending-panel');
+    if (pendingPanel && !pendingPanel.classList.contains('open')) {
+        pendingPanel.classList.add('open');
+        console.log('Auto-opened pending panel during drag');
+    }
 }
 
 /**
  * Handles dragover event for pending drop zone
  */
 function handlePendingDragOver(e) {
-    const source = e.dataTransfer.types.includes('source') ? 
-        e.dataTransfer.getData('source') : null;
-    
-    // Only allow tree nodes to be dropped (not pending items being moved back)
-    if (source === 'pending') return;
-    
+    console.log('Pending container dragover triggered');
+    // Allow all dragover (can't read dataTransfer during dragover)
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 }
@@ -516,12 +556,8 @@ function handlePendingDragOver(e) {
  * Handles dragenter event for pending drop zone
  */
 function handlePendingDragEnter(e) {
-    const source = e.dataTransfer.types.includes('source') ? 
-        e.dataTransfer.getData('source') : null;
-    
-    // Only highlight for tree nodes
-    if (source === 'pending') return;
-    
+    console.log('Pending container dragenter triggered');
+    // Highlight for all drag operations (can't read dataTransfer during dragenter)
     e.preventDefault();
     const target = e.currentTarget;
     target.classList.add('drag-over-pending');
@@ -542,14 +578,17 @@ function handlePendingDragLeave(e) {
  * Handles drop event for pending drop zone
  */
 async function handlePendingDrop(e) {
+    console.log('Pending drop triggered');
     e.preventDefault();
     e.stopPropagation();
     
-    const target = e.currentTarget;
-    target.classList.remove('drag-over-pending');
+    // Remove drag-over class from container only
+    const pendingContainer = document.getElementById('pending-items-container');
+    if (pendingContainer) pendingContainer.classList.remove('drag-over-pending');
     
     const nodeId = e.dataTransfer.getData('text/plain');
     const source = e.dataTransfer.getData('source');
+    console.log('Drop data:', { nodeId, source });
     
     // Only handle drops from the tree
     if (source === 'pending' || !nodeId) return;

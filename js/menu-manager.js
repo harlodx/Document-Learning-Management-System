@@ -60,8 +60,35 @@ function initializePendingPanel() {
 
     // Toggle pending panel on button click
     pendingToggle.addEventListener('click', togglePendingPanel);
+    
+    // Monitor panel for state changes and keep toggle in sync
+    const observer = new MutationObserver(() => {
+        syncPendingToggleState();
+    });
+    
+    observer.observe(pendingPanel, { attributes: true, attributeFilter: ['class'] });
 
     console.log('pending panel initialized');
+}
+
+/**
+ * Sync the toggle button state with the actual panel state
+ */
+function syncPendingToggleState() {
+    const pendingPanel = document.getElementById('pending-panel');
+    const pendingToggle = document.getElementById('pending-toggle');
+    
+    if (!pendingPanel || !pendingToggle) return;
+    
+    const isPanelOpen = pendingPanel.classList.contains('open');
+    
+    if (isPanelOpen) {
+        pendingToggle.classList.add('active');
+        ispendingPanelOpen = true;
+    } else {
+        pendingToggle.classList.remove('active');
+        ispendingPanelOpen = false;
+    }
 }
 
 /**

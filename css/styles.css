@@ -2939,14 +2939,10 @@ footer {
 
 /* Drag over styles for pending panel */
 .drag-over-pending {
-    background-color: rgba(244, 67, 54, 0.1);
-    border: 2px dashed var(--danger-color);
+    border: 3px dashed rgba(244, 67, 54, 0.5);
     transition: all 0.2s ease;
-}
-
-#pending-panel.drag-over-pending,
-#pending-items-container.drag-over-pending {
-    background-color: rgba(244, 67, 54, 0.05);
+    box-shadow: inset 0 0 12px rgba(244, 67, 54, 0.15);
+    border-radius: 5px;
 }
 
 /* ---------------------------------- */

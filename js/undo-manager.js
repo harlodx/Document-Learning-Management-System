@@ -37,10 +37,12 @@ let isUndoRedoOperation = false;
 function saveStateToHistory(structure, description = 'Document change') {
     // Deep clone the structure
     const stateCopy = JSON.parse(JSON.stringify(structure));
+    const pendingItemsCopy = JSON.parse(JSON.stringify(stateManager.getPendingItems() || []));
     
     // Create history entry with timestamp and description
     const historyEntry = {
         state: stateCopy,
+        pendingItems: pendingItemsCopy,
         timestamp: new Date().toISOString(),
         description: description
     };
@@ -66,12 +68,15 @@ function saveStateToHistory(structure, description = 'Document change') {
 export function saveStateBeforeChange(description = 'Document change') {
     const currentStructure = stateManager.getDocumentStructure();
     const stateCopy = JSON.parse(JSON.stringify(currentStructure));
+    const pendingItemsCopy = JSON.parse(JSON.stringify(stateManager.getPendingItems() || []));
     
     // Only save if this is a new state (not same as last saved)
     const lastState = undoStack.length > 0 ? undoStack[undoStack.length - 1].state : null;
-    if (undoStack.length === 0 || JSON.stringify(lastState) !== JSON.stringify(stateCopy)) {
+    const lastPending = undoStack.length > 0 ? undoStack[undoStack.length - 1].pendingItems : null;
+    if (undoStack.length === 0 || JSON.stringify(lastState) !== JSON.stringify(stateCopy) || JSON.stringify(lastPending) !== JSON.stringify(pendingItemsCopy)) {
         const historyEntry = {
             state: stateCopy,
+            pendingItems: pendingItemsCopy,
             timestamp: new Date().toISOString(),
             description: description
         };
@@ -101,9 +106,11 @@ export async function undo() {
     // Get current state and save to redo stack
     const currentStructure = stateManager.getDocumentStructure();
     const currentStateCopy = JSON.parse(JSON.stringify(currentStructure));
+    const currentPendingCopy = JSON.parse(JSON.stringify(stateManager.getPendingItems() || []));
     const lastUndoEntry = undoStack[undoStack.length - 1];
     const redoEntry = {
         state: currentStateCopy,
+        pendingItems: currentPendingCopy,
         timestamp: new Date().toISOString(),
         description: lastUndoEntry.description || 'Change'
     };
@@ -114,11 +121,26 @@ export async function undo() {
     
     // Reconstruct DocumentNode objects from JSON
     const reconstructedStructure = previousEntry.state.map(nodeJson => DocumentNode.fromJSON(nodeJson));
+    const reconstructedPending = previousEntry.pendingItems || [];
     
     // Restore previous state
     isUndoRedoOperation = true;
+    
+    // Set pending items first
+    stateManager.setPendingItems(reconstructedPending);
+    
+    // Then set document structure
     stateManager.setDocumentStructure(reconstructedStructure);
+    
+    // Render document tree
     renderDocumentStructure(reconstructedStructure);
+    
+    // Re-render pending items after a brief delay to ensure state is fully propagated
+    const { renderPendingItems } = await import('./pending-manager.js');
+    setTimeout(() => {
+        renderPendingItems();
+    }, 0);
+    
     isUndoRedoOperation = false;
     
     // Show notification with action description
@@ -142,9 +164,11 @@ export async function redo() {
     // Get current state and save to undo stack
     const currentStructure = stateManager.getDocumentStructure();
     const currentStateCopy = JSON.parse(JSON.stringify(currentStructure));
+    const currentPendingCopy = JSON.parse(JSON.stringify(stateManager.getPendingItems() || []));
     const nextEntry = redoStack[redoStack.length - 1];
     const undoEntry = {
         state: currentStateCopy,
+        pendingItems: currentPendingCopy,
         timestamp: new Date().toISOString(),
         description: nextEntry.description || 'Change'
     };
@@ -155,11 +179,26 @@ export async function redo() {
     
     // Reconstruct DocumentNode objects from JSON
     const reconstructedStructure = redoEntryPopped.state.map(nodeJson => DocumentNode.fromJSON(nodeJson));
+    const reconstructedPending = redoEntryPopped.pendingItems || [];
     
     // Restore next state
     isUndoRedoOperation = true;
+    
+    // Set pending items first
+    stateManager.setPendingItems(reconstructedPending);
+    
+    // Then set document structure
     stateManager.setDocumentStructure(reconstructedStructure);
+    
+    // Render document tree
     renderDocumentStructure(reconstructedStructure);
+    
+    // Re-render pending items after a brief delay to ensure state is fully propagated
+    const { renderPendingItems } = await import('./pending-manager.js');
+    setTimeout(() => {
+        renderPendingItems();
+    }, 0);
+    
     isUndoRedoOperation = false;
     
     // Show notification with action description

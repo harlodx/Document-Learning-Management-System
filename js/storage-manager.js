@@ -128,7 +128,7 @@ export function loadDocumentFromStorage() {
     try {
         const jsonString = localStorage.getItem(STORAGE_KEYS.DOCUMENT);
         
-        if (!jsonString) {
+        if (!jsonString || jsonString === 'undefined' || jsonString === 'null') {
             console.log('No saved document found in storage');
             return null;
         }
@@ -229,7 +229,7 @@ export function loadPendingFromStorage() {
     try {
         const jsonString = localStorage.getItem(STORAGE_KEYS.pending_items);
         
-        if (!jsonString) {
+        if (!jsonString || jsonString === 'undefined' || jsonString === 'null') {
             return [];
         }
 

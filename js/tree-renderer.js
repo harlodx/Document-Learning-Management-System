@@ -420,8 +420,11 @@ function handleTreeDragStart(e) {
     // Stop propagation to prevent parent list items from also firing dragstart
     e.stopPropagation();
     
+    console.log('TREE DRAG START EVENT FIRED');
+    
     // Prevent dragging from buttons or action elements
     if (e.target.closest('.delete-btn, .node-actions, button')) {
+        console.log('Drag prevented - clicked on button/action element');
         e.preventDefault();
         return;
     }
@@ -433,6 +436,7 @@ function handleTreeDragStart(e) {
     }
     
     treeDraggedNodeId = listItem.getAttribute('data-node-id');
+    console.log('Tree node ID for drag:', treeDraggedNodeId);
     if (!treeDraggedNodeId) {
         console.warn('handleTreeDragStart: No data-node-id found');
         return;
@@ -459,6 +463,10 @@ function handleTreeDragStart(e) {
  * @param {DragEvent} e - The drag event
  */
 function handleTreeDragOver(e) {
+    // Only handle if we're actually over a tree node
+    const targetElement = e.target.closest('[data-node-id]');
+    if (!targetElement) return; // Not over a tree node, let other handlers take it
+    
     // Allow drops from both tree and pending
     const sourceType = e.dataTransfer.types.includes('source') ? 'pending' : 'tree';
     if (!treeDragState.isDragging && sourceType !== 'pending') return;
@@ -498,11 +506,11 @@ function handleTreeDragEnter(e) {
     const relativeY = mouseY - rect.top;
     const height = rect.height;
     
-    // Divide into three zones: top 30%, middle 40%, bottom 30%
+    // Divide into three zones: top 40%, middle 20%, bottom 40%
     let dropZone;
-    if (relativeY < height * 0.3) {
+    if (relativeY < height * 0.4) {
         dropZone = 'before';
-    } else if (relativeY > height * 0.7) {
+    } else if (relativeY > height * 0.6) {
         dropZone = 'after';
     } else {
         dropZone = 'child';
@@ -538,9 +546,6 @@ function handleTreeDragLeave(e) {
  * @param {DragEvent} e - The drag event
  */
 function handleTreeDrop(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    
     // Check if this is from pending
     const sourceType = e.dataTransfer.getData('source');
     const draggedId = e.dataTransfer.getData('text/plain');
@@ -558,6 +563,10 @@ function handleTreeDrop(e) {
         console.warn('Drop ignored: no target element with data-node-id');
         return false;
     }
+    
+    // Only prevent default and stop propagation if we're actually handling the drop
+    e.stopPropagation();
+    e.preventDefault();
     
     const targetNodeId = targetElement.getAttribute('data-node-id');
     
@@ -623,6 +632,7 @@ function handleTreeDrop(e) {
  * @param {DragEvent} e - The drag event
  */
 function handleTreeDragEnd(e) {
+    console.log('TREE DRAG END - dropEffect:', e.dataTransfer.dropEffect);
     // Use setTimeout to ensure this runs after drop event
     setTimeout(() => {
         cleanupDragVisuals();
@@ -1019,10 +1029,13 @@ async function restoreFromPendingToTree(pendingId, targetNodeId, dropZone) {
         const documentStructure = stateManager.getDocumentStructure();
 
         // Clone the item and remove pending metadata
-        const restoredNode = JSON.parse(JSON.stringify(item));
-        delete restoredNode._pendingAt;
-        delete restoredNode._originalParentId;
-        delete restoredNode._originalIndex;
+        const itemCopy = JSON.parse(JSON.stringify(item));
+        delete itemCopy._pendingAt;
+        delete itemCopy._originalParentId;
+        delete itemCopy._originalIndex;
+
+        // Convert to DocumentNode instance (this ensures proper object structure)
+        const restoredNode = DocumentNode.fromJSON(itemCopy);
 
         // Find the target node
         const targetInfo = findNodeAndParent(documentStructure, targetNodeId);
