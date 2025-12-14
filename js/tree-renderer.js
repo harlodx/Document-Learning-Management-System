@@ -452,7 +452,8 @@ function handleTreeDragStart(e) {
         // Add dragging class using data attribute selector
         listItem.classList.add('dragging');
         
-        e.dataTransfer.effectAllowed = 'move';
+        // Allow both move (within tree) and copy (into editor/pending)
+        e.dataTransfer.effectAllowed = 'copyMove';
         e.dataTransfer.setData('text/plain', treeDraggedNodeId);
         e.dataTransfer.setData('source', 'tree');
     }

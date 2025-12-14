@@ -16,8 +16,16 @@ const activeListeners = new Map();
  * @param {Object} node - The document node containing content
  * @throws {Error} If required elements are not found
  */
+/**
+ * Loads content for editing from a given node
+ * @param {Object} node - The node to load (can be a tree node with children or leaf node)
+ */
 export function loadContentForEditing(node) {
+    console.log('=== loadContentForEditing CALLED ===');
+    console.log('Node object:', JSON.stringify(node, null, 2));
+    
     if (!node) {
+        console.error('Node is null or undefined');
         throw new Error('Node is required for loading content');
     }
 
@@ -26,18 +34,27 @@ export function loadContentForEditing(node) {
         const sectionId = document.getElementById('contentID');
         const sectionTitle = document.getElementById('contentTitle');
         
+        console.log('Found DOM elements:', { sectionId: !!sectionId, sectionTitle: !!sectionTitle });
+        
         if (!sectionId || !sectionTitle) {
             throw new Error('Content editor elements not found in DOM');
         }
 
+        console.log('Setting node ID:', node.id);
         sectionId.textContent = node.id || '';
+        
+        console.log('Setting node name:', node.name);
         sectionTitle.value = node.name || '';
 
         // Load the content list
+        console.log('Calling populateContentList...');
         populateContentList(node);
+        console.log('populateContentList completed');
 
         // Update state
+        console.log('Updating state with current editing item');
         stateManager.setCurrentEditingItem(node);
+        console.log('State updated');
 
     } catch (error) {
         console.error('Error loading content for editing:', error);
@@ -611,41 +628,30 @@ export function initializeContentEditorDragDrop() {
     
     console.log('Setting up content editor drag/drop handlers');
     
-    // Find the parent container that holds the entire editing area
-    const contentContainer = document.getElementById('contentForm') || document.getElementById('myList');
-    if (!contentContainer) {
-        console.warn('Content container not found');
+    // Find the main document content section
+    const documentSection = document.querySelector('.document-content');
+    if (!documentSection) {
+        console.warn('Document content section not found');
         return;
     }
     
-    // Find the parent element (the whole content area)
-    const editorParent = contentContainer.closest('.content-editor') || contentContainer.parentElement;
+    console.log('Found document-content section, attaching handlers with capture phase');
     
-    console.log('Attaching handlers to editor parent:', editorParent?.id || editorParent?.className);
+    // Attach handlers at the section level with capture phase to intercept all drops
+    documentSection.addEventListener('dragover', handleEditorDragOver, true);
+    documentSection.addEventListener('dragenter', handleEditorDragEnter, true);
+    documentSection.addEventListener('dragleave', handleEditorDragLeave, false);
+    documentSection.addEventListener('drop', handleEditorDrop, true);
     
-    // Attach to the parent container to capture all drops in the content area
-    if (editorParent) {
-        editorParent.addEventListener('dragover', handleEditorDragOver, true); // Use capture phase
-        editorParent.addEventListener('dragenter', handleEditorDragEnter, true);
-        editorParent.addEventListener('dragleave', handleEditorDragLeave, false);
-        editorParent.addEventListener('drop', handleEditorDrop, true); // Use capture phase to intercept before children
-        console.log('Handlers attached to editor parent using capture phase');
-    }
-    
-    // Also attach to the individual elements as fallback
-    [myList, contentForm].forEach(element => {
-        if (element) {
-            element.addEventListener('dragover', handleEditorDragOver, false);
-            element.addEventListener('drop', handleEditorDrop, false);
-        }
-    });
+    console.log('Content editor drag/drop handlers attached to document-content section');
     
     console.log('All content editor drag/drop handlers attached');
     
     // Add a test handler to document to see if drops are firing at all
     document.addEventListener('drop', (e) => {
-        console.log('DOCUMENT DROP EVENT FIRED - target:', e.target.id || e.target.className);
-    });
+        console.log('DOCUMENT LEVEL DROP EVENT FIRED - target:', e.target.id || e.target.className);
+        console.log('Drop event details:', { dropEffect: e.dataTransfer.dropEffect, eventTarget: e.target.tagName });
+    }, true); // Use capture phase
     
     document.addEventListener('dragend', (e) => {
         console.log('DOCUMENT DRAGEND EVENT FIRED - dropEffect:', e.dataTransfer.dropEffect);
@@ -656,10 +662,12 @@ export function initializeContentEditorDragDrop() {
  * Handles drag over for content editor
  */
 function handleEditorDragOver(e) {
-    console.log('Editor dragover triggered');
+    console.log('Editor dragover triggered - setting dropEffect to copy');
     e.preventDefault();
     e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.dropEffect = 'copy';
+    console.log('After dragover - dropEffect set to:', e.dataTransfer.dropEffect);
     return false;
 }
 
@@ -667,9 +675,12 @@ function handleEditorDragOver(e) {
  * Handles drag enter for content editor
  */
 function handleEditorDragEnter(e) {
+    console.log('Editor dragenter triggered');
     e.preventDefault();
     const element = e.currentTarget;
-    element.classList.add('drag-over-editor');
+    if (element.classList) {
+        element.classList.add('drag-over-editor');
+    }
 }
 
 /**
