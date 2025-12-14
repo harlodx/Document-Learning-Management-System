@@ -591,3 +591,102 @@ export function cleanup() {
     clearContentList();
     activeListeners.clear();
 }
+
+/**
+ * Initialize drag and drop for the content editor
+ */
+export function initializeContentEditorDragDrop() {
+    const myList = document.getElementById('myList');
+    const contentForm = document.getElementById('contentForm');
+    
+    if (!myList || !contentForm) return;
+    
+    // Make the content area accept drops
+    [myList, contentForm].forEach(element => {
+        element.addEventListener('dragover', handleEditorDragOver);
+        element.addEventListener('drop', handleEditorDrop);
+        element.addEventListener('dragleave', handleEditorDragLeave);
+        element.addEventListener('dragenter', handleEditorDragEnter);
+    });
+}
+
+/**
+ * Handles drag over for content editor
+ */
+function handleEditorDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    return false;
+}
+
+/**
+ * Handles drag enter for content editor
+ */
+function handleEditorDragEnter(e) {
+    e.preventDefault();
+    const element = e.currentTarget;
+    element.classList.add('drag-over-editor');
+}
+
+/**
+ * Handles drag leave for content editor
+ */
+function handleEditorDragLeave(e) {
+    const element = e.currentTarget;
+    // Only remove class if leaving the element itself, not a child
+    if (e.target === element) {
+        element.classList.remove('drag-over-editor');
+    }
+}
+
+/**
+ * Handles drop for content editor
+ */
+async function handleEditorDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const element = e.currentTarget;
+    element.classList.remove('drag-over-editor');
+    
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if (!draggedId) return;
+    
+    console.log('Node dropped on editor:', draggedId);
+    
+    // Find the node in the document structure
+    const documentStructure = stateManager.getDocumentStructure();
+    const node = findNodeById(documentStructure, draggedId);
+    
+    if (!node) {
+        console.warn('Dropped node not found:', draggedId);
+        return;
+    }
+    
+    // Load the node into the editor
+    loadContentForEditing(node);
+    
+    const { showSuccess } = await import('./message-center.js');
+    const nodeName = node.title || node.name || 'Item';
+    showSuccess(`${nodeName} loaded for editing`);
+}
+
+/**
+ * Find a node by ID in the document structure
+ * @param {Array} nodes - Array of nodes to search
+ * @param {string} nodeId - ID to find
+ * @returns {Object|null} The found node or null
+ */
+function findNodeById(nodes, nodeId) {
+    for (const node of nodes) {
+        if (node.id === nodeId) {
+            return node;
+        }
+        if (node.children && node.children.length > 0) {
+            const found = findNodeById(node.children, nodeId);
+            if (found) return found;
+        }
+    }
+    return null;
+}

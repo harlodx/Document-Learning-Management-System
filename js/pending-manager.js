@@ -52,18 +52,18 @@ export function renderPendingItems() {
         const hasChildren = childCount > 0;
         
         html += `
-            <div class="pending-item" data-Pending-id="${itemId}" data-Pending-index="${index}">
+            <div class="pending-item" draggable="true" data-pending-id="${itemId}" data-pending-index="${index}">
                 <div class="pending-item-main">
                     <div class="pending-item-buttons">
-                        <button class="restore-btn" data-Pending-id="${itemId}" title="Restore this item and all sub-items" data-tooltip="Restore">
+                        <button class="restore-btn" data-pending-id="${itemId}" title="Restore this item and all sub-items" data-tooltip="Restore">
                             ↺
                         </button>
-                        <button class="delete-pending-btn" data-Pending-id="${itemId}" title="Permanently delete this item and all sub-items" data-tooltip="Delete">
+                        <button class="delete-pending-btn" data-pending-id="${itemId}" title="Permanently delete this item and all sub-items" data-tooltip="Delete">
                             ✕
                         </button>
                     </div>
                     <div class="pending-item-content">
-                        <div class="pending-item-info" data-Pending-node-id="${itemId}" style="flex: 1; cursor: pointer;">
+                        <div class="pending-item-info" data-pending-node-id="${itemId}" style="flex: 1; cursor: pointer;">
                             <div class="pending-item-title-row">
                                 <span class="pending-item-title">${escapeHtml(title)}</span>
                                 ${hasChildren ? `<span class="pending-child-count">(${childCount} sub-item${childCount > 1 ? 's' : ''})</span>` : ''}
@@ -71,10 +71,10 @@ export function renderPendingItems() {
                             ${contentPreview ? `<div class="pending-item-preview">${escapeHtml(contentPreview)}</div>` : ''}
                             <span class="pending-item-date">Deleted: ${pendingDate}</span>
                         </div>
-                        ${hasChildren ? `<button class="pending-expand-btn" data-Pending-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="pending-no-children"></span>'}
+                        ${hasChildren ? `<button class="pending-expand-btn" data-pending-id="${itemId}" title="Show/hide sub-items">▶</button>` : '<span class="pending-no-children"></span>'}
                     </div>
                 </div>
-                ${hasChildren ? `<div class="pending-children-container" data-Pending-id="${itemId}" style="display: none;">${renderPendingChildren(item)}</div>` : ''}
+                ${hasChildren ? `<div class="pending-children-container" data-pending-id="${itemId}" style="display: none;">${renderPendingChildren(item)}</div>` : ''}
             </div>
         `;
     });
@@ -83,6 +83,9 @@ export function renderPendingItems() {
 
     // Attach event listeners
     attachPendingEventListeners();
+    
+    // Setup drop zone for pending panel
+    setupPendingDropZone();
 }
 
 /**
@@ -150,8 +153,8 @@ function attachPendingEventListeners() {
     document.querySelectorAll('.pending-expand-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent triggering item click
-            const PendingId = e.target.getAttribute('data-Pending-id');
-            const childrenContainer = document.querySelector(`.pending-children-container[data-Pending-id="${PendingId}"]`);
+            const PendingId = e.target.getAttribute('data-pending-id');
+            const childrenContainer = document.querySelector(`.pending-children-container[data-pending-id="${PendingId}"]`);
             const button = e.target;
             
             if (childrenContainer) {
@@ -163,12 +166,12 @@ function attachPendingEventListeners() {
     });
     
     // Click handlers for viewing Pending items (including children)
-    document.querySelectorAll('[data-Pending-node-id]').forEach(element => {
+    document.querySelectorAll('[data-pending-node-id]').forEach(element => {
         element.addEventListener('click', async (e) => {
             // Don't trigger if clicking on a button
             if (e.target.tagName === 'BUTTON') return;
             
-            const PendingNodeId = e.currentTarget.getAttribute('data-Pending-node-id');
+            const PendingNodeId = e.currentTarget.getAttribute('data-pending-node-id');
             console.log('Pending item clicked:', PendingNodeId);
             
             // Find the Pending item in the Pending array
@@ -186,7 +189,7 @@ function attachPendingEventListeners() {
     // Restore buttons
     document.querySelectorAll('.restore-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const PendingId = e.target.getAttribute('data-Pending-id');
+            const PendingId = e.target.getAttribute('data-pending-id');
             restoreFromPending(PendingId);
         });
     });
@@ -194,10 +197,13 @@ function attachPendingEventListeners() {
     // Delete buttons
     document.querySelectorAll('.delete-pending-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const PendingId = e.target.getAttribute('data-Pending-id');
+            const PendingId = e.target.getAttribute('data-pending-id');
             permanentlyDeleteFromPending(PendingId);
         });
     });
+
+    // Setup drag handlers for pending items
+    setupPendingDragHandlers();
 }
 
 /**
@@ -422,3 +428,143 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+/**
+ * Sets up drag and drop handlers for pending items
+ */
+function setupPendingDragHandlers() {
+    const pendingItems = document.querySelectorAll('.pending-item');
+    
+    pendingItems.forEach(item => {
+        // Prevent dragging when clicking buttons
+        const buttons = item.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+        });
+
+        item.addEventListener('dragstart', handlePendingDragStart);
+        item.addEventListener('dragend', handlePendingDragEnd);
+    });
+}
+
+/**
+ * Handles drag start for pending items
+ */
+function handlePendingDragStart(e) {
+    // Prevent dragging from buttons
+    if (e.target.closest('button')) {
+        e.preventDefault();
+        return;
+    }
+
+    const pendingItem = e.currentTarget;
+    const pendingId = pendingItem.getAttribute('data-pending-id');
+    
+    if (!pendingId) return;
+
+    pendingItem.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', pendingId);
+    e.dataTransfer.setData('source', 'pending');
+    
+    console.log('Pending item drag started:', pendingId);
+}
+
+/**
+ * Handles drag end for pending items
+ */
+function handlePendingDragEnd(e) {
+    const pendingItem = e.currentTarget;
+    pendingItem.classList.remove('dragging');
+}
+
+/**
+ * Sets up the pending panel as a drop zone for tree nodes
+ */
+function setupPendingDropZone() {
+    const pendingPanel = document.getElementById('pending-panel');
+    const pendingContainer = document.getElementById('pending-items-container');
+    
+    if (!pendingPanel || !pendingContainer) return;
+
+    // Handle dragover on both panel and container
+    [pendingPanel, pendingContainer].forEach(element => {
+        element.addEventListener('dragover', handlePendingDragOver);
+        element.addEventListener('dragenter', handlePendingDragEnter);
+        element.addEventListener('dragleave', handlePendingDragLeave);
+        element.addEventListener('drop', handlePendingDrop);
+    });
+}
+
+/**
+ * Handles dragover event for pending drop zone
+ */
+function handlePendingDragOver(e) {
+    const source = e.dataTransfer.types.includes('source') ? 
+        e.dataTransfer.getData('source') : null;
+    
+    // Only allow tree nodes to be dropped (not pending items being moved back)
+    if (source === 'pending') return;
+    
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+/**
+ * Handles dragenter event for pending drop zone
+ */
+function handlePendingDragEnter(e) {
+    const source = e.dataTransfer.types.includes('source') ? 
+        e.dataTransfer.getData('source') : null;
+    
+    // Only highlight for tree nodes
+    if (source === 'pending') return;
+    
+    e.preventDefault();
+    const target = e.currentTarget;
+    target.classList.add('drag-over-pending');
+}
+
+/**
+ * Handles dragleave event for pending drop zone
+ */
+function handlePendingDragLeave(e) {
+    // Only remove highlight if we're leaving the element entirely
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    
+    const target = e.currentTarget;
+    target.classList.remove('drag-over-pending');
+}
+
+/**
+ * Handles drop event for pending drop zone
+ */
+async function handlePendingDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const target = e.currentTarget;
+    target.classList.remove('drag-over-pending');
+    
+    const nodeId = e.dataTransfer.getData('text/plain');
+    const source = e.dataTransfer.getData('source');
+    
+    // Only handle drops from the tree
+    if (source === 'pending' || !nodeId) return;
+    
+    console.log('Tree node dropped on pending:', nodeId);
+    
+    // Import deleteNode dynamically to avoid circular dependencies
+    try {
+        const { deleteNode } = await import('./data-operations.js');
+        await deleteNode(nodeId);
+    } catch (error) {
+        console.error('Error moving node to pending:', error);
+        showError('Failed to move item to pending');
+    }
+}
+
+// Export the setup function for external use
+export { setupPendingDragHandlers };

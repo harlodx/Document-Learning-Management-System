@@ -24,7 +24,7 @@ import { stateManager } from './state-manager.js';
 import { buildRevisionList, buildRevisionListFromHistory, RevisionDocument } from './revision-manager.js';
 import { reconstructTreeFromFlatList } from './tree-reconstruction.js';
 import { renderDocumentStructure } from './tree-renderer.js';
-import { initializeContentEditor } from './content-editor.js';
+import { initializeContentEditor, initializeContentEditorDragDrop } from './content-editor.js';
 import { initializeFileInput, loadInitialData, saveDocument, commitDocument, downloadVersionedDocument, exportCompleteDocument, importCompleteDocument } from './data-operations.js';
 import { initializeAllEventHandlers } from './event-handlers.js';
 import { 
@@ -267,6 +267,9 @@ function initializeApplication() {
 
         // Initialize content editor
         initializeContentEditor();
+        
+        // Initialize content editor drag and drop
+        initializeContentEditorDragDrop();
 
         // Initialize file input
         initializeFileInput();

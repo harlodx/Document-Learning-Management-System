@@ -450,6 +450,7 @@ function handleTreeDragStart(e) {
         
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', treeDraggedNodeId);
+        e.dataTransfer.setData('source', 'tree');
     }
 }
 
@@ -458,7 +459,9 @@ function handleTreeDragStart(e) {
  * @param {DragEvent} e - The drag event
  */
 function handleTreeDragOver(e) {
-    if (!treeDragState.isDragging) return;
+    // Allow drops from both tree and pending
+    const sourceType = e.dataTransfer.types.includes('source') ? 'pending' : 'tree';
+    if (!treeDragState.isDragging && sourceType !== 'pending') return;
     
     if (e.preventDefault) {
         e.preventDefault();
@@ -472,7 +475,10 @@ function handleTreeDragOver(e) {
  * @param {DragEvent} e - The drag event
  */
 function handleTreeDragEnter(e) {
-    if (!treeDragState.isDragging) return;
+    // Check if dragging from pending
+    const sourceType = e.dataTransfer.types.includes('source') ? 'pending' : 'tree';
+    
+    if (!treeDragState.isDragging && sourceType !== 'pending') return;
     
     // Use closest to find the actual list item, not nested elements
     const targetElement = e.target.closest('[data-node-id]');
@@ -481,8 +487,8 @@ function handleTreeDragEnter(e) {
     const targetNodeId = targetElement.getAttribute('data-node-id');
     if (!targetNodeId) return;
     
-    // Don't allow dropping on itself or its children
-    if (targetNodeId === treeDraggedNodeId || isDescendant(treeDraggedNodeId, targetNodeId)) {
+    // Don't allow dropping on itself or its children (only for tree moves)
+    if (sourceType === 'tree' && (targetNodeId === treeDraggedNodeId || isDescendant(treeDraggedNodeId, targetNodeId))) {
         return;
     }
     
@@ -535,15 +541,16 @@ function handleTreeDrop(e) {
     e.stopPropagation();
     e.preventDefault();
     
+    // Check if this is from pending
+    const sourceType = e.dataTransfer.getData('source');
+    const draggedId = e.dataTransfer.getData('text/plain');
+    
     console.log('Drop event fired', { 
         isDragging: treeDragState.isDragging, 
+        sourceType,
+        draggedId,
         state: treeDragState 
     });
-    
-    if (!treeDragState.isDragging) {
-        console.warn('Drop ignored: not in dragging state');
-        return false;
-    }
     
     // Use closest to find the actual list item
     const targetElement = e.target.closest('[data-node-id]');
@@ -552,18 +559,41 @@ function handleTreeDrop(e) {
         return false;
     }
     
-    targetElement.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
-    
     const targetNodeId = targetElement.getAttribute('data-node-id');
-    const sourceNodeId = treeDragState.sourceId;
-    const dropZone = treeDragState.dropZone || 'before';
-    
-    console.log('Drop details:', { sourceNodeId, targetNodeId, dropZone });
     
     if (!targetNodeId) {
         console.warn('Drop ignored: no target node ID');
         return false;
     }
+    
+    // Handle drop from pending section
+    if (sourceType === 'pending') {
+        targetElement.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
+        const dropZone = treeDragState.dropZone || 'before';
+        console.log('Drop from pending:', { draggedId, targetNodeId, dropZone });
+        
+        cleanupDragVisuals();
+        
+        // Defer the restore operation
+        setTimeout(() => {
+            restoreFromPendingToTree(draggedId, targetNodeId, dropZone);
+        }, 0);
+        
+        return false;
+    }
+    
+    // Handle normal tree reordering
+    if (!treeDragState.isDragging) {
+        console.warn('Drop ignored: not in dragging state');
+        return false;
+    }
+    
+    targetElement.classList.remove('drag-over-before', 'drag-over-after', 'drag-over-child');
+    
+    const sourceNodeId = treeDragState.sourceId;
+    const dropZone = treeDragState.dropZone || 'before';
+    
+    console.log('Drop details:', { sourceNodeId, targetNodeId, dropZone });
     
     if (sourceNodeId && targetNodeId && sourceNodeId !== targetNodeId) {
         // Don't allow dropping on descendants
@@ -965,4 +995,136 @@ export function updateNodeDisplay(nodeId, updates) {
         console.error(`Error updating node display for ${nodeId}:`, error);
         throw error;
     }
+}
+
+/**
+ * Restores an item from pending to a specific location in the tree
+ * @param {string} pendingId - ID of the pending item to restore
+ * @param {string} targetNodeId - ID of the target node
+ * @param {string} dropZone - Where to place it: 'before', 'after', or 'child'
+ */
+async function restoreFromPendingToTree(pendingId, targetNodeId, dropZone) {
+    console.log('Restoring from pending to tree:', { pendingId, targetNodeId, dropZone });
+    
+    try {
+        const pendingItems = stateManager.getPendingItems() || [];
+        const itemIndex = pendingItems.findIndex(item => item.id === pendingId);
+
+        if (itemIndex === -1) {
+            showError('Pending item not found');
+            return;
+        }
+
+        const item = pendingItems[itemIndex];
+        const documentStructure = stateManager.getDocumentStructure();
+
+        // Clone the item and remove pending metadata
+        const restoredNode = JSON.parse(JSON.stringify(item));
+        delete restoredNode._pendingAt;
+        delete restoredNode._originalParentId;
+        delete restoredNode._originalIndex;
+
+        // Find the target node
+        const targetInfo = findNodeAndParent(documentStructure, targetNodeId);
+        
+        if (!targetInfo) {
+            showError('Target location not found');
+            return;
+        }
+
+        const { node: targetNode, parent: targetParent, array: targetArray, index: targetIndex } = targetInfo;
+
+        // Insert at the appropriate location based on drop zone
+        if (dropZone === 'child') {
+            // Add as child of target
+            if (!targetNode.children) {
+                targetNode.children = [];
+            }
+            targetNode.children.push(restoredNode);
+            restoredNode.parentId = targetNode.id;
+            
+            // Re-index target's children
+            targetNode.children.forEach((child, index) => {
+                if (child) {
+                    DocumentNode._existingIds.delete(child.id);
+                    child.parentId = targetNode.id;
+                    child.order = index + 1;
+                    child.id = `${targetNode.id}-${index + 1}`;
+                    DocumentNode._existingIds.add(child.id);
+                    updateChildrenIdsRecursive(child);
+                }
+            });
+        } else if (dropZone === 'before') {
+            // Insert before target
+            targetArray.splice(targetIndex, 0, restoredNode);
+            restoredNode.parentId = targetParent?.id || null;
+            
+            // Re-index siblings
+            reindexSiblings(targetArray, targetParent);
+        } else { // 'after'
+            // Insert after target
+            targetArray.splice(targetIndex + 1, 0, restoredNode);
+            restoredNode.parentId = targetParent?.id || null;
+            
+            // Re-index siblings
+            reindexSiblings(targetArray, targetParent);
+        }
+
+        // Remove from pending
+        pendingItems.splice(itemIndex, 1);
+        stateManager.setPendingItems(pendingItems);
+
+        // Update document structure
+        stateManager.setDocumentStructure(documentStructure);
+
+        // Save to version control
+        const { saveWorkingCopy } = await import('./version-control.js');
+        saveWorkingCopy(documentStructure, pendingItems);
+
+        // Re-render
+        renderDocumentStructure(documentStructure);
+        
+        // Re-render pending items
+        const { renderPendingItems } = await import('./pending-manager.js');
+        renderPendingItems();
+
+        // Auto-save
+        const { scheduleAutoSave } = await import('./storage-manager.js');
+        scheduleAutoSave();
+
+        const { showSuccess } = await import('./message-center.js');
+        const nodeName = restoredNode.title || restoredNode.name || 'Item';
+        showSuccess(`${nodeName} restored from Pending`);
+
+        console.log(`Restored item ${pendingId} from pending`);
+
+    } catch (error) {
+        console.error('Error restoring from pending to tree:', error);
+        const { showError } = await import('./message-center.js');
+        showError(`Failed to restore item: ${error.message}`);
+    }
+}
+
+/**
+ * Re-indexes siblings after insertion
+ * @param {Array} siblings - Array of sibling nodes
+ * @param {Object} parent - Parent node or null for root
+ */
+function reindexSiblings(siblings, parent) {
+    siblings.forEach((node, idx) => {
+        if (node) {
+            DocumentNode._existingIds.delete(node.id);
+            if (parent) {
+                node.parentId = parent.id;
+                node.order = idx + 1;
+                node.id = `${parent.id}-${idx + 1}`;
+            } else {
+                node.parentId = null;
+                node.order = idx + 1;
+                node.id = (idx + 1).toString();
+            }
+            DocumentNode._existingIds.add(node.id);
+            updateChildrenIdsRecursive(node);
+        }
+    });
 }

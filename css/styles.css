@@ -2919,4 +2919,34 @@ footer {
     color: #999;
 }
 
+/* Drag and drop styles for pending items */
+.pending-item.dragging {
+    opacity: 0.5;
+    cursor: move;
+}
+
+/* Drag over styles for content editor */
+.drag-over-editor {
+    background-color: rgba(33, 150, 243, 0.1);
+    border: 2px dashed var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+#myList.drag-over-editor,
+#contentForm.drag-over-editor {
+    background-color: rgba(33, 150, 243, 0.05);
+}
+
+/* Drag over styles for pending panel */
+.drag-over-pending {
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 2px dashed var(--danger-color);
+    transition: all 0.2s ease;
+}
+
+#pending-panel.drag-over-pending,
+#pending-items-container.drag-over-pending {
+    background-color: rgba(244, 67, 54, 0.05);
+}
+
 /* ---------------------------------- */
