@@ -222,18 +222,22 @@
 
         <!-- Main Document Content Area -->
         <section class="document-content">
-            <form id="contentForm" class="section 1" action="">
-                <!-- <div class="content-title-container"> -->
-                    <h4 id="contentID">Item Label</h4>
-                    <textarea id="contentTitle">Section Title (from the index on the Left)</textarea>
-                <!-- </div> -->
-                <ol id="myList" class="dynamic-container">
-                </ol>
+            <div id="editor-panels" class="editor-panels">
+                <div class="editor-pane primary" data-pane-id="primary-pane">
+                    <form id="contentForm" class="section 1" action="">
+                        <div class="editor-pane-header">
+                            <span class="pane-title">Editor</span>
+                            <button class="pane-close-btn" disabled title="Primary editor cannot be closed">×</button>
+                        </div>
+                        <h4 id="contentID">Item Label</h4>
+                        <textarea id="contentTitle">Section Title (from the index on the Left)</textarea>
+                        <ol id="myList" class="dynamic-container">
+                        </ol>
 
-                <textarea id="myTextarea" placeholder="Type something here, press the Enter button to add it to the document"></textarea>
-                <!-- <button id="addToListBtn">Add to List</button> -->
-            </form>
-
+                        <textarea id="myTextarea" placeholder="Type something here, press the Enter button to add it to the document"></textarea>
+                    </form>
+                </div>
+            </div>
         </section>
     </main>
     <footer>

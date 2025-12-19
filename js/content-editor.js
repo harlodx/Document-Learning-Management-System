@@ -20,23 +20,22 @@ const activeListeners = new Map();
  * Loads content for editing from a given node
  * @param {Object} node - The node to load (can be a tree node with children or leaf node)
  */
-export function loadContentForEditing(node) {
+export function loadContentForEditing(node, paneRoot = getPrimaryPaneRoot()) {
     console.log('=== loadContentForEditing CALLED ===');
     console.log('Node object:', JSON.stringify(node, null, 2));
+    console.log('Pane root:', paneRoot?.dataset?.paneId || 'primary');
     
     if (!node) {
         console.error('Node is null or undefined');
         throw new Error('Node is required for loading content');
     }
 
+    const { sectionId, sectionTitle, contentList } = getEditorElements(paneRoot);
+
     try {
-        // Update section title and ID displays
-        const sectionId = document.getElementById('contentID');
-        const sectionTitle = document.getElementById('contentTitle');
+        console.log('Found DOM elements:', { sectionId: !!sectionId, sectionTitle: !!sectionTitle, contentList: !!contentList });
         
-        console.log('Found DOM elements:', { sectionId: !!sectionId, sectionTitle: !!sectionTitle });
-        
-        if (!sectionId || !sectionTitle) {
+        if (!sectionId || !sectionTitle || !contentList) {
             throw new Error('Content editor elements not found in DOM');
         }
 
@@ -48,7 +47,7 @@ export function loadContentForEditing(node) {
 
         // Load the content list
         console.log('Calling populateContentList...');
-        populateContentList(node);
+        populateContentList(node, contentList, paneRoot);
         console.log('populateContentList completed');
 
         // Update state
@@ -66,16 +65,16 @@ export function loadContentForEditing(node) {
  * Populates the content list with existing content items
  * @param {Object} contentNode - The node containing content array
  */
-export function populateContentList(contentNode) {
-    const myList = document.getElementById('myList');
+export function populateContentList(contentNode, listElement = getPrimaryContentList(), paneRoot = getPrimaryPaneRoot()) {
+    const myList = listElement;
     
     if (!myList) {
-        throw new Error('Content list element (myList) not found');
+        throw new Error('Content list element not found');
     }
 
     try {
         // Clear existing content
-        clearContentList();
+        clearContentList(myList);
 
         const content = contentNode.content || [];
 
@@ -171,16 +170,15 @@ function createContentListItem(contentText, nodeId, index) {
  * Adds a new item to the content list
  * @param {string} text - Optional text to add (if not provided, reads from textarea)
  */
-export function addListItem(text = null) {
-    const myList = document.getElementById('myList');
-    const myTextarea = document.getElementById('myTextarea');
+export function addListItem(text = null, paneRoot = getPrimaryPaneRoot()) {
+    const { contentList, contentTextarea } = getPaneControls(paneRoot);
 
-    if (!myList || !myTextarea) {
+    if (!contentList || !contentTextarea) {
         throw new Error('Required content editor elements not found');
     }
 
     try {
-        const newText = text || myTextarea.value.trim();
+        const newText = text ?? contentTextarea.value.trim();
 
         if (newText === '') {
             return;
@@ -188,16 +186,15 @@ export function addListItem(text = null) {
 
         const currentItem = stateManager.getCurrentEditingItem();
         const nodeId = currentItem?.id || 'unknown';
-        const index = myList.children.length;
+        const index = contentList.children.length;
 
         const newListItem = createContentListItem(newText, nodeId, index);
-        myList.appendChild(newListItem);
+        contentList.appendChild(newListItem);
 
         // Clear textarea
-        myTextarea.value = '';
+        contentTextarea.value = '';
 
-        // TODO: Update source data
-        updateSourceContent();
+        updateSourceContent(contentList, paneRoot);
 
     } catch (error) {
         console.error('Error adding list item:', error);
@@ -385,6 +382,7 @@ async function deleteContentItem(nodeId, index) {
 // Drag and drop state for content items
 let contentDraggedElement = null;
 let contentDraggedIndex = null;
+let contentDraggedList = null;
 
 /**
  * Handles drag start for content items
@@ -393,6 +391,7 @@ let contentDraggedIndex = null;
 function handleContentDragStart(e) {
     contentDraggedElement = e.currentTarget;
     contentDraggedElement.classList.add('dragging');
+    contentDraggedList = contentDraggedElement.closest('ol');
     
     // Extract index from ID (format: c{nodeId}_{index})
     const id = contentDraggedElement.id;
@@ -412,6 +411,7 @@ function handleContentDragOver(e) {
         e.preventDefault();
     }
     e.dataTransfer.dropEffect = 'move';
+    e.stopPropagation();
     return false;
 }
 
@@ -443,6 +443,10 @@ function handleContentDrop(e) {
     }
     
     e.currentTarget.classList.remove('drag-over');
+    const listElement = e.currentTarget.closest('ol');
+    if (contentDraggedList && listElement !== contentDraggedList) {
+        return false; // ignore cross-list drops
+    }
     
     if (contentDraggedElement !== e.currentTarget) {
         // Extract target index
@@ -451,7 +455,7 @@ function handleContentDrop(e) {
         const targetIndex = match ? parseInt(match[1]) : null;
         
         if (contentDraggedIndex !== null && targetIndex !== null) {
-            reorderContentItems(contentDraggedIndex, targetIndex);
+            reorderContentItems(contentDraggedIndex, targetIndex, listElement || getPrimaryContentList());
         }
     }
     
@@ -471,6 +475,7 @@ function handleContentDragEnd(e) {
     
     contentDraggedElement = null;
     contentDraggedIndex = null;
+    contentDraggedList = null;
 }
 
 /**
@@ -478,7 +483,7 @@ function handleContentDragEnd(e) {
  * @param {number} fromIndex - Original index
  * @param {number} toIndex - Target index
  */
-function reorderContentItems(fromIndex, toIndex) {
+function reorderContentItems(fromIndex, toIndex, listElement = getPrimaryContentList()) {
     try {
         const currentNode = stateManager.getCurrentEditingItem();
         if (!currentNode || !Array.isArray(currentNode.content)) {
@@ -489,8 +494,8 @@ function reorderContentItems(fromIndex, toIndex) {
         const [movedItem] = currentNode.content.splice(fromIndex, 1);
         currentNode.content.splice(toIndex, 0, movedItem);
         
-        // Refresh the display
-        populateContentList(currentNode);
+        // Refresh the display in the affected list
+        populateContentList(currentNode, listElement);
         
         // Trigger auto-save
         document.dispatchEvent(new CustomEvent('dlms:contentChanged'));
@@ -506,8 +511,8 @@ function reorderContentItems(fromIndex, toIndex) {
 /**
  * Clears the content list and removes event listeners
  */
-export function clearContentList() {
-    const myList = document.getElementById('myList');
+export function clearContentList(listElement = getPrimaryContentList()) {
+    const myList = listElement;
     
     if (!myList) {
         return;
@@ -535,9 +540,9 @@ export function clearContentList() {
  * Updates the source data with current content
  * TODO: Implement actual data persistence
  */
-function updateSourceContent() {
+function updateSourceContent(listElement = getPrimaryContentList(), paneRoot = getPrimaryPaneRoot()) {
     const currentItem = stateManager.getCurrentEditingItem();
-    const myList = document.getElementById('myList');
+    const myList = listElement;
 
     if (!currentItem || !myList) {
         return;
@@ -573,30 +578,17 @@ function updateSourceContent() {
  */
 export function initializeContentEditor() {
     try {
-        const myTextarea = document.getElementById('myTextarea');
-        const titleTextarea = document.getElementById('contentTitle');
-
-        if (myTextarea) {
-            // Add item on Enter key
-            myTextarea.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    addListItem();
-                }
-            });
+        const primaryPane = getPrimaryPaneRoot();
+        if (primaryPane) {
+            bindPaneInputs(primaryPane);
         }
 
-        if (titleTextarea) {
-            // Update title on input
-            titleTextarea.addEventListener('input', (event) => {
-                const currentItem = stateManager.getCurrentEditingItem();
-                if (currentItem) {
-                    const newValue = event.target.value;
-                    console.log(`Updating title for ${currentItem.id}: ${newValue}`);
-                    // TODO: Update source data with debouncing
-                }
-            });
-        }
+        // Bind any already-present secondary panes
+        document.querySelectorAll('.editor-pane').forEach((pane) => {
+            if (pane !== primaryPane) {
+                bindPaneInputs(pane);
+            }
+        });
 
     } catch (error) {
         console.error('Error initializing content editor:', error);
@@ -615,53 +607,26 @@ export function cleanup() {
  * Initialize drag and drop for the content editor
  */
 export function initializeContentEditorDragDrop() {
-    console.log('initializeContentEditorDragDrop called');
-    const myList = document.getElementById('myList');
-    const contentForm = document.getElementById('contentForm');
-    
-    console.log('Found elements:', { myList: !!myList, contentForm: !!contentForm });
-    
-    if (!myList || !contentForm) {
-        console.warn('Content editor elements not found for drag/drop setup');
-        return;
-    }
-    
     console.log('Setting up content editor drag/drop handlers');
+    const primaryPane = getPrimaryPaneRoot();
     
-    // Find the main document content section
-    const documentSection = document.querySelector('.document-content');
-    if (!documentSection) {
-        console.warn('Document content section not found');
+    if (!primaryPane) {
+        console.warn('Primary editor pane not found for drag/drop setup');
         return;
     }
-    
-    console.log('Found document-content section, attaching handlers with capture phase');
-    
-    // Attach handlers at the section level with capture phase to intercept all drops
-    documentSection.addEventListener('dragover', handleEditorDragOver, true);
-    documentSection.addEventListener('dragenter', handleEditorDragEnter, true);
-    documentSection.addEventListener('dragleave', handleEditorDragLeave, false);
-    documentSection.addEventListener('drop', handleEditorDrop, true);
-    
-    console.log('Content editor drag/drop handlers attached to document-content section');
-    
-    console.log('All content editor drag/drop handlers attached');
-    
-    // Add a test handler to document to see if drops are firing at all
-    document.addEventListener('drop', (e) => {
-        console.log('DOCUMENT LEVEL DROP EVENT FIRED - target:', e.target.id || e.target.className);
-        console.log('Drop event details:', { dropEffect: e.dataTransfer.dropEffect, eventTarget: e.target.tagName });
-    }, true); // Use capture phase
-    
-    document.addEventListener('dragend', (e) => {
-        console.log('DOCUMENT DRAGEND EVENT FIRED - dropEffect:', e.dataTransfer.dropEffect);
-    });
+
+    attachPaneDragDropHandlers(primaryPane);
+    primaryPane.addEventListener('contextmenu', handlePaneContextMenu);
 }
 
 /**
  * Handles drag over for content editor
  */
 function handleEditorDragOver(e) {
+    // Skip pane-level handling when reordering content items within a list
+    if (e.dataTransfer.types && e.dataTransfer.types.includes('text/html') && !e.dataTransfer.types.includes('text/plain')) {
+        return; // let list-level handlers manage reorder
+    }
     console.log('Editor dragover triggered - setting dropEffect to copy');
     e.preventDefault();
     e.stopPropagation();
@@ -675,11 +640,14 @@ function handleEditorDragOver(e) {
  * Handles drag enter for content editor
  */
 function handleEditorDragEnter(e) {
+    if (e.dataTransfer.types && e.dataTransfer.types.includes('text/html') && !e.dataTransfer.types.includes('text/plain')) {
+        return;
+    }
     console.log('Editor dragenter triggered');
     e.preventDefault();
-    const element = e.currentTarget;
-    if (element.classList) {
-        element.classList.add('drag-over-editor');
+    const pane = e.currentTarget.closest('.editor-pane') || e.currentTarget;
+    if (pane.classList) {
+        pane.classList.add('drag-over-editor');
     }
 }
 
@@ -687,23 +655,27 @@ function handleEditorDragEnter(e) {
  * Handles drag leave for content editor
  */
 function handleEditorDragLeave(e) {
-    const element = e.currentTarget;
-    // Only remove class if leaving the element itself, not a child
-    if (e.target === element) {
-        element.classList.remove('drag-over-editor');
+    if (e.dataTransfer.types && e.dataTransfer.types.includes('text/html') && !e.dataTransfer.types.includes('text/plain')) {
+        return;
     }
+    const pane = e.currentTarget.closest('.editor-pane') || e.currentTarget;
+    if (pane.contains(e.relatedTarget)) return;
+    pane.classList.remove('drag-over-editor');
 }
 
 /**
  * Handles drop for content editor
  */
 async function handleEditorDrop(e) {
+    if (e.dataTransfer.types && e.dataTransfer.types.includes('text/html') && !e.dataTransfer.types.includes('text/plain')) {
+        return;
+    }
     console.log('Editor drop triggered');
     e.preventDefault();
     e.stopPropagation();
     
-    const element = e.currentTarget;
-    element.classList.remove('drag-over-editor');
+    const pane = e.currentTarget.closest('.editor-pane') || e.currentTarget;
+    pane.classList.remove('drag-over-editor');
     
     const draggedId = e.dataTransfer.getData('text/plain');
     console.log('Dragged ID:', draggedId);
@@ -726,13 +698,201 @@ async function handleEditorDrop(e) {
     }
     
     console.log('About to call loadContentForEditing with node:', node);
-    // Load the node into the editor
-    loadContentForEditing(node);
+    // Load the node into the specific pane
+    loadContentForEditing(node, pane);
     console.log('loadContentForEditing completed');
     
     const { showSuccess } = await import('./message-center.js');
     const nodeName = node.title || node.name || 'Item';
     showSuccess(`${nodeName} loaded for editing`);
+}
+
+/**
+ * Helper: get primary pane root
+ */
+function getPrimaryPaneRoot() {
+    return document.querySelector('.editor-pane.primary');
+}
+
+/**
+ * Helper: get primary content list
+ */
+function getPrimaryContentList() {
+    return document.getElementById('myList');
+}
+
+/**
+ * Helper: get editor elements for a pane (primary or secondary)
+ */
+function getEditorElements(paneRoot) {
+    const isPrimary = paneRoot?.classList?.contains('primary');
+    if (isPrimary) {
+        return {
+            sectionId: document.getElementById('contentID'),
+            sectionTitle: document.getElementById('contentTitle'),
+            contentList: document.getElementById('myList'),
+            contentTextarea: document.getElementById('myTextarea'),
+        };
+    }
+
+    return {
+        sectionId: paneRoot?.querySelector('.content-id'),
+        sectionTitle: paneRoot?.querySelector('.content-title'),
+        contentList: paneRoot?.querySelector('.content-list'),
+        contentTextarea: paneRoot?.querySelector('.content-textarea'),
+    };
+}
+
+/**
+ * Helper: get pane controls (list + textarea)
+ */
+function getPaneControls(paneRoot) {
+    const { contentList, contentTextarea } = getEditorElements(paneRoot);
+    return { contentList, contentTextarea };
+}
+
+/**
+ * Bind textarea/title handlers for a pane
+ */
+function bindPaneInputs(paneRoot) {
+    const { contentTextarea, sectionTitle, contentList } = getEditorElements(paneRoot);
+
+    if (contentTextarea) {
+        contentTextarea.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addListItem(null, paneRoot);
+            }
+        });
+    }
+
+    if (sectionTitle) {
+        sectionTitle.addEventListener('input', (event) => {
+            const currentItem = stateManager.getCurrentEditingItem();
+            if (currentItem) {
+                const newValue = event.target.value;
+                currentItem.name = newValue;
+                console.log(`Updating title for ${currentItem.id}: ${newValue}`);
+                // TODO: Update source data with debouncing
+            }
+        });
+    }
+
+    // If we ever need to sync content updates per pane, the list reference is available here
+    if (contentList) {
+        // placeholder for future per-pane behaviors
+    }
+}
+
+/**
+ * Create a new editor pane (secondary)
+ */
+function createEditorPane() {
+    const pane = document.createElement('div');
+    pane.className = 'editor-pane';
+    pane.dataset.paneId = `pane-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    pane.innerHTML = `
+        <div class="editor-pane-header">
+            <span class="pane-title">Editor</span>
+            <button class="pane-close-btn" title="Close">×</button>
+        </div>
+        <h4 class="content-id">Item Label</h4>
+        <textarea class="content-title" placeholder="Section Title"></textarea>
+        <ol class="dynamic-container content-list"></ol>
+        <textarea class="content-textarea" placeholder="Type something here, press the Enter button to add it to the document"></textarea>
+    `;
+
+    const closeBtn = pane.querySelector('.pane-close-btn');
+    closeBtn.addEventListener('click', () => removeEditorPane(pane));
+    pane.addEventListener('contextmenu', handlePaneContextMenu);
+    attachPaneDragDropHandlers(pane);
+    bindPaneInputs(pane);
+    return pane;
+}
+
+/**
+ * Add a new editor pane to the UI
+ */
+function addEditorPane() {
+    const container = document.getElementById('editor-panels');
+    if (!container) return;
+    const pane = createEditorPane();
+    container.appendChild(pane);
+    console.log('Added new editor pane', pane.dataset.paneId);
+}
+
+/**
+ * Remove an editor pane
+ */
+function removeEditorPane(pane) {
+    const container = document.getElementById('editor-panels');
+    if (!container || !pane) return;
+    if (pane.classList.contains('primary')) return; // never remove primary
+    container.removeChild(pane);
+    console.log('Removed editor pane', pane.dataset.paneId);
+}
+
+/**
+ * Attach drag/drop handlers to a pane
+ */
+function attachPaneDragDropHandlers(pane) {
+    if (!pane) return;
+    pane.addEventListener('dragover', handleEditorDragOver, false);
+    pane.addEventListener('dragenter', handleEditorDragEnter, false);
+    pane.addEventListener('dragleave', handleEditorDragLeave, false);
+    pane.addEventListener('drop', handleEditorDrop, false);
+}
+
+/**
+ * Context menu handler for panes
+ */
+function handlePaneContextMenu(e) {
+    e.preventDefault();
+    const menu = buildPaneContextMenu(e.currentTarget, e.clientX, e.clientY);
+    document.body.appendChild(menu);
+}
+
+function buildPaneContextMenu(pane, x, y) {
+    // remove existing
+    document.querySelectorAll('.pane-context-menu').forEach(m => m.remove());
+
+    const menu = document.createElement('div');
+    menu.className = 'context-menu pane-context-menu open';
+    menu.style.top = `${y}px`;
+    menu.style.left = `${x}px`;
+
+    const addItem = document.createElement('div');
+    addItem.className = 'context-menu-item';
+    addItem.textContent = 'New editor';
+    addItem.addEventListener('click', () => {
+        addEditorPane();
+        menu.remove();
+    });
+
+    const removeItem = document.createElement('div');
+    removeItem.className = 'context-menu-item';
+    removeItem.textContent = 'Close editor';
+    if (pane.classList.contains('primary')) {
+        removeItem.classList.add('disabled');
+    } else {
+        removeItem.addEventListener('click', () => {
+            removeEditorPane(pane);
+            menu.remove();
+        });
+    }
+
+    menu.appendChild(addItem);
+    menu.appendChild(removeItem);
+
+    const closeOnClick = (ev) => {
+        if (!menu.contains(ev.target)) {
+            menu.remove();
+            document.removeEventListener('click', closeOnClick);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closeOnClick), 0);
+
+    return menu;
 }
 
 /**
