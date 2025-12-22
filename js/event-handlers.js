@@ -311,12 +311,55 @@ export function initializeAllEventHandlers() {
     try {
         // Initialize dynamic click handler
         initializeDynamicClickHandler('dynamic-container', 'dynamic-item');
+        
+        // Add additional handler for index panel to ensure click-to-load works
+        // when panel is fixed position
+        initializeIndexPanelClickHandler();
 
         console.log('All event handlers initialized successfully');
 
     } catch (error) {
         console.error('Error initializing event handlers:', error);
     }
+}
+
+/**
+ * Initialize click handler specifically for index panel
+ * Ensures click-to-load functionality works with fixed positioning
+ */
+function initializeIndexPanelClickHandler() {
+    const indexPanel = document.getElementById('index-panel');
+    
+    if (!indexPanel) {
+        console.warn('Index panel not found for click handler initialization');
+        return;
+    }
+    
+    // Remove existing listener if any
+    if (indexPanel._indexClickHandler) {
+        indexPanel.removeEventListener('click', indexPanel._indexClickHandler);
+    }
+    
+    // Create click handler for index panel
+    const clickHandler = (event) => {
+        // Find if clicked element or parent is a dynamic-item
+        const dynamicItem = event.target.closest('.dynamic-item');
+        
+        if (!dynamicItem || !dynamicItem.id) {
+            return;
+        }
+        
+        try {
+            routeClickEvent(dynamicItem.id);
+        } catch (error) {
+            console.error(`Error handling index panel click on ${dynamicItem.id}:`, error);
+        }
+    };
+    
+    indexPanel._indexClickHandler = clickHandler;
+    indexPanel.addEventListener('click', clickHandler);
+    
+    console.log('Index panel click handler initialized');
 }
 
 /**

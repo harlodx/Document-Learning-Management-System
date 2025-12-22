@@ -780,15 +780,15 @@ async function initializeTreeState(rootNodes) {
 /**
  * Loads document from storage or falls back to test data
  * @param {Object[]} testData - Optional test data to use if no saved document
- * @returns {Object[]} The loaded document structure
+ * @returns {Promise<Object[]>} Promise resolving to the loaded document structure
  */
-export function loadInitialData(testData = null) {
+export async function loadInitialData(testData = null) {
     try {
         // Try to load from storage first
         const savedDocument = loadDocumentFromStorage();
         
         if (savedDocument && savedDocument.length > 0) {
-            console.log('Loading document from local storage...');
+            console.log('Loading document from local storage...', savedDocument.length, 'nodes');
             
             // Clear existing IDs and hydrate
             DocumentNode._existingIds.clear();
@@ -796,11 +796,19 @@ export function loadInitialData(testData = null) {
                 DocumentNode.fromJSON(jsonNode, null)
             );
 
+            console.log('Hydrated to DocumentNode instances:', rootNodes.length, 'root nodes');
+
             // Update state first
             stateManager.setDocumentStructure(rootNodes);
             
             // Smart tree initialization (sets collapse states, then renders)
-            initializeTreeState(rootNodes);
+            // IMPORTANT: We await this so rendering completes before returning
+            await initializeTreeState(rootNodes).catch(error => {
+                console.error('Error in initializeTreeState:', error);
+                // Fallback to basic render
+                console.log('Falling back to basic renderDocumentStructure');
+                renderDocumentStructure(rootNodes);
+            });
 
             return rootNodes;
         }
@@ -811,8 +819,9 @@ export function loadInitialData(testData = null) {
             return loadTestData(testData);
         }
 
-        // No data available
-        console.log('No document to load');
+        // No data available - render empty state
+        console.log('No document to load - rendering empty structure');
+        renderDocumentStructure([]);
         return [];
 
     } catch (error) {
@@ -824,6 +833,9 @@ export function loadInitialData(testData = null) {
             return loadTestData(testData);
         }
         
+        // Render empty on error
+        console.log('Rendering empty structure due to error');
+        renderDocumentStructure([]);
         return [];
     }
 }

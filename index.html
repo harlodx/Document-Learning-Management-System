@@ -49,6 +49,13 @@
         <span class="pending-icon">🗑</span>
     </button>
 
+    <!-- Index Toggle Button -->
+    <button id="index-toggle" class="index-toggle" aria-label="Toggle Document Index">
+        <span class="index-line"></span>
+        <span class="index-line"></span>
+        <span class="index-line"></span>
+    </button>
+
     <!-- Slide-out Menu -->
     <nav id="side-menu" class="side-menu">
         <!-- User Section -->
@@ -200,7 +207,7 @@
 
         </section>
 
-        <aside>
+        <aside id="index-panel" class="index-panel open">
 
             <section class="index">
                 <div class="section-heading">
@@ -209,7 +216,7 @@
                 <div class="search-container">
                     <input type="text" id="index-search" class="search-input" placeholder="Search sections...">
                 </div>
-                <div id="document-structure-container" class="index-items">
+                <div id="document-structure-container" class="index-items index-scrollable">
                     <!-- Main content from code goes in here -->
                 </div>
                 <div class="controls index">

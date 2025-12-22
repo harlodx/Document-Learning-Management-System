@@ -287,11 +287,30 @@ function populateChangesList(version, changesList) {
             return;
         }
         
-        const patches = commit.patch;
+        let patches = commit.patch;
         const author = commit.author || 'User';
         
         if (patches.length === 0) {
             changesList.innerHTML = '<div class="change-item no-changes">No changes in this version</div>';
+            return;
+        }
+        
+        // Filter out system-generated operations that don't need to be displayed
+        // Keep only meaningful operations: add, remove, replace (excluding timestamps)
+        patches = patches.filter(patch => {
+            const pathParts = patch.path.split('/').filter(p => p);
+            const property = pathParts[pathParts.length - 1];
+            
+            // Exclude timestamp-only operations - these are system-generated and already shown in commit header
+            if (property === 'lastEditTime' && patch.op === 'replace') {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        if (patches.length === 0) {
+            changesList.innerHTML += '<div class="change-item no-changes">No meaningful changes to display</div>';
             return;
         }
         
@@ -483,31 +502,48 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
         let nodeId = null;
         try {
             // First element is the root index
-            if (documentArray && documentArray[parts[0]]) {
-                nodeId = documentArray[parts[0]].id || (parseInt(parts[0]) + 1).toString();
+            const firstPartInt = parseInt(parts[0]);
+            
+            // Validate that the first part is actually a number
+            if (isNaN(firstPartInt)) {
+                console.warn('Invalid path - first part is not a number:', parts[0], 'Full path:', pathStr);
+                return null;
+            }
+            
+            if (documentArray && documentArray[firstPartInt]) {
+                nodeId = documentArray[firstPartInt].id || (firstPartInt + 1).toString();
                 
                 // If there are more parts, we're navigating into children
-                let current = documentArray[parts[0]];
+                let current = documentArray[firstPartInt];
                 for (let i = 1; i < parts.length; i += 2) {
                     if (parts[i] === 'children' && parts[i + 1] !== undefined) {
                         const childIndex = parseInt(parts[i + 1]);
-                        if (current.children && current.children[childIndex]) {
+                        if (!isNaN(childIndex) && current.children && current.children[childIndex]) {
                             current = current.children[childIndex];
                             nodeId = current.id || nodeId + '-' + (childIndex + 1);
                         }
                     }
                 }
             } else {
-                // Fallback: construct ID from path indices
-                nodeId = (parseInt(parts[0]) + 1).toString();
-                for (let i = 1; i < parts.length; i += 2) {
-                    if (parts[i] === 'children' && parts[i + 1] !== undefined) {
-                        nodeId += '-' + (parseInt(parts[i + 1]) + 1);
+                // Fallback: construct ID from path indices, but only if valid
+                if (!isNaN(firstPartInt)) {
+                    nodeId = (firstPartInt + 1).toString();
+                    for (let i = 1; i < parts.length; i += 2) {
+                        if (parts[i] === 'children' && parts[i + 1] !== undefined) {
+                            const childIdx = parseInt(parts[i + 1]);
+                            if (!isNaN(childIdx)) {
+                                nodeId += '-' + (childIdx + 1);
+                            }
+                        }
                     }
+                } else {
+                    console.warn('Could not extract node ID from path:', pathStr);
+                    return null;
                 }
             }
         } catch (e) {
-            console.warn('Error extracting node ID:', e);
+            console.warn('Error extracting node ID from path:', pathStr, e);
+            return null;
         }
         
         return nodeId;
@@ -551,8 +587,56 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
         }
     };
     
+    // Helper to get the node object from previousState
+    const getNodeObject = (pathStr) => {
+        if (!previousState) return null;
+        
+        const parts = pathStr.split('/').filter(p => p);
+        try {
+            // Start from the appropriate root (handle both old and new format)
+            let current = previousState?.document || previousState;
+            
+            // Navigate through the path
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                
+                if (!isNaN(part)) {
+                    const index = parseInt(part);
+                    if (Array.isArray(current) && current[index] !== undefined) {
+                        current = current[index];
+                    } else {
+                        return null;
+                    }
+                } else if (part === 'children') {
+                    // Skip, next part will be the child index
+                    continue;
+                } else {
+                    // It's a property name
+                    if (current && current[part] !== undefined) {
+                        current = current[part];
+                    } else {
+                        return null;
+                    }
+                }
+            }
+            
+            // Return the node object if it's a node (has id or name/title)
+            if (current && typeof current === 'object' && (current.id || current.name || current.title)) {
+                return current;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    };
+    
     const nodeId = getNodeIdFromPath(path);
-    const nodeRef = nodeId ? `node ${nodeId}` : 'a node';
+    const nodeObject = getNodeObject(path);
+    const nodeTitle = nodeObject?.name || nodeObject?.title || '';
+    
+    // Safeguard: ensure nodeId is not NaN and is valid
+    const validNodeId = (nodeId && !isNaN(nodeId) && nodeId !== 'NaN') ? nodeId : null;
+    const nodeRef = validNodeId ? `node ${validNodeId}${nodeTitle ? ` - ${nodeTitle}` : ''}` : 'a node';
     
     let action = '';
     let previousVal = '—';
@@ -566,23 +650,36 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
                 // Adding a child node
                 const childTitle = getNodeTitle(value);
                 const childId = value.id || 'new child';
-                action = `Added child to ${nodeRef}`;
-                currentVal = `${childId}: ${childTitle}`;
+                action = `Added child to ${nodeRef}: ${childId}${childTitle && childTitle !== 'Unknown' ? ` - ${childTitle}` : ''}`;
+                currentVal = childTitle;
+                previousVal = '—';
             } else if (pathParts[1] === 'content') {
-                // Adding content
-                const contentText = Array.isArray(value) ? value.join(', ') : truncateValue(value, 50);
-                action = `Added content to ${nodeRef}`;
+                // Adding content - extract node ID from the root index
+                const contentText = Array.isArray(value) ? value.join(', ') : truncateValue(value, 100);
+                // For content at /document/0/content/X, the node ID is based on index 0
+                const contentNodeId = parseInt(pathParts[0]) + 1;
+                
+                // Get the node object to get its title
+                const contentRootPath = `/${pathParts[0]}`;
+                const contentNode = getNodeObject(contentRootPath);
+                const contentNodeTitle = contentNode?.name || contentNode?.title || '';
+                
+                const contentNodeRef = !isNaN(contentNodeId) ? `node ${contentNodeId}${contentNodeTitle ? ` - ${contentNodeTitle}` : ''}` : 'a node';
+                action = `Added content to ${contentNodeRef}`;
                 currentVal = contentText;
+                previousVal = '—';
             } else if (pathParts.length === 1) {
                 // Adding a root node
                 const nodeTitle = getNodeTitle(value);
                 const newNodeId = value.id || (parseInt(pathParts[0]) + 1).toString();
-                action = `Added ${newNodeId}`;
+                action = `Added root node: ${newNodeId}${nodeTitle && nodeTitle !== 'Unknown' ? ` - ${nodeTitle}` : ''}`;
                 currentVal = nodeTitle;
+                previousVal = '—';
             } else {
-                const property = pathParts[pathParts.length - 1];
+                const property = pathParts[pathParts.length - 1] || 'property';
                 action = `Added ${property} to ${nodeRef}`;
-                currentVal = truncateValue(value, 50);
+                currentVal = Array.isArray(value) ? value.join(', ') : truncateValue(String(value), 100);
+                previousVal = '—';
             }
             break;
             
@@ -593,46 +690,52 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
                 action = `Removed child from ${nodeRef}`;
                 const previousValue = getPreviousValue(path);
                 previousVal = previousValue ? getNodeTitle(previousValue) : 'unknown';
+                currentVal = '—';
             } else if (pathParts.length === 1) {
                 // Removing a root node
-                action = `Removed ${nodeRef}`;
+                action = `Removed root node: ${nodeRef}`;
                 const previousValue = getPreviousValue(path);
                 previousVal = previousValue ? getNodeTitle(previousValue) : 'unknown';
+                currentVal = '—';
             } else {
-                const property = pathParts[pathParts.length - 1];
+                const property = pathParts[pathParts.length - 1] || 'property';
                 action = `Removed ${property} from ${nodeRef}`;
                 const previousValue = getPreviousValue(path);
-                previousVal = previousValue ? truncateValue(previousValue, 40) : 'unknown';
+                previousVal = previousValue ? (Array.isArray(previousValue) ? previousValue.join(', ') : truncateValue(String(previousValue), 100)) : 'unknown';
+                currentVal = '—';
             }
-            currentVal = '—';
             break;
             
         case 'replace':
             cssClass = 'change-replace';
             
-            const property = pathParts[pathParts.length - 1];
+            const property = pathParts[pathParts.length - 1] || 'property';
             const previousValue = getPreviousValue(path);
             
             if (property === 'name' || property === 'title') {
-                action = `Changed ${nodeRef} title`;
-                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
-                currentVal = truncateValue(value, 40);
+                action = `Changed title of ${nodeRef}`;
+                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(String(previousValue), 100) : 'none';
+                currentVal = truncateValue(String(value), 100);
             } else if (property === 'content') {
-                action = `Changed ${nodeRef} content`;
+                action = `Changed content of ${nodeRef}`;
                 previousVal = previousValue !== null && previousValue !== undefined 
-                    ? (Array.isArray(previousValue) ? previousValue.join(', ') : truncateValue(previousValue, 40)) 
+                    ? (Array.isArray(previousValue) ? previousValue.join(', ') : truncateValue(String(previousValue), 100)) 
                     : 'empty';
-                currentVal = Array.isArray(value) ? value.join(', ') : truncateValue(value, 40);
+                currentVal = Array.isArray(value) ? value.join(', ') : truncateValue(String(value), 100);
+            } else if (property === 'lastEditTime') {
+                action = `Updated ${nodeRef} timestamp`;
+                previousVal = previousValue ? formatTime(previousValue) : 'none';
+                currentVal = formatTime(value);
             } else if (!isNaN(property)) {
                 // It's an array index (content item)
                 const itemNumber = parseInt(property) + 1;
-                action = `Changed ${nodeRef} item ${itemNumber}`;
-                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
-                currentVal = truncateValue(value, 40);
+                action = `Modified content item ${itemNumber} in ${nodeRef}`;
+                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(String(previousValue), 100) : 'none';
+                currentVal = truncateValue(String(value), 100);
             } else {
-                action = `Changed ${nodeRef} ${property}`;
-                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(previousValue, 40) : 'none';
-                currentVal = truncateValue(value, 40);
+                action = `Changed ${property} in ${nodeRef}`;
+                previousVal = previousValue !== null && previousValue !== undefined ? truncateValue(String(previousValue), 100) : 'none';
+                currentVal = truncateValue(String(value), 100);
             }
             break;
             
@@ -640,7 +743,7 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
             cssClass = 'change-move';
             const fromId = getNodeIdFromPath(from);
             const toId = getNodeIdFromPath(path);
-            action = 'Moved node';
+            action = fromId && toId ? `Moved ${nodeRef} from position ${fromId} to ${toId}` : `Moved ${nodeRef}`;
             previousVal = fromId ? `Position ${fromId}` : 'old position';
             currentVal = toId ? `Position ${toId}` : 'new position';
             break;
@@ -649,7 +752,7 @@ function parsePatchOperation(patch, previousState = null, author = 'User') {
             cssClass = 'change-copy';
             const copyFromId = getNodeIdFromPath(from);
             const copyToId = getNodeIdFromPath(path);
-            action = 'Copied node';
+            action = copyFromId && copyToId ? `Copied from ${copyFromId} to ${copyToId}` : `Copied node`;
             previousVal = copyFromId ? `Node ${copyFromId}` : 'source';
             currentVal = copyToId ? `Node ${copyToId}` : 'destination';
             break;

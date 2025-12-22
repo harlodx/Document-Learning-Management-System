@@ -353,6 +353,23 @@ export async function handleAddSubnode(nodeId = null) {
     // Update state and re-render
     stateManager.setDocumentStructure(documentStructure);
     renderDocumentStructure(documentStructure);
+    
+    // Expand the parent node and auto-select the new child
+    setTimeout(() => {
+        // First, expand the parent if collapsed
+        const collapseBtn = document.querySelector(`[id="collapse-node-${parentNode.id}"]`);
+        if (collapseBtn && collapseBtn.getAttribute('data-collapsed') === 'true') {
+            console.log('Expanding parent node:', parentNode.id);
+            collapseBtn.click();
+        }
+        
+        // Then auto-select the new child node
+        const newNodeElement = document.querySelector(`[data-node-id="${newChild.id}"]`);
+        if (newNodeElement) {
+            console.log('Auto-selecting new child node:', newChild.id);
+            newNodeElement.click();
+        }
+    }, 100);
 }
 
 /**
@@ -415,6 +432,15 @@ export async function handleAddRootNode(nodeId = null) {
     // Update state and re-render
     stateManager.setDocumentStructure(documentStructure);
     renderDocumentStructure(documentStructure);
+    
+    // Auto-select the new root node after rendering
+    setTimeout(() => {
+        const newNodeElement = document.querySelector(`[data-node-id="${newNode.id}"]`);
+        if (newNodeElement) {
+            console.log('Auto-selecting new root node:', newNode.id);
+            newNodeElement.click();
+        }
+    }, 100);
     
     console.log('Added root node at position:', insertIndex);
 }

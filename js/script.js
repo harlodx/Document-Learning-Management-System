@@ -232,7 +232,7 @@ const testRevisions = [
 /**
  * Initializes the application
  */
-function initializeApplication() {
+async function initializeApplication() {
     try {
         debugMessage('Initializing DLMS application...');
         
@@ -247,6 +247,10 @@ function initializeApplication() {
         // Initialize menu system
         debugMessage('Initializing menu...');
         initializeMenu();
+        
+        // Initialize index panel toggle
+        debugMessage('Initializing index panel...');
+        initializeIndexPanel();
         
         // Initialize user management system
         debugMessage('Initializing user management...');
@@ -302,7 +306,7 @@ function initializeApplication() {
 
         // Load data from storage or use test data as fallback
         debugMessage('Loading document data...');
-        const loadedData = loadInitialData(flatNodeList);
+        const loadedData = await loadInitialData(flatNodeList);
         
         if (loadedData && loadedData.length > 0) {
             debugMessage(`Loaded ${loadedData.length} root nodes`);
@@ -390,6 +394,56 @@ function loadTitleAndSubtitle() {
     } catch (error) {
         console.error('Error loading title/subtitle:', error);
     }
+}
+
+/**
+ * Initialize index panel toggle functionality
+ */
+function initializeIndexPanel() {
+    const indexToggle = document.getElementById('index-toggle');
+    const indexPanel = document.getElementById('index-panel');
+    const main = document.querySelector('main');
+    const header = document.querySelector('header');
+    
+    if (!indexToggle || !indexPanel || !main) {
+        console.warn('Index panel elements not found');
+        return;
+    }
+    
+    // Start with panel open by default - add active classes immediately
+    indexToggle.classList.add('active');
+    main.classList.add('index-open');
+    if (header) header.classList.add('index-open');
+    
+    console.log('Index panel initialization:', {
+        panelVisible: indexPanel.classList.contains('open'),
+        panelLeft: window.getComputedStyle(indexPanel).left,
+        mainMarginLeft: window.getComputedStyle(main).marginLeft,
+        toggleActive: indexToggle.classList.contains('active'),
+        mainIndexOpen: main.classList.contains('index-open')
+    });
+    
+    indexToggle.addEventListener('click', () => {
+        const isOpen = indexPanel.classList.contains('open');
+        
+        if (isOpen) {
+            // Close the panel
+            indexPanel.classList.remove('open');
+            indexToggle.classList.remove('active');
+            main.classList.remove('index-open');
+            if (header) header.classList.remove('index-open');
+        } else {
+            // Open the panel
+            indexPanel.classList.add('open');
+            indexToggle.classList.add('active');
+            main.classList.add('index-open');
+            if (header) header.classList.add('index-open');
+        }
+        
+        console.log('Index panel toggled:', !isOpen ? 'opened' : 'closed');
+    });
+    
+    debugMessage('Index panel toggle initialized');
 }
 
 /**
@@ -587,8 +641,8 @@ function updateAddSubnodeButtonState() {
 // DOM READY EVENT
 // =========================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApplication();
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeApplication();
 });
 
 // =========================================================================

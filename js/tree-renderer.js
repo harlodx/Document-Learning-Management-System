@@ -34,11 +34,21 @@ export function markNodeExpanded(nodeId) {
  * @throws {Error} If container element is not found
  */
 export function renderDocumentStructure(documentStructure, containerId = 'document-structure-container') {
+    console.log('renderDocumentStructure called with:', {
+        containerId,
+        nodeCount: documentStructure?.length,
+        isArray: Array.isArray(documentStructure)
+    });
+    
     const container = document.getElementById(containerId);
     
     if (!container) {
+        console.error(`Container element '${containerId}' not found in DOM`);
+        console.error('Available elements with id:', document.querySelectorAll('[id]').length);
         throw new Error(`Container element '${containerId}' not found in DOM`);
     }
+    
+    console.log('Container found:', container.className, container.id);
 
     if (!Array.isArray(documentStructure)) {
         console.error('Invalid document structure:', documentStructure);
@@ -54,15 +64,21 @@ export function renderDocumentStructure(documentStructure, containerId = 'docume
         container.innerHTML = '';
 
         if (documentStructure.length === 0) {
+            console.log('No documents to display - showing empty message');
             container.innerHTML = '<div class="empty-message">No documents to display</div>';
             return;
         }
 
+        console.log('Building nested list for', documentStructure.length, 'root nodes');
         // Build the nested list
         buildNestedList(documentStructure, container);
         
         // Restore collapse states after rendering
         restoreCollapseStates(container);
+        
+        console.log('Document structure rendered successfully');
+        console.log('Container HTML after render:', container.innerHTML.substring(0, 200));
+        console.log('Container has', container.children.length, 'direct children');
         
     } catch (error) {
         console.error('Error rendering document structure:', error);
@@ -330,6 +346,14 @@ function createSectionLink(node) {
         collapseBtn.setAttribute('clickable', 'true');
         collapseBtn.setAttribute('data-node-id', node.id);
         collapseBtn.setAttribute('data-collapsed', 'false');
+        
+        // Attach click handler directly for collapse functionality
+        collapseBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            console.log('Collapse button clicked for node:', node.id);
+            const { toggleNodeCollapse } = await import('./event-handlers.js');
+            toggleNodeCollapse(node.id);
+        });
         
         actionButtons.appendChild(collapseBtn);
     }
