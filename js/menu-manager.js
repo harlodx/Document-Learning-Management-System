@@ -6,6 +6,7 @@
 import { saveDocument, commitDocument } from './data-operations.js';
 import { showSuccess } from './message-center.js';
 
+const LOG_ENABLED = typeof globalThis !== 'undefined' ? !!globalThis.LOG_ENABLED : false;
 let isMenuOpen = false;
 let ispendingPanelOpen = false;
 
@@ -43,7 +44,7 @@ export function initializeMenu() {
     // Initialize keyboard shortcuts
     initializeKeyboardShortcuts();
 
-    console.log('Menu manager initialized');
+    if (LOG_ENABLED) console.log('Menu manager initialized');
 }
 
 /**
@@ -68,7 +69,7 @@ function initializePendingPanel() {
     
     observer.observe(pendingPanel, { attributes: true, attributeFilter: ['class'] });
 
-    console.log('pending panel initialized');
+    if (LOG_ENABLED) console.log('pending panel initialized');
 }
 
 /**
@@ -177,7 +178,7 @@ function initializeKeyboardShortcuts() {
         // Ctrl+S or Cmd+S - Save
         if ((e.ctrlKey || e.metaKey) && e.key === 's' && !e.shiftKey) {
             e.preventDefault();
-            console.log('Keyboard shortcut: Save (Ctrl+S)');
+            if (LOG_ENABLED) console.log('Keyboard shortcut: Save (Ctrl+S)');
             saveDocument();
             showSuccess('Document Saved');
         }
@@ -185,7 +186,7 @@ function initializeKeyboardShortcuts() {
         // Ctrl+Shift+S or Cmd+Shift+S - Commit
         if ((e.ctrlKey || e.metaKey) && e.key === 'S' && e.shiftKey) {
             e.preventDefault();
-            console.log('Keyboard shortcut: Commit (Ctrl+Shift+S)');
+            if (LOG_ENABLED) console.log('Keyboard shortcut: Commit (Ctrl+Shift+S)');
             commitDocument();
             showSuccess('Changes Committed');
         }
@@ -200,10 +201,12 @@ function initializeKeyboardShortcuts() {
         }
     });
 
-    console.log('Keyboard shortcuts initialized:');
-    console.log('  - Ctrl+S (or Cmd+S): Save Draft');
-    console.log('  - Ctrl+Shift+S (or Cmd+Shift+S): Commit Changes');
-    console.log('  - Escape: Close Menu');
+    if (LOG_ENABLED) {
+        console.log('Keyboard shortcuts initialized:');
+        console.log('  - Ctrl+S (or Cmd+S): Save Draft');
+        console.log('  - Ctrl+Shift+S (or Cmd+Shift+S): Commit Changes');
+        console.log('  - Escape: Close Menu');
+    }
 }
 
 /**

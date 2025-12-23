@@ -19,6 +19,7 @@
 */
 
 // Import modules
+import './logger.js';
 import DocumentNode from './documentnode.js';
 import { stateManager } from './state-manager.js';
 import { buildRevisionList, buildRevisionListFromHistory, RevisionDocument } from './revision-manager.js';
@@ -59,7 +60,7 @@ import { initializeUserManagement, updateUserSelector, getCurrentUserInfo, expor
 // CONFIGURATION & CONSTANTS
 // =========================================================================
 
-const DEBUG_MODE = true; // Set to false to disable debug messages
+import { DEBUG_MODE, logDebug } from './logger.js';
 
 /**
  * Debug logging utility
@@ -70,9 +71,9 @@ function debugMessage(message, data = null) {
     if (!DEBUG_MODE) return;
 
     if (data !== null && data !== undefined) {
-        console.log('DEBUG:', message, data);
+        logDebug('DEBUG:', message, data);
     } else {
-        console.log('DEBUG:', message);
+        logDebug('DEBUG:', message);
     }
 }
 
