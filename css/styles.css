@@ -30,10 +30,11 @@
     --border-light: #e0e0e0;
     --border-focus: #4CAF50;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    /* Shadows - Subtle glow effect */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg-right: 10px 4px 15px rgba(0, 0, 0, 0.15), 5px 2px 8px rgba(0, 0, 0, 0.08);
     
     /* UI Elements */
     --hover-bg: rgba(0, 0, 0, 0.05);
@@ -66,7 +67,13 @@
     --menu-button-bg: rgba(255, 255, 255, 0.2);
     --menu-button-hover: rgba(255, 255, 255, 0.3);
     --menu-button-border: rgba(255, 255, 255, 0.35);
+
+    --index-button-bg: rgba(31, 121, 238, 0.75);
+    --index-button-hover: rgba(31, 121, 238, 0.85);
+    --index-button-border: rgba(31, 121, 238, 0.9);
 }
+
+/* (Menu dimming now handled by the overlay; no per-element filters) */
 
 /* Dark Theme */
 body.dark-theme {
@@ -105,10 +112,11 @@ body.dark-theme {
     --border-light: #353535;
     --border-focus: #66BB6A;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+    /* Shadows - Subtle glow effect (dark theme) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5), 0 3px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg-right: 10px 4px 15px rgba(0, 0, 0, 0.5), 5px 2px 8px rgba(0, 0, 0, 0.3);
     
     /* UI Elements */
     --hover-bg: rgba(255, 255, 255, 0.1);
@@ -170,6 +178,7 @@ body {
     color: var(--text-color);
     line-height: 1.6;
     padding: 2vw;
+    padding-top: 15px;
 }
 
 
@@ -178,11 +187,12 @@ header {
     justify-content: center;
     align-items: center;
     min-height: 60px;
-    width: 100%;
+    width: calc(100% - 340px);
     padding: 0 2rem 0 80px;
     background-color: var(--header-bg-color);
-    transition: all var(--transition-normal);
+    transition: filter var(--transition-normal);
     margin-left: 340px;
+    border-radius: 10px;
 }
 
 header h1 {
@@ -191,9 +201,17 @@ header h1 {
     color: var(--text-color);
 }
 
+header img {
+    max-height: 50px;
+    max-width: 100%;
+    object-fit: contain;
+    transition: filter var(--transition-normal);
+}
+
 /* Shift header back when index panel is closed */
 header:not(.index-open) {
     margin-left: 0;
+    width: 100%;
 }
 
 /* Theme Toggle Styles */
@@ -269,8 +287,8 @@ header:not(.index-open) {
     z-index: 999;
     width: 15px;
     height: 120px;
-    background-color: var(--menu-bg-opacity);
-    border: 1px solid var(--menu-divider);
+    background-color: var(--index-button-bg);
+    border: 1px solid var(--index-button-border);
     border-left: none;
     border-radius: 0 12px 12px 0;
     cursor: pointer;
@@ -288,16 +306,17 @@ header:not(.index-open) {
 }
 
 .index-toggle:hover {
-    width: 60px;
+    width: 40px;
     padding: 15px 12px;
-    background-color: var(--menu-bg-hover, var(--menu-bg-opacity));
+    background-color: var(--index-button-hover, var(--menu-bg-opacity));
+    border-radius: 0 100px 100px 0;
     box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.25);
 }
 
 .index-toggle.active {
     left: 340px;
-    width: 60px;
-    padding: 15px 12px;
+    width: 20px;
+    padding: 15px 6px 15px 20px;
     border-radius: 0 12px 12px 0;
 }
 
@@ -310,80 +329,30 @@ header:not(.index-open) {
     pointer-events: none;
 }
 
-.index-toggle:hover .index-line,
-.index-toggle.active .index-line {
-    width: 30px;
-}
-
-.index-toggle.active .index-line:nth-child(1) {
-    transform: rotate(45deg) translateY(9px);
-}
-
-.index-toggle.active .index-line:nth-child(2) {
-    opacity: 0;
-}
-
-.index-toggle.active .index-line:nth-child(3) {
-    transform: rotate(-45deg) translateY(-9px);
-}
-
-/* Index Toggle Button - Tab Style */
-.index-toggle {
-    position: fixed;
-    top: 50vh;
-    left: 0;
-    transform: translateY(-50%);
-    z-index: 999;
+/* On hover turn the menu lines into an arrow */
+.index-toggle:hover .index-line {
     width: 15px;
-    height: 120px;
-    background-color: var(--menu-bg-opacity);
-    border: 1px solid var(--menu-divider);
-    border-left: none;
-    border-radius: 0 12px 12px 0;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 15px 4px;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
-    transition: all var(--transition-normal);
-    pointer-events: auto;
-    backdrop-filter: blur(10px);
-    overflow: hidden;
 }
 
-.index-toggle:hover {
-    width: 60px;
-    padding: 15px 12px;
-    background-color: var(--menu-bg-hover, var(--menu-bg-opacity));
-    box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.25);
+.index-toggle:hover .index-line:nth-child(1) {
+    transform: rotate(45deg) translateY(0) translateX(6px);
 }
 
-.index-toggle.active {
-    left: 340px;
-    width: 60px;
-    padding: 15px 12px;
-    border-radius: 0 12px 12px 0;
+.index-toggle:hover .index-line:nth-child(2) {
+    width: 20px;
+    /* height: 4px; */
+    transform: translateX(-3px);
 }
 
-.index-line {
-    width: 8px;
-    height: 3px;
-    background-color: var(--menu-text-color);
-    border-radius: 2px;
-    transition: all var(--transition-fast);
-    pointer-events: none;
+.index-toggle:hover .index-line:nth-child(3) {
+    transform: rotate(-45deg) translateY(0) translateX(6px);
 }
 
-.index-toggle:hover .index-line,
-.index-toggle.active .index-line {
-    width: 30px;
-}
+
+/* When active */
 
 .index-toggle.active .index-line:nth-child(1) {
-    transform: rotate(45deg) translateY(9px);
+    transform: rotate(45deg) translateY(10px);
 }
 
 .index-toggle.active .index-line:nth-child(2) {
@@ -393,11 +362,17 @@ header:not(.index-open) {
 .index-toggle.active .index-line:nth-child(3) {
     transform: rotate(-45deg) translateY(-9px);
 }
+
+.index-toggle.active .index-line {
+    width: 25px;
+}
+
+/* Removed duplicate Index Toggle block */
 
 /* Hamburger Menu Button - Tab Style */
 .menu-toggle {
     position: fixed;
-    top: 50vh;
+    top: calc(50vh - 40px); /* vertically paired with pending toggle */
     right: 0;
     transform: translateY(-50%);
     z-index: 1001;
@@ -422,7 +397,7 @@ header:not(.index-open) {
 }
 
 .menu-toggle:hover {
-    width: 60px;
+    width: 40px;
     padding: 15px 12px;
     background-color: var(--menu-bg-hover, var(--menu-bg-opacity));
     box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.25);
@@ -430,7 +405,7 @@ header:not(.index-open) {
 
 .menu-toggle.active {
     right: 280px;
-    width: 60px;
+    width: 40px;
     padding: 15px 12px;
     border-radius: 12px 0 0 12px;
 }
@@ -446,7 +421,7 @@ header:not(.index-open) {
 
 .menu-toggle:hover .hamburger-line,
 .menu-toggle.active .hamburger-line {
-    width: 30px;
+    width: 20px;
     
 }
 
@@ -472,7 +447,7 @@ header:not(.index-open) {
     max-height: 100vh;
     background-color: var(--menu-bg-opacity);
     box-shadow: var(--shadow-lg);
-    z-index: 1000;
+    z-index: 1200; /* above overlay */
     display: flex;
     flex-direction: column;
     padding: 20px 0;
@@ -493,28 +468,39 @@ header:not(.index-open) {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+    background-color: rgba(0, 0, 0, 0.35); /* unified dimming */
+    z-index: 1100; /* below menu (1200), above content */
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity var(--transition-normal), visibility var(--transition-normal);
 }
 
 .menu-overlay.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto; /* click-capture only */
 }
 
 /* User Section */
 .menu-user-section {
+    /* merged base + interactive definitions */
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 15px 30px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: var(--border-radius);
+    margin: -4px -8px;
+    padding: 19px 38px;
 }
 
 .user-avatar {
+    /* merged definitions */
     flex-shrink: 0;
+    position: relative;
+    transition: transform 0.2s ease;
 }
 
 .user-info {
@@ -1466,15 +1452,9 @@ body.high-contrast .menu-item:hover {
     outline: 2px solid var(--border-focus);
 }
 
-/* Main container shift when menu is open */
+/* Main container */
 #dynamic-container {
     transition: all var(--transition-normal);
-}
-
-#dynamic-container.menu-active {
-    transform: translateX(-100px);
-    filter: brightness(0.7);
-    pointer-events: none;
 }
 
 main {
@@ -1510,7 +1490,7 @@ main:not(.index-open) {
     padding: 1rem;
     margin-top: 1rem;
     background-color: var(--surface-color);
-    transition: all var(--transition-normal);
+    transition: filter var(--transition-normal);
 }
 
 .document-name {
@@ -1718,19 +1698,13 @@ main:not(.index-open) {
     overflow: hidden;
 }
 
-.revision-tracking-search .search-input {
-    flex: 1;
-    min-width: 200px;
-    border: none;
-    border-radius: 0;
-    background-color: var(--surface-color);
-    padding: 8px 12px;
-}
+/* Shared search input styles for revision + inline changes */
+.revision-tracking-search .search-input,
+/* Removed duplicate: handled by shared rule above */
 
-.revision-tracking-search .search-input:focus {
-    outline: none;
-    box-shadow: none;
-}
+/* Shared focus styles for search inputs */
+.revision-tracking-search .search-input:focus,
+/* Removed duplicate: handled by shared rule above */
 
 .revision-tracking-search .search-results-count {
     font-size: 14px;
@@ -2019,6 +1993,7 @@ nav {
     background-color: var(--surface-color);
     border-right: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
+    /* box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
     transition: left var(--transition-normal);
     z-index: 998;
     display: flex;
@@ -2032,9 +2007,13 @@ nav {
     left: -350px;
 }
 
+.index-panel.open {
+    box-shadow: var(--shadow-lg-right);
+}
+
 aside {
     grid-area: aside;
-    margin-top: 10px;
+    margin-top: 8px;
     padding: 1rem;
     border: 1px solid var(--footer-bg-color);
     border-radius: 10px;
@@ -2049,7 +2028,6 @@ aside {
     height: calc(100vh - 20px);
     overflow-y: auto;
     margin-top: 10px;
-    margin-left: 10px;
     padding: 1rem;
     border: 1px solid var(--footer-bg-color);
     border-radius: 10px;
@@ -2228,13 +2206,7 @@ footer {
 
 
 
-/* Used for the Content List */
-#myList {
-    list-style-type: decimal;
-    list-style-position: outside;
-    padding-left: 0.25rem;
-    counter-reset: item;
-}
+/* Removed duplicate #myList; consolidated below with editor pane styles */
 
 .section-link {
     display: flex; 
@@ -2326,6 +2298,8 @@ footer {
     flex-direction: column;
     height: 100%;
     padding: 0 20px;
+    box-sizing: border-box;
+    min-height: 0;
 }
 
 .index-panel .section-heading {
@@ -2719,7 +2693,7 @@ footer {
 /* Pending Toggle Button */
 .pending-toggle {
     position: fixed;
-    top: calc(50vh + 50px);
+    top: calc(50vh + 40px); /* vertically paired with menu toggle */
     right: 0;
     transform: translateY(-50%);
     z-index: 998;
@@ -2731,32 +2705,76 @@ footer {
     border-radius: 12px 0 0 12px;
     cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 6px;
     padding: 15px 4px;
     box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
-    transition: all var(--transition-normal);
+    transition: all 0.35s ease; /* slower fade-back for hover exit */
     pointer-events: auto;
     backdrop-filter: blur(10px);
     overflow: hidden;
 }
 
 .pending-toggle:hover {
+    z-index: 1201; /* float above menu-toggle while hovering */
     width: 40px;
     padding: 15px 12px;
     background-color: rgba(244, 67, 54, 0.65);
+    border-radius: 100px 0 0 100px;
     box-shadow: -3px 3px 12px rgba(0, 0, 0, 0.25);
 }
 
 .pending-toggle.active {
     right: 350px;
-    width: 40px;
-    padding: 15px 12px;
+    width: 20px;
+    padding: 15px 6px 15px 20px;
     border-radius: 12px 0 0 12px;
 }
 
-.pending-icon {
-    display: none;
+.pending-line {
+    width: 8px;
+    height: 3px;
+    background-color: var(--menu-text-color);
+    border-radius: 2px;
+    transition: all var(--transition-fast);
+    pointer-events: none;
+}
+
+/* On hover turn the lines into a left-pointing arrow (opposite of index-toggle) */
+.pending-toggle:hover .pending-line {
+    width: 15px;
+}
+
+.pending-toggle:hover .pending-line:nth-child(1) {
+    transform: rotate(-45deg) translateY(0) translateX(-6px);
+}
+
+.pending-toggle:hover .pending-line:nth-child(2) {
+    width: 20px;
+    transform: translateX(3px);
+}
+
+.pending-toggle:hover .pending-line:nth-child(3) {
+    transform: rotate(45deg) translateY(0) translateX(-6px);
+}
+
+/* When active - form an X */
+.pending-toggle.active .pending-line:nth-child(1) {
+    transform: rotate(45deg) translateY(10px);
+}
+
+.pending-toggle.active .pending-line:nth-child(2) {
+    opacity: 0;
+}
+
+.pending-toggle.active .pending-line:nth-child(3) {
+    transform: rotate(-45deg) translateY(-9px);
+}
+
+.pending-toggle.active .pending-line {
+    width: 25px;
 }
 
 /* Pending Panel */
@@ -2770,7 +2788,7 @@ footer {
     background-color: var(--surface-color);
     border-left: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
-    z-index: 998;
+    z-index: 900; /* below overlay (1100) so it dims uniformly */
     display: flex;
     flex-direction: column;
     padding: 20px;

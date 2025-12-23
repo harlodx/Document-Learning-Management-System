@@ -145,12 +145,10 @@ function toggleMenu() {
 function openMenu() {
     const sideMenu = document.getElementById('side-menu');
     const menuOverlay = document.getElementById('menu-overlay');
-    const mainContainer = document.getElementById('dynamic-container');
     const menuToggle = document.getElementById('menu-toggle');
 
     sideMenu.classList.add('open');
     menuOverlay.classList.add('active');
-    mainContainer.classList.add('menu-active');
     menuToggle.classList.add('active');
     
     isMenuOpen = true;
@@ -162,12 +160,10 @@ function openMenu() {
 function closeMenu() {
     const sideMenu = document.getElementById('side-menu');
     const menuOverlay = document.getElementById('menu-overlay');
-    const mainContainer = document.getElementById('dynamic-container');
     const menuToggle = document.getElementById('menu-toggle');
 
     sideMenu.classList.remove('open');
     menuOverlay.classList.remove('active');
-    mainContainer.classList.remove('menu-active');
     menuToggle.classList.remove('active');
     
     isMenuOpen = false;
