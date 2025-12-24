@@ -134,10 +134,38 @@ export function commitChanges(commitMessage, author = 'User', userInfo = null) {
         const patch = jsonpatch.compare(lastCommittedState, workingCopy);
         
         // Add timestamp to each patch operation
-        const timestampedPatch = patch.map(operation => ({
-            ...operation,
-            timestamp: new Date().toISOString()
-        }));
+        // Use the lastEditTime from the node if available, otherwise use commit time
+        const timestampedPatch = patch.map(operation => {
+            let operationTimestamp = new Date().toISOString();
+            
+            // Try to extract the node from the path and use its lastEditTime if available
+            try {
+                const pathParts = operation.path.split('/').filter(p => p);
+                if (pathParts.length > 0 && pathParts[0] !== 'pendingItems') {
+                    // Remove 'document' prefix if present
+                    const startIdx = pathParts[0] === 'document' ? 1 : 0;
+                    const nodeIndex = parseInt(pathParts[startIdx]);
+                    
+                    // Get the node from the working copy
+                    const docArray = workingCopy.document || workingCopy;
+                    if (Array.isArray(docArray) && docArray[nodeIndex]) {
+                        const node = docArray[nodeIndex];
+                        // Use the node's lastEditTime if it exists and is more recent
+                        if (node.lastEditTime) {
+                            operationTimestamp = node.lastEditTime;
+                        }
+                    }
+                }
+            } catch (e) {
+                // If anything fails, just use the commit time
+                console.warn('Could not extract node timestamp:', e);
+            }
+            
+            return {
+                ...operation,
+                timestamp: operationTimestamp
+            };
+        });
 
         // Create commit entry with user info
         const commit = {

@@ -78,6 +78,90 @@ function debugMessage(message, data = null) {
 }
 
 // =========================================================================
+// UTILITY FUNCTIONS
+// =========================================================================
+
+/**
+ * Query DOM elements and log if not found
+ * @param {string} selector - CSS selector
+ * @param {string} name - Element name for logging
+ * @returns {Element|null}
+ */
+function getElement(selector, name = null) {
+    const element = document.getElementById(selector);
+    if (!element && name) {
+        console.warn(`${name} element not found: #${selector}`);
+    }
+    return element;
+}
+
+/**
+ * Query multiple DOM elements by IDs
+ * @param {...string} ids - Element IDs to query
+ * @returns {object} Object with id as key and element as value
+ */
+function getElements(...ids) {
+    return ids.reduce((acc, id) => {
+        acc[id] = document.getElementById(id);
+        return acc;
+    }, {});
+}
+
+/**
+ * Update button state (disabled, opacity, cursor, title)
+ * @param {Element} button - Button element
+ * @param {boolean} enabled - Whether button should be enabled
+ * @param {string} title - Button title/tooltip
+ */
+function setButtonState(button, enabled, title = '') {
+    if (!button) return;
+    
+    button.disabled = !enabled;
+    button.style.opacity = enabled ? '1' : '0.5';
+    button.style.cursor = enabled ? 'pointer' : 'not-allowed';
+    if (title) button.title = title;
+}
+
+/**
+ * Setup event listener with optional handler
+ * @param {string} elementId - Element ID
+ * @param {string} event - Event type (e.g., 'click')
+ * @param {Function} handler - Event handler function
+ * @returns {Element|null}
+ */
+function setupEventListener(elementId, event, handler) {
+    const element = getElement(elementId);
+    if (element && handler) {
+        element.addEventListener(event, handler);
+    }
+    return element;
+}
+
+/**
+ * Toggle CSS classes on element
+ * @param {Element} element - DOM element
+ * @param {string[]} classes - Class names to toggle
+ * @param {boolean} force - True/false to force state
+ */
+function toggleClasses(element, classes, force = null) {
+    if (!element) return;
+    classes.forEach(cls => {
+        element.classList.toggle(cls, force !== null ? force : undefined);
+    });
+}
+
+/**
+ * Check if element has class(es)
+ * @param {Element} element - DOM element
+ * @param {string[]} classes - Class names to check
+ * @returns {boolean}
+ */
+function hasClasses(element, classes) {
+    if (!element) return false;
+    return classes.every(cls => element.classList.contains(cls));
+}
+
+// =========================================================================
 // TEST DATA DEFINITIONS
 // =========================================================================
 
@@ -398,11 +482,34 @@ function loadTitleAndSubtitle() {
 }
 
 /**
+ * Toggle panel open/close state with related elements
+ * @param {Element} toggle - Toggle button element
+ * @param {Element} panel - Panel element
+ * @param {Element[]} relatedElements - Elements affected by toggle
+ */
+function togglePanelState(toggle, panel, relatedElements = []) {
+    if (!toggle || !panel) return;
+    
+    const isOpen = panel.classList.contains('open');
+    const newState = !isOpen;
+    
+    // Update panel and toggle
+    toggleClasses(panel, ['open'], newState);
+    toggleClasses(toggle, ['active'], newState);
+    
+    // Update related elements
+    relatedElements.forEach(el => {
+        if (el) toggleClasses(el, ['index-open'], newState);
+    });
+    
+    debugMessage(`Index panel ${newState ? 'opened' : 'closed'}`);
+}
+
+/**
  * Initialize index panel toggle functionality
  */
 function initializeIndexPanel() {
-    const indexToggle = document.getElementById('index-toggle');
-    const indexPanel = document.getElementById('index-panel');
+    const { 'index-toggle': indexToggle, 'index-panel': indexPanel } = getElements('index-toggle', 'index-panel');
     const main = document.querySelector('main');
     const header = document.querySelector('header');
     
@@ -411,37 +518,16 @@ function initializeIndexPanel() {
         return;
     }
     
-    // Start with panel open by default - add active classes immediately
-    indexToggle.classList.add('active');
-    main.classList.add('index-open');
-    if (header) header.classList.add('index-open');
+    // Start with panel open by default
+    toggleClasses(indexToggle, ['active'], true);
+    toggleClasses(main, ['index-open'], true);
+    if (header) toggleClasses(header, ['index-open'], true);
     
-    console.log('Index panel initialization:', {
-        panelVisible: indexPanel.classList.contains('open'),
-        panelLeft: window.getComputedStyle(indexPanel).left,
-        mainMarginLeft: window.getComputedStyle(main).marginLeft,
-        toggleActive: indexToggle.classList.contains('active'),
-        mainIndexOpen: main.classList.contains('index-open')
-    });
+    debugMessage('Index panel initialized (open by default)');
     
+    // Set up toggle click handler
     indexToggle.addEventListener('click', () => {
-        const isOpen = indexPanel.classList.contains('open');
-        
-        if (isOpen) {
-            // Close the panel
-            indexPanel.classList.remove('open');
-            indexToggle.classList.remove('active');
-            main.classList.remove('index-open');
-            if (header) header.classList.remove('index-open');
-        } else {
-            // Open the panel
-            indexPanel.classList.add('open');
-            indexToggle.classList.add('active');
-            main.classList.add('index-open');
-            if (header) header.classList.add('index-open');
-        }
-        
-        console.log('Index panel toggled:', !isOpen ? 'opened' : 'closed');
+        togglePanelState(indexToggle, indexPanel, [main, header]);
     });
     
     debugMessage('Index panel toggle initialized');
@@ -451,84 +537,49 @@ function initializeIndexPanel() {
  * Sets up export and import button handlers
  */
 function setupExportImportHandlers() {
-    const newBtn = document.getElementById('new-document-btn');
-    const exportBtn = document.getElementById('export-btn');
-    const importBtn = document.getElementById('import-btn');
-    const pdfBtn = document.getElementById('export-pdf-btn');
+    // Document operation buttons
+    setupEventListener('new-document-btn', 'click', async () => {
+        debugMessage('New document button clicked');
+        const { createNewDocument } = await import('./data-operations.js');
+        await createNewDocument();
+    });
     
-    if (newBtn) {
-        newBtn.addEventListener('click', async () => {
-            console.log('New document button clicked');
-            const { createNewDocument } = await import('./data-operations.js');
-            await createNewDocument();
-        });
-    }
+    setupEventListener('export-btn', 'click', async () => {
+        debugMessage('Export button clicked');
+        await exportCompleteDocument();
+    });
     
-    if (exportBtn) {
-        exportBtn.addEventListener('click', async () => {
-            console.log('Export button clicked');
-            await exportCompleteDocument();
-        });
-    }
+    setupEventListener('import-btn', 'click', async () => {
+        debugMessage('Import button clicked');
+        await importCompleteDocument();
+    });
     
-    if (importBtn) {
-        importBtn.addEventListener('click', async () => {
-            console.log('Import button clicked');
-            await importCompleteDocument();
-        });
-    }
+    setupEventListener('export-pdf-btn', 'click', () => {
+        debugMessage('PDF export button clicked');
+        const documentStructure = stateManager.getDocumentStructure();
+        const title = document.getElementById('document-name')?.value || 'Untitled Document';
+        const subtitle = document.getElementById('document-subtitle')?.value || '';
+        exportToPDF(documentStructure, title, subtitle);
+    });
     
-    if (pdfBtn) {
-        pdfBtn.addEventListener('click', () => {
-            console.log('PDF export button clicked');
-            const documentStructure = stateManager.getDocumentStructure();
-            const title = document.getElementById('document-name')?.value || 'Untitled Document';
-            const subtitle = document.getElementById('document-subtitle')?.value || '';
-            exportToPDF(documentStructure, title, subtitle);
-        });
-    }
+    // Save and commit buttons
+    setupEventListener('saveDocument', 'click', () => {
+        debugMessage('Save button clicked');
+        saveDocument();
+    });
     
-    // Set up save and commit button handlers
-    const saveBtn = document.getElementById('saveDocument');
-    const commitBtn = document.getElementById('commitDocument');
+    setupEventListener('commitDocument', 'click', () => {
+        debugMessage('Commit button clicked');
+        commitDocument();
+    });
     
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            console.log('Save button clicked');
-            saveDocument();
-        });
-    }
+    // Title and subtitle auto-save
+    ['document-name', 'document-subtitle'].forEach(id => {
+        setupEventListener(id, 'input', scheduleAutoSave);
+    });
     
-    if (commitBtn) {
-        commitBtn.addEventListener('click', () => {
-            console.log('Commit button clicked');
-            commitDocument();
-        });
-    }
-    
-    // Set up auto-save for title and subtitle changes
-    const titleElement = document.getElementById('document-name');
-    const subtitleElement = document.getElementById('document-subtitle');
-    
-    if (titleElement) {
-        titleElement.addEventListener('input', () => {
-            scheduleAutoSave();
-        });
-    }
-    
-    if (subtitleElement) {
-        subtitleElement.addEventListener('input', () => {
-            scheduleAutoSave();
-        });
-    }
-    
-    // Set up clear all pending button
-    const clearAllPendingBtn = document.getElementById('clear-all-pending-btn');
-    if (clearAllPendingBtn) {
-        clearAllPendingBtn.addEventListener('click', () => {
-            clearAllPending();
-        });
-    }
+    // Clear pending items
+    setupEventListener('clear-all-pending-btn', 'click', clearAllPending);
     
     // Set up Add Root and Add Subnode buttons
     setupAddNodeButtons();
@@ -538,105 +589,59 @@ function setupExportImportHandlers() {
  * Set up Add Root and Add Subnode button handlers
  */
 async function setupAddNodeButtons() {
-    const addRootBtn = document.getElementById('add-root-btn');
-    const addSubnodeBtn = document.getElementById('add-subnode-btn');
+    const { 'add-root-btn': addRootBtn, 'add-subnode-btn': addSubnodeBtn } = getElements('add-root-btn', 'add-subnode-btn');
     
-    console.log('Setting up Add Node buttons...');
-    console.log('Add Root button found:', !!addRootBtn);
-    console.log('Add Subnode button found:', !!addSubnodeBtn);
+    debugMessage('Setting up Add Node buttons...');
     
     if (addRootBtn) {
         addRootBtn.addEventListener('click', async () => {
-            console.log('Add Root button clicked');
+            debugMessage('Add Root button clicked');
             const { handleAddRootNode } = await import('./context-menu.js');
-            
-            // Get currently editing item to insert after
             const currentItem = stateManager.getCurrentEditingItem();
-            const nodeId = currentItem ? currentItem.id : null;
-            
-            console.log('Adding root node. Current editing item:', nodeId);
-            await handleAddRootNode(nodeId);
+            await handleAddRootNode(currentItem ? currentItem.id : null);
         });
     }
     
     if (addSubnodeBtn) {
         addSubnodeBtn.addEventListener('click', async () => {
-            console.log('Add Subnode button clicked');
+            debugMessage('Add Subnode button clicked');
             const { handleAddSubnode } = await import('./context-menu.js');
-            
-            // Get currently editing item as parent
             const currentItem = stateManager.getCurrentEditingItem();
             
             if (!currentItem) {
-                console.warn('No node selected - cannot add subnode');
                 const { showError } = await import('./message-center.js');
                 showError('Please select a node first');
                 return;
             }
             
-            console.log('Adding subnode to:', currentItem.id);
+            debugMessage('Adding subnode to:', currentItem.id);
             await handleAddSubnode(currentItem.id);
         });
         
         // Listen for selection changes
-        console.log('Adding listener for editingItemChanged...');
-        stateManager.addListener('editingItemChanged', () => {
-            console.log('editingItemChanged event fired!');
-            updateAddSubnodeButtonState();
-        });
-        
-        // Set initial button state
-        console.log('Setting initial Add Subnode button state...');
+        stateManager.addListener('editingItemChanged', updateAddSubnodeButtonState);
         updateAddSubnodeButtonState();
     }
     
-    console.log('Add Node buttons setup complete');
+    debugMessage('Add Node buttons setup complete');
 }
 
 /**
  * Update the Add Subnode button state based on selection
  */
 function updateAddSubnodeButtonState() {
-    console.log('=== UPDATE ADD SUBNODE BUTTON STATE ===');
-    
-    const addSubnodeBtn = document.getElementById('add-subnode-btn');
-    console.log('Button element found:', !!addSubnodeBtn);
-    
-    if (!addSubnodeBtn) {
-        console.warn('Add Subnode button not found in DOM');
-        return;
-    }
+    const addSubnodeBtn = getElement('add-subnode-btn');
+    if (!addSubnodeBtn) return;
     
     const currentItem = stateManager.getCurrentEditingItem();
-    console.log('Current editing item:', currentItem);
-    console.log('Current item ID:', currentItem?.id);
-    console.log('Current item name:', currentItem?.name);
+    const enabled = !!currentItem;
+    const title = enabled 
+        ? `Add a subnode to "${currentItem.name}"` 
+        : 'Please select a node first';
     
-    if (!currentItem) {
-        addSubnodeBtn.disabled = true;
-        addSubnodeBtn.style.opacity = '0.5';
-        addSubnodeBtn.style.cursor = 'not-allowed';
-        addSubnodeBtn.title = 'Please select a node first';
-        console.log('✗ Add Subnode button DISABLED (no selection)');
-    } else {
-        addSubnodeBtn.disabled = false;
-        addSubnodeBtn.style.opacity = '1';
-        addSubnodeBtn.style.cursor = 'pointer';
-        addSubnodeBtn.title = `Add a subnode to "${currentItem.name}"`;
-        console.log('✓ Add Subnode button ENABLED (node selected:', currentItem.id, currentItem.name, ')');
-    }
-    
-    console.log('Button disabled state:', addSubnodeBtn.disabled);
-    console.log('Button opacity:', addSubnodeBtn.style.opacity);
+    setButtonState(addSubnodeBtn, enabled, title);
+    debugMessage(`Add Subnode button ${enabled ? 'enabled' : 'disabled'}`, currentItem);
 }
-
-/**
- * Shows a temporary save indicator to the user
- * @param {string} message - The message to show
- * @param {boolean} hasUncommitted - Whether there are uncommitted changes
- * @param {string} color - Optional background color
- */
-// Removed showSaveIndicator function - now using centralized message center
 
 // =========================================================================
 // DOM READY EVENT

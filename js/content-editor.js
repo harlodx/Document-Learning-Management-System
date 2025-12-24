@@ -7,6 +7,8 @@ console.log('===== CONTENT EDITOR MODULE LOADING =====');
 
 import { stateManager } from './state-manager.js';
 import { showError, showConfirm } from './message-center.js';
+import { updateNodeDisplay } from './tree-renderer.js';
+import { scheduleAutoSave } from './storage-manager.js';
 
 // Store active event listeners for cleanup
 const activeListeners = new Map();
@@ -773,7 +775,17 @@ function bindPaneInputs(paneRoot) {
                 const newValue = event.target.value;
                 currentItem.name = newValue;
                 console.log(`Updating title for ${currentItem.id}: ${newValue}`);
-                // TODO: Update source data with debouncing
+                
+                // Mark node as edited to capture the action timestamp
+                if (typeof currentItem.markEdited === 'function') {
+                    currentItem.markEdited();
+                }
+                
+                // Update the UI to reflect the change in the document index
+                updateNodeDisplay(currentItem.id, { name: newValue });
+                
+                // Mark document as modified and schedule auto-save
+                scheduleAutoSave();
             }
         });
     }
