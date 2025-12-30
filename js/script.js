@@ -107,6 +107,7 @@ function getElements(...ids) {
     }, {});
 }
 
+// function test 
 /**
  * Update button state (disabled, opacity, cursor, title)
  * @param {Element} button - Button element
